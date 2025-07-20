@@ -1,6 +1,9 @@
+
 import { ReactNode } from "react";
-import { Home, Calculator, BookOpen, Target, TrendingUp, ShoppingBag, Menu } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { Home, Calculator, BookOpen, Target, TrendingUp, ShoppingBag, Menu, User, Settings, Users, BarChart3, LogOut } from "lucide-react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserRole } from "@/types/auth";
 import {
   Sidebar,
   SidebarContent,
@@ -14,46 +17,98 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface LayoutProps {
   children: ReactNode;
 }
 
-const navigationItems = [
-  {
-    title: "PRIMEIROS PASSOS",
-    items: [
-      { title: "Home", url: "/", icon: Home },
-      { title: "Meus Objetivos", url: "/objetivos", icon: Target },
-    ]
-  },
-  {
-    title: "FERRAMENTAS DNB",
-    items: [
-      { title: "Planner de Compras", url: "/planner", icon: Calculator },
-      { title: "Análise de Mercado", url: "/analise", icon: TrendingUp },
-      { title: "Achadinhos", url: "/achadinhos", icon: ShoppingBag },
-    ]
-  },
-  {
-    title: "DNB ACADEMY",
-    items: [
-      { title: "Aprenda Câmbio", url: "/academy", icon: BookOpen },
-    ]
+const getNavigationItems = (userRole: UserRole) => {
+  const baseItems = [
+    {
+      title: "PRIMEIROS PASSOS",
+      items: [
+        { title: "Home", url: "/", icon: Home },
+        { title: "Meus Objetivos", url: "/objetivos", icon: Target },
+      ]
+    },
+    {
+      title: "FERRAMENTAS DNB",
+      items: [
+        { title: "Planner de Compras", url: "/planner", icon: Calculator },
+        { title: "Análise de Mercado", url: "/analise", icon: TrendingUp },
+        { title: "Achadinhos", url: "/achadinhos", icon: ShoppingBag },
+      ]
+    },
+    {
+      title: "DNB ACADEMY",
+      items: [
+        { title: "Aprenda Câmbio", url: "/academy", icon: BookOpen },
+      ]
+    }
+  ];
+
+  // Add admin sections based on role
+  if (userRole === UserRole.ADMIN) {
+    baseItems.push({
+      title: "ADMINISTRAÇÃO",
+      items: [
+        { title: "Configurações", url: "/admin/settings", icon: Settings },
+        { title: "Dashboard Gestor", url: "/manager/dashboard", icon: BarChart3 },
+      ]
+    });
+  } else if (userRole === UserRole.MANAGER) {
+    baseItems.push({
+      title: "GESTÃO",
+      items: [
+        { title: "Dashboard", url: "/manager/dashboard", icon: BarChart3 },
+        { title: "Usuários", url: "/manager/users", icon: Users },
+      ]
+    });
   }
-];
+
+  return baseItems;
+};
 
 function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
   const isCollapsed = state === "collapsed";
+
+  const navigationItems = user ? getNavigationItems(user.role) : [];
 
   const isActive = (path: string) => currentPath === path;
   const getNavClasses = (isActive: boolean) =>
     isActive 
       ? "bg-primary/10 text-primary font-semibold border-r-2 border-primary" 
       : "hover:bg-muted/50 text-muted-foreground hover:text-foreground";
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const getRoleLabel = (role: UserRole) => {
+    switch (role) {
+      case UserRole.ADMIN: return 'Admin';
+      case UserRole.MANAGER: return 'Gestor';
+      case UserRole.PREMIUM: return 'Premium';
+      case UserRole.FREE: return 'Gratuito';
+    }
+  };
+
+  const getRoleBadgeVariant = (role: UserRole) => {
+    switch (role) {
+      case UserRole.ADMIN: return 'destructive';
+      case UserRole.MANAGER: return 'default';
+      case UserRole.PREMIUM: return 'secondary';
+      case UserRole.FREE: return 'outline';
+    }
+  };
 
   return (
     <Sidebar
@@ -79,6 +134,36 @@ function AppSidebar() {
             </div>
           )}
         </div>
+
+        {/* User Info */}
+        {user && !isCollapsed && (
+          <div className="mb-6 px-2">
+            <div className="bg-muted/50 rounded-lg p-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{user.name}</p>
+                  <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs">
+                    {getRoleLabel(user.role)}
+                  </Badge>
+                </div>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <Button asChild variant="ghost" size="sm" className="h-8 px-2 flex-1">
+                  <NavLink to="/profile">
+                    <User className="h-3 w-3 mr-1" />
+                    Perfil
+                  </NavLink>
+                </Button>
+                <Button onClick={handleLogout} variant="ghost" size="sm" className="h-8 px-2">
+                  <LogOut className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Navigation */}
         {navigationItems.map((section) => (
@@ -116,6 +201,8 @@ function AppSidebar() {
 }
 
 export default function Layout({ children }: LayoutProps) {
+  const { user } = useAuth();
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -135,6 +222,13 @@ export default function Layout({ children }: LayoutProps) {
             </div>
             
             <div className="flex items-center gap-4">
+              {user && (
+                <div className="hidden md:flex items-center gap-2 text-sm">
+                  <Badge variant={getRoleBadgeVariant(user.role)}>
+                    {getRoleLabel(user.role)}
+                  </Badge>
+                </div>
+              )}
               <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
                 Sistema ativo
