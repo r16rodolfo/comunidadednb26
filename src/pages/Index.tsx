@@ -1,13 +1,65 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import Layout from "@/components/Layout";
+import PromoBanner from "@/components/PromoBanner";
+import WelcomeCard from "@/components/WelcomeCard";
+import QuickActionCards from "@/components/QuickActionCards";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <Layout>
+      <div className="space-y-8 animate-fade-in">
+        {/* Hero Banner */}
+        <PromoBanner />
+
+        {/* Welcome Section */}
+        <WelcomeCard />
+
+        {/* Quick Actions */}
+        <div>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-foreground mb-2">
+              Ferramentas Principais
+            </h2>
+            <p className="text-muted-foreground">
+              Acesse rapidamente as funcionalidades mais utilizadas da plataforma
+            </p>
+          </div>
+          <QuickActionCards />
+        </div>
+
+        {/* Additional Information */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+          <div className="text-center p-6 bg-card rounded-xl border border-border/50">
+            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <span className="text-primary font-bold text-lg">1</span>
+            </div>
+            <h3 className="font-semibold text-foreground mb-2">Defina suas Metas</h3>
+            <p className="text-sm text-muted-foreground">
+              Estabeleça objetivos claros para suas viagens e compras de câmbio
+            </p>
+          </div>
+          
+          <div className="text-center p-6 bg-card rounded-xl border border-border/50">
+            <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <span className="text-accent font-bold text-lg">2</span>
+            </div>
+            <h3 className="font-semibold text-foreground mb-2">Acompanhe o Mercado</h3>
+            <p className="text-sm text-muted-foreground">
+              Monitore cotações e tome decisões inteligentes no momento certo
+            </p>
+          </div>
+          
+          <div className="text-center p-6 bg-card rounded-xl border border-border/50">
+            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <span className="text-primary font-bold text-lg">3</span>
+            </div>
+            <h3 className="font-semibold text-foreground mb-2">Execute com Confiança</h3>
+            <p className="text-sm text-muted-foreground">
+              Realize suas compras com base em análises e planejamento sólido
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 
