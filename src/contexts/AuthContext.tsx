@@ -3,12 +3,14 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { UserProfile, AuthState, LoginCredentials, RegisterData, UserRole } from '@/types/auth';
 
 interface AuthContextType extends AuthState {
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<UserProfile>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
   hasPermission: (permission: string) => boolean;
   hasRole: (role: UserRole) => boolean;
+  viewAsUser: boolean;
+  setViewAsUser: (value: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -64,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: false,
     isLoading: true
   });
+  const [viewAsUser, setViewAsUser] = useState(false);
 
   useEffect(() => {
     // Check for stored user data
@@ -95,6 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: true,
         isLoading: false
       });
+      
+      // Return user role for redirect logic
+      return user;
     } else {
       throw new Error('Credenciais inválidas');
     }
@@ -157,7 +163,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout,
     updateProfile,
     hasPermission,
-    hasRole
+    hasRole,
+    viewAsUser,
+    setViewAsUser
   };
 
   return (

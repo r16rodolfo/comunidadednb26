@@ -19,6 +19,7 @@ import Login from "./pages/Login";
 import Unauthorized from "./pages/Unauthorized";
 import AdminSettings from "./pages/admin/Settings";
 import ManagerDashboard from "./pages/manager/Dashboard";
+import Users from "./pages/manager/Users";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -78,6 +79,11 @@ const App = () => (
             <Route path="/manager/dashboard" element={
               <ProtectedRoute requiredRole={UserRole.MANAGER}>
                 <ManagerDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/manager/users" element={
+              <ProtectedRoute requiredRole={UserRole.MANAGER}>
+                <Users />
               </ProtectedRoute>
             } />
             

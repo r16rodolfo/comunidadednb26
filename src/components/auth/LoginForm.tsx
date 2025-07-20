@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { UserRole } from '@/types/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,9 +21,17 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      await login(credentials);
+      const user = await login(credentials);
       toast({ title: 'Login realizado com sucesso!' });
-      navigate('/');
+      
+      // Redirect based on user role
+      if (user.role === UserRole.ADMIN) {
+        navigate('/admin/settings');
+      } else if (user.role === UserRole.MANAGER) {
+        navigate('/manager/dashboard');
+      } else {
+        navigate('/');
+      }
     } catch (error) {
       toast({
         title: 'Erro no login',

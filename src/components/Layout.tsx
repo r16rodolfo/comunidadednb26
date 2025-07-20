@@ -42,8 +42,62 @@ const getRoleBadgeVariant = (role: UserRole) => {
   }
 };
 
-const getNavigationItems = (userRole: UserRole) => {
-  const baseItems = [
+const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => {
+  // If viewing as user, show user navigation
+  if (viewAsUser) {
+    return [
+      {
+        title: "PRIMEIROS PASSOS",
+        items: [
+          { title: "Home", url: "/", icon: Home },
+          { title: "Meus Objetivos", url: "/objetivos", icon: Target },
+        ]
+      },
+      {
+        title: "FERRAMENTAS DNB",
+        items: [
+          { title: "Planner de Compras", url: "/planner", icon: Calculator },
+          { title: "Análise de Mercado", url: "/analise", icon: TrendingUp },
+          { title: "Achadinhos", url: "/achadinhos", icon: ShoppingBag },
+        ]
+      },
+      {
+        title: "DNB ACADEMY",
+        items: [
+          { title: "Aprenda Câmbio", url: "/academy", icon: BookOpen },
+        ]
+      }
+    ];
+  }
+
+  // Admin navigation - focused on administration
+  if (userRole === UserRole.ADMIN) {
+    return [
+      {
+        title: "ADMINISTRAÇÃO",
+        items: [
+          { title: "Configurações", url: "/admin/settings", icon: Settings },
+          { title: "Dashboard Gestor", url: "/manager/dashboard", icon: BarChart3 },
+        ]
+      }
+    ];
+  }
+
+  // Manager navigation - focused on management
+  if (userRole === UserRole.MANAGER) {
+    return [
+      {
+        title: "GESTÃO",
+        items: [
+          { title: "Dashboard", url: "/manager/dashboard", icon: BarChart3 },
+          { title: "Usuários", url: "/manager/users", icon: Users },
+        ]
+      }
+    ];
+  }
+
+  // User navigation (Premium/Free)
+  return [
     {
       title: "PRIMEIROS PASSOS",
       items: [
@@ -66,38 +120,17 @@ const getNavigationItems = (userRole: UserRole) => {
       ]
     }
   ];
-
-  // Add admin sections based on role
-  if (userRole === UserRole.ADMIN) {
-    baseItems.push({
-      title: "ADMINISTRAÇÃO",
-      items: [
-        { title: "Configurações", url: "/admin/settings", icon: Settings },
-        { title: "Dashboard Gestor", url: "/manager/dashboard", icon: BarChart3 },
-      ]
-    });
-  } else if (userRole === UserRole.MANAGER) {
-    baseItems.push({
-      title: "GESTÃO",
-      items: [
-        { title: "Dashboard", url: "/manager/dashboard", icon: BarChart3 },
-        { title: "Usuários", url: "/manager/users", icon: Users },
-      ]
-    });
-  }
-
-  return baseItems;
 };
 
 function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, viewAsUser } = useAuth();
   const navigate = useNavigate();
   const currentPath = location.pathname;
   const isCollapsed = state === "collapsed";
 
-  const navigationItems = user ? getNavigationItems(user.role) : [];
+  const navigationItems = user ? getNavigationItems(user.role, viewAsUser) : [];
 
   const isActive = (path: string) => currentPath === path;
   const getNavClasses = (isActive: boolean) =>
@@ -116,9 +149,9 @@ function AppSidebar() {
       className={`${isCollapsed ? "w-16" : "w-64"} border-r border-border bg-sidebar transition-all duration-300`}
       collapsible="icon"
     >
-      <SidebarContent className="p-4">
+      <SidebarContent className="p-4 scroll-area">
         {/* Logo Area */}
-        <div className="mb-8 px-2">
+        <div className="mb-6 px-2">
           {!isCollapsed ? (
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
@@ -135,36 +168,6 @@ function AppSidebar() {
             </div>
           )}
         </div>
-
-        {/* User Info */}
-        {user && !isCollapsed && (
-          <div className="mb-6 px-2">
-            <div className="bg-muted/50 rounded-lg p-3">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{user.name}</p>
-                  <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs">
-                    {getRoleLabel(user.role)}
-                  </Badge>
-                </div>
-              </div>
-              <div className="mt-3 flex gap-2">
-                <Button asChild variant="ghost" size="sm" className="h-8 px-2 flex-1">
-                  <NavLink to="/profile">
-                    <User className="h-3 w-3 mr-1" />
-                    Perfil
-                  </NavLink>
-                </Button>
-                <Button onClick={handleLogout} variant="ghost" size="sm" className="h-8 px-2">
-                  <LogOut className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Navigation */}
         {navigationItems.map((section) => (
@@ -202,7 +205,8 @@ function AppSidebar() {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { user } = useAuth();
+  const { user, viewAsUser, setViewAsUser, logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <SidebarProvider>
@@ -217,19 +221,62 @@ export default function Layout({ children }: LayoutProps) {
                 <Menu className="h-5 w-5" />
               </SidebarTrigger>
               <div className="hidden sm:block">
-                <h2 className="text-lg font-semibold text-foreground">Dashboard</h2>
-                <p className="text-sm text-muted-foreground">Gerencie suas viagens e câmbio</p>
+                <h2 className="text-lg font-semibold text-foreground">
+                  {user?.role === UserRole.ADMIN ? 'Administração' : 
+                   user?.role === UserRole.MANAGER ? 'Gestão' : 'Dashboard'}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {viewAsUser ? 'Visualizando como usuário' : 'Painel de controle'}
+                </p>
               </div>
             </div>
             
             <div className="flex items-center gap-4">
+              {/* View Toggle for Admin/Manager */}
+              {user && (user.role === UserRole.ADMIN || user.role === UserRole.MANAGER) && (
+                <Button
+                  variant={viewAsUser ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewAsUser(!viewAsUser)}
+                  className="hidden md:flex"
+                >
+                  {viewAsUser ? 'Voltar ao Admin' : 'Ver como Usuário'}
+                </Button>
+              )}
+
+              {/* User Menu */}
               {user && (
-                <div className="hidden md:flex items-center gap-2 text-sm">
-                  <Badge variant={getRoleBadgeVariant(user.role)}>
-                    {getRoleLabel(user.role)}
-                  </Badge>
+                <div className="flex items-center gap-3">
+                  <div className="hidden md:flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-sm font-medium">{user.name}</p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                    </div>
+                    <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs">
+                      {getRoleLabel(user.role)}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button asChild variant="ghost" size="sm">
+                      <NavLink to="/profile">
+                        <User className="h-4 w-4" />
+                      </NavLink>
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        logout();
+                        navigate('/login');
+                      }} 
+                      variant="ghost" 
+                      size="sm"
+                    >
+                      <LogOut className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               )}
+
               <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
                 Sistema ativo
@@ -238,7 +285,7 @@ export default function Layout({ children }: LayoutProps) {
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 p-6 overflow-auto">
+          <main className="flex-1 p-6 scroll-area">
             <div className="max-w-7xl mx-auto">
               {children}
             </div>
