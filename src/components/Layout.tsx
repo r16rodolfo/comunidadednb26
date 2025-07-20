@@ -24,6 +24,24 @@ interface LayoutProps {
   children: ReactNode;
 }
 
+const getRoleLabel = (role: UserRole) => {
+  switch (role) {
+    case UserRole.ADMIN: return 'Admin';
+    case UserRole.MANAGER: return 'Gestor';
+    case UserRole.PREMIUM: return 'Premium';
+    case UserRole.FREE: return 'Gratuito';
+  }
+};
+
+const getRoleBadgeVariant = (role: UserRole) => {
+  switch (role) {
+    case UserRole.ADMIN: return 'destructive';
+    case UserRole.MANAGER: return 'default';
+    case UserRole.PREMIUM: return 'secondary';
+    case UserRole.FREE: return 'outline';
+  }
+};
+
 const getNavigationItems = (userRole: UserRole) => {
   const baseItems = [
     {
@@ -92,23 +110,6 @@ function AppSidebar() {
     navigate('/login');
   };
 
-  const getRoleLabel = (role: UserRole) => {
-    switch (role) {
-      case UserRole.ADMIN: return 'Admin';
-      case UserRole.MANAGER: return 'Gestor';
-      case UserRole.PREMIUM: return 'Premium';
-      case UserRole.FREE: return 'Gratuito';
-    }
-  };
-
-  const getRoleBadgeVariant = (role: UserRole) => {
-    switch (role) {
-      case UserRole.ADMIN: return 'destructive';
-      case UserRole.MANAGER: return 'default';
-      case UserRole.PREMIUM: return 'secondary';
-      case UserRole.FREE: return 'outline';
-    }
-  };
 
   return (
     <Sidebar
