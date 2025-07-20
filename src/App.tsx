@@ -14,6 +14,7 @@ import Planner from "./pages/Planner";
 import Academy from "./pages/Academy";
 import Achadinhos from "./pages/Achadinhos";
 import AchadinhosPub from "./pages/AchadinhosPub";
+import DnbAnalysis from "./pages/DnbAnalysis";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Unauthorized from "./pages/Unauthorized";
@@ -121,7 +122,7 @@ const App = () => (
             } />
             <Route path="/analise" element={
               <ProtectedRoute>
-                <Index />
+                <DnbAnalysis />
               </ProtectedRoute>
             } />
             
