@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Planner from "./pages/Planner";
 import Academy from "./pages/Academy";
+import Achadinhos from "./pages/Achadinhos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,7 +24,7 @@ const App = () => (
           {/* Placeholder routes for other pages */}
           <Route path="/objetivos" element={<Index />} />
           <Route path="/analise" element={<Index />} />
-          <Route path="/achadinhos" element={<Index />} />
+          <Route path="/achadinhos" element={<Achadinhos />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
