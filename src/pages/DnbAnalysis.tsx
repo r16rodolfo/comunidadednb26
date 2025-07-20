@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Layout from '@/components/Layout';
 import {
   Card,
   CardContent,
@@ -65,24 +66,22 @@ export default function DnbAnalysis() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="animate-pulse space-y-6">
-            <div className="h-8 bg-muted rounded w-1/3"></div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-32 bg-muted rounded-lg"></div>
-              ))}
-            </div>
+      <Layout>
+        <div className="space-y-6 animate-pulse">
+          <div className="h-8 bg-muted rounded w-1/3"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-32 bg-muted rounded-lg"></div>
+            ))}
           </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <Layout>
+      <div className="space-y-6 animate-fade-in">
         {/* Header */}
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Análise de Mercado DNB</h1>
@@ -330,6 +329,6 @@ export default function DnbAnalysis() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </Layout>
   );
 }
