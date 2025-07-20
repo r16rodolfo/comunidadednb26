@@ -4,6 +4,7 @@ import { Home, Calculator, BookOpen, Target, TrendingUp, ShoppingBag, Menu, User
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/types/auth";
+import { NotificationSystem } from "@/components/NotificationSystem";
 import {
   Sidebar,
   SidebarContent,
@@ -91,6 +92,8 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
         items: [
           { title: "Dashboard", url: "/manager/dashboard", icon: BarChart3 },
           { title: "Usuários", url: "/manager/users", icon: Users },
+          { title: "Conteúdo", url: "/manager/content", icon: BookOpen },
+          { title: "Analytics", url: "/manager/analytics", icon: TrendingUp },
         ]
       }
     ];
@@ -232,6 +235,11 @@ export default function Layout({ children }: LayoutProps) {
             </div>
             
             <div className="flex items-center gap-4">
+              {/* Notifications for Admin/Manager */}
+              {user && (user.role === UserRole.ADMIN || user.role === UserRole.MANAGER) && (
+                <NotificationSystem />
+              )}
+
               {/* View Toggle for Admin/Manager */}
               {user && (user.role === UserRole.ADMIN || user.role === UserRole.MANAGER) && (
                 <Button
