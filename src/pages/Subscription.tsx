@@ -14,12 +14,15 @@ import {
   Star
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+// Mock functions for now - will be replaced with Supabase integration later
+const mockSupabase = {
+  functions: {
+    invoke: async (functionName: string, options?: any) => {
+      console.log(`Mock call to ${functionName}:`, options);
+      throw new Error('Supabase não conectado ainda');
+    }
+  }
+};
 
 export default function Subscription() {
   const { user } = useAuth();
@@ -85,10 +88,13 @@ export default function Subscription() {
   const checkSubscription = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('check-subscription');
-      if (error) throw error;
-      
-      setSubscriptionData(data);
+      // Mock implementation - will use Supabase later
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setSubscriptionData({
+        subscribed: user?.role === 'premium',
+        subscription_tier: user?.role === 'premium' ? 'Premium Mensal' : null,
+        subscription_end: user?.role === 'premium' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null
+      });
       toast({ title: 'Status da assinatura atualizado!' });
     } catch (error) {
       toast({
@@ -104,13 +110,12 @@ export default function Subscription() {
   const createCheckout = async (planId: string) => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { planId }
+      // Mock implementation - will use Supabase later
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast({ 
+        title: 'Funcionalidade em desenvolvimento',
+        description: 'Conecte ao Supabase para ativar pagamentos'
       });
-      if (error) throw error;
-      
-      // Abrir Stripe checkout em nova aba
-      window.open(data.url, '_blank');
     } catch (error) {
       toast({
         title: 'Erro ao criar checkout',
@@ -125,11 +130,12 @@ export default function Subscription() {
   const manageSubscription = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('customer-portal');
-      if (error) throw error;
-      
-      // Abrir portal do cliente em nova aba
-      window.open(data.url, '_blank');
+      // Mock implementation - will use Supabase later
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast({ 
+        title: 'Funcionalidade em desenvolvimento',
+        description: 'Conecte ao Supabase para ativar gestão de assinaturas'
+      });
     } catch (error) {
       toast({
         title: 'Erro ao abrir portal de gestão',
