@@ -22,6 +22,8 @@ import ManagerDashboard from "./pages/manager/Dashboard";
 import Users from "./pages/manager/Users";
 import Content from "./pages/manager/Content";
 import Analytics from "./pages/manager/Analytics";
+import Subscription from "./pages/Subscription";
+import AdminSubscriptions from "./pages/admin/Subscriptions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -96,6 +98,18 @@ const App = () => (
             <Route path="/manager/analytics" element={
               <ProtectedRoute requiredRole={UserRole.MANAGER}>
                 <Analytics />
+              </ProtectedRoute>
+            } />
+            
+            {/* Subscription Routes */}
+            <Route path="/subscription" element={
+              <ProtectedRoute>
+                <Subscription />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/subscriptions" element={
+              <ProtectedRoute requiredRole={UserRole.ADMIN}>
+                <AdminSubscriptions />
               </ProtectedRoute>
             } />
             

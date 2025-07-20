@@ -46,7 +46,8 @@ export default function AdminSettings() {
   const [apiConfigs, setApiConfigs] = useState([
     { id: '1', name: 'OpenAI API', key: 'sk-...', isActive: true },
     { id: '2', name: 'PandaVideo API', key: 'pv_...', isActive: true },
-    { id: '3', name: 'Exchange Rate API', key: 'er_...', isActive: false }
+    { id: '3', name: 'Exchange Rate API', key: 'er_...', isActive: false },
+    { id: '4', name: 'Stripe Secret Key', key: 'sk_live_...', isActive: true }
   ]);
 
   const handleSavePlatformConfig = async () => {

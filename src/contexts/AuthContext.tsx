@@ -11,6 +11,7 @@ interface AuthContextType extends AuthState {
   hasRole: (role: UserRole) => boolean;
   viewAsUser: boolean;
   setViewAsUser: (value: boolean) => void;
+  checkSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -156,6 +157,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return authState.user.role === role;
   };
 
+  const checkSubscription = async () => {
+    if (!authState.user) return;
+    
+    try {
+      // This would call the Supabase edge function in a real implementation
+      console.log('Checking subscription for user:', authState.user.email);
+      // For now, just a mock implementation
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+    }
+  };
+
   const value: AuthContextType = {
     ...authState,
     login,
@@ -165,7 +178,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hasPermission,
     hasRole,
     viewAsUser,
-    setViewAsUser
+    setViewAsUser,
+    checkSubscription
   };
 
   return (

@@ -1,6 +1,6 @@
 
 import { ReactNode } from "react";
-import { Home, Calculator, BookOpen, Target, TrendingUp, ShoppingBag, Menu, User, Settings, Users, BarChart3, LogOut } from "lucide-react";
+import { Home, Calculator, BookOpen, Target, TrendingUp, ShoppingBag, Menu, User, Settings, Users, BarChart3, LogOut, CreditCard } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/types/auth";
@@ -62,12 +62,18 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
           { title: "Achadinhos", url: "/achadinhos", icon: ShoppingBag },
         ]
       },
-      {
-        title: "DNB ACADEMY",
-        items: [
-          { title: "Aprenda Câmbio", url: "/academy", icon: BookOpen },
-        ]
-      }
+    {
+      title: "DNB ACADEMY",
+      items: [
+        { title: "Aprenda Câmbio", url: "/academy", icon: BookOpen },
+      ]
+    },
+    {
+      title: "CONTA",
+      items: [
+        { title: "Assinatura", url: "/subscription", icon: CreditCard },
+      ]
+    }
     ];
   }
 
@@ -78,6 +84,7 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
         title: "ADMINISTRAÇÃO",
         items: [
           { title: "Configurações", url: "/admin/settings", icon: Settings },
+          { title: "Assinaturas", url: "/admin/subscriptions", icon: CreditCard },
           { title: "Dashboard Gestor", url: "/manager/dashboard", icon: BarChart3 },
         ]
       }
@@ -120,6 +127,12 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
       title: "DNB ACADEMY",
       items: [
         { title: "Aprenda Câmbio", url: "/academy", icon: BookOpen },
+      ]
+    },
+    {
+      title: "CONTA",
+      items: [
+        { title: "Assinatura", url: "/subscription", icon: CreditCard },
       ]
     }
   ];
