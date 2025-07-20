@@ -46,7 +46,6 @@ import {
   Info,
   Eye,
   Filter,
-  X
 } from 'lucide-react';
 import { useDnb } from '@/hooks/useDnb';
 import { format } from 'date-fns';
@@ -69,7 +68,6 @@ export default function DnbAnalysis() {
     setRecommendationFilter,
     getLatestAnalysis,
     getRecommendationConfig,
-    recommendations
   } = useDnb();
 
   const [selectedAnalysis, setSelectedAnalysis] = useState<any>(null);
@@ -239,7 +237,7 @@ export default function DnbAnalysis() {
           )}
         </div>
 
-        {/* Disclaimer - Glass effect red box */}
+        {/* Disclaimer */}
         <Alert className="border-red-200 bg-red-50/80 backdrop-blur-sm text-red-800 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300 shadow-sm">
           <Info className="h-4 w-4" />
           <AlertDescription className="text-sm">
