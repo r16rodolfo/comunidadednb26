@@ -21,7 +21,7 @@ const quickActions = [
     stats: "Dados atualizados a cada minuto"
   },
   {
-    title: "DNB Academy",
+    title: "Acessar Aulas",
     description: "Aprenda sobre câmbio, viagens e finanças com nossos especialistas",
     icon: BookOpen,
     href: "/academy",
