@@ -17,7 +17,10 @@ import {
   Plane,
   Bell,
   ChevronDown,
-  Calendar
+  Calendar,
+  Route,
+  CalendarDays,
+  Luggage
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -89,10 +92,10 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
         ],
         subItems: [
           { title: "Roteiro Dia a Dia", url: "/agencia/roteiro", icon: Calendar },
-          { title: "Logística e Transporte", url: "/agencia/logistica", icon: TrendingUp },
-          { title: "Calendário de Eventos", url: "/agencia/eventos", icon: Calendar },
+          { title: "Logística e Transporte", url: "/agencia/logistica", icon: Route },
+          { title: "Calendário de Eventos", url: "/agencia/eventos", icon: CalendarDays },
           { title: "Guias e Dicas", url: "/agencia/guias", icon: BookOpen },
-          { title: "Clima e Bagagem", url: "/agencia/clima", icon: Target },
+          { title: "Clima e Bagagem", url: "/agencia/clima", icon: Luggage },
         ]
       },
     {
@@ -163,10 +166,10 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
       ],
       subItems: [
         { title: "Roteiro Dia a Dia", url: "/agencia/roteiro", icon: Calendar },
-        { title: "Logística e Transporte", url: "/agencia/logistica", icon: TrendingUp },
-        { title: "Calendário de Eventos", url: "/agencia/eventos", icon: Calendar },
+        { title: "Logística e Transporte", url: "/agencia/logistica", icon: Route },
+        { title: "Calendário de Eventos", url: "/agencia/eventos", icon: CalendarDays },
         { title: "Guias e Dicas", url: "/agencia/guias", icon: BookOpen },
-        { title: "Clima e Bagagem", url: "/agencia/clima", icon: Target },
+        { title: "Clima e Bagagem", url: "/agencia/clima", icon: Luggage },
       ]
     },
     {
