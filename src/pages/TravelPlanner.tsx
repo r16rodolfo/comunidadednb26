@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { TravelPlanForm } from '@/components/travel/TravelPlanForm';
 import { TravelDashboard } from '@/components/travel/TravelDashboard';
+import { ItineraryModule } from '@/components/travel/ItineraryModule';
 import { useTravel } from '@/hooks/useTravel';
 import { useToast } from '@/hooks/use-toast';
 import { TravelPlanInput } from '@/types/travel';
 
 export default function TravelPlanner() {
+  const { module } = useParams();
   const { 
     currentPlan, 
     travelReports, 
@@ -18,7 +21,7 @@ export default function TravelPlanner() {
   } = useTravel();
   
   const { toast } = useToast();
-  const [selectedModule, setSelectedModule] = useState<string | null>(null);
+  const [selectedModule, setSelectedModule] = useState<string | null>(module || null);
 
   const currentReport = currentPlan ? travelReports[currentPlan.id] : null;
 
@@ -48,11 +51,27 @@ export default function TravelPlanner() {
 
   const handleViewModule = (moduleId: string) => {
     setSelectedModule(moduleId);
-    // TODO: Implementar visualização de módulos específicos
-    toast({
-      title: `Módulo: ${moduleId}`,
-      description: "Funcionalidade em desenvolvimento",
-    });
+  };
+
+  const handleBackToDashboard = () => {
+    setSelectedModule(null);
+  };
+
+  const renderModuleContent = () => {
+    if (!currentReport) return null;
+
+    switch (selectedModule || module) {
+      case 'roteiro':
+        return (
+          <ItineraryModule
+            itinerary={currentReport.itinerary}
+            destination={currentReport.plan.destinationPrimary}
+            onBack={handleBackToDashboard}
+          />
+        );
+      default:
+        return null;
+    }
   };
 
   const handleGeneratePDF = () => {
@@ -81,6 +100,8 @@ export default function TravelPlanner() {
             onSubmit={handleCreatePlan}
             isLoading={isGenerating}
           />
+        ) : selectedModule || module ? (
+          renderModuleContent()
         ) : (
           <TravelDashboard
             report={currentReport}

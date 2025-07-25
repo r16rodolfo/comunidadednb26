@@ -133,6 +133,12 @@ const App = () => (
               </ProtectedRoute>
             } />
             
+            <Route path="/agencia/:module" element={
+              <ProtectedRoute>
+                <TravelPlanner />
+              </ProtectedRoute>
+            } />
+            
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
