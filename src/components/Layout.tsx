@@ -1,6 +1,6 @@
 
 import { ReactNode } from "react";
-import { Home, Calculator, BookOpen, Target, TrendingUp, ShoppingBag, Menu, User, Settings, Users, BarChart3, LogOut, CreditCard } from "lucide-react";
+import { Home, Calculator, BookOpen, Target, TrendingUp, ShoppingBag, Menu, User, Settings, Users, BarChart3, LogOut, CreditCard, Plane } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/types/auth";
@@ -54,14 +54,20 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
           { title: "Meus Objetivos", url: "/objetivos", icon: Target },
         ]
       },
-      {
-        title: "FERRAMENTAS DNB",
-        items: [
-          { title: "Planner de Compras", url: "/planner", icon: Calculator },
-          { title: "Análise de Mercado", url: "/analise", icon: TrendingUp },
-          { title: "Achadinhos", url: "/achadinhos", icon: ShoppingBag },
-        ]
-      },
+        {
+          title: "FERRAMENTAS DNB",
+          items: [
+            { title: "Planner de Compras", url: "/planner", icon: Calculator },
+            { title: "Análise de Mercado", url: "/analise", icon: TrendingUp },
+            { title: "Achadinhos", url: "/achadinhos", icon: ShoppingBag },
+          ]
+        },
+        {
+          title: "AGÊNCIA DNB",
+          items: [
+            { title: "Planejador de Viagem", url: "/agencia", icon: Plane },
+          ]
+        },
     {
       title: "DNB ACADEMY",
       items: [
@@ -121,6 +127,12 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
         { title: "Planner de Compras", url: "/planner", icon: Calculator },
         { title: "Análise de Mercado", url: "/analise", icon: TrendingUp },
         { title: "Achadinhos", url: "/achadinhos", icon: ShoppingBag },
+      ]
+    },
+    {
+      title: "AGÊNCIA DNB",
+      items: [
+        { title: "Planejador de Viagem", url: "/agencia", icon: Plane },
       ]
     },
     {

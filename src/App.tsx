@@ -11,6 +11,7 @@ import { UserRole } from "@/types/auth";
 // Pages
 import Index from "./pages/Index";
 import Planner from "./pages/Planner";
+import TravelPlanner from "./pages/TravelPlanner";
 import Academy from "./pages/Academy";
 import Achadinhos from "./pages/Achadinhos";
 import AchadinhosPub from "./pages/AchadinhosPub";
@@ -123,6 +124,12 @@ const App = () => (
             <Route path="/analise" element={
               <ProtectedRoute>
                 <DnbAnalysis />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/agencia" element={
+              <ProtectedRoute>
+                <TravelPlanner />
               </ProtectedRoute>
             } />
             

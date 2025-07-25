@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calculator, TrendingUp, BookOpen, Target, ArrowRight } from "lucide-react";
+import { Calculator, TrendingUp, BookOpen, Target, ArrowRight, Plane } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const quickActions = [
@@ -35,12 +35,20 @@ const quickActions = [
     href: "/objetivos",
     gradient: "bg-gradient-subtle",
     stats: "Acompanhamento personalizado"
+  },
+  {
+    title: "Planejador de Viagem",
+    description: "Crie roteiros inteligentes e personalizados para suas próximas viagens",
+    icon: Plane,
+    href: "/agencia",
+    gradient: "bg-gradient-primary",
+    stats: "IA Gemini integrada"
   }
 ];
 
 export default function QuickActionCards() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
       {quickActions.map((action) => (
         <Card key={action.title} className="group hover:shadow-elegant transition-all duration-300 hover:-translate-y-1 border-border/50">
           <CardHeader className="pb-3">
