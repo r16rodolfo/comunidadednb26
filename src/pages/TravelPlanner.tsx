@@ -59,12 +59,11 @@ export default function TravelPlanner() {
 
   const renderModuleContent = () => {
     if (!currentReport) return null;
-
+    
     switch (selectedModule || module) {
       case 'roteiro':
         return (
           <ItineraryModule
-            itinerary={currentReport.itinerary}
             destination={currentReport.plan.destinationPrimary}
             onBack={handleBackToDashboard}
           />
