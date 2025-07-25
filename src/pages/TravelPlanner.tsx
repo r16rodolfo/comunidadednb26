@@ -25,6 +25,39 @@ export default function TravelPlanner() {
 
   const currentReport = currentPlan ? travelReports[currentPlan.id] : null;
 
+  // Se não há plano mas estamos tentando acessar um módulo, criar um plano de exemplo
+  React.useEffect(() => {
+    if (module && !currentPlan && !isGenerating) {
+      const createExamplePlan = async () => {
+        try {
+          const examplePlan: TravelPlanInput = {
+            destinationPrimary: "Rio de Janeiro",
+            destinationsSecondary: ["Niterói", "Petrópolis"],
+            dateStart: new Date(2024, 2, 15), // 15 de março
+            dateEnd: new Date(2024, 2, 18),   // 18 de março
+            tripReason: 'leisure',
+            travelerProfile: 'couple',
+            tripStyle: 'comfort',
+            mainInterests: ['gastronomy', 'culture', 'nature'],
+            mainTransport: 'plane'
+          };
+          
+          const newPlan = await createTravelPlan(examplePlan);
+          await generateTravelReport(newPlan.id);
+          
+          toast({
+            title: "Plano de exemplo criado!",
+            description: "Criámos um roteiro para o Rio de Janeiro para demonstração.",
+          });
+        } catch (error) {
+          console.error('Erro ao criar plano de exemplo:', error);
+        }
+      };
+      
+      createExamplePlan();
+    }
+  }, [module, currentPlan, isGenerating, createTravelPlan, generateTravelReport, toast]);
+
   const handleCreatePlan = async (planData: TravelPlanInput) => {
     try {
       const newPlan = await createTravelPlan(planData);
@@ -58,7 +91,14 @@ export default function TravelPlanner() {
   };
 
   const renderModuleContent = () => {
-    if (!currentReport) return null;
+    if (!currentReport) {
+      return (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">A carregar o seu plano de viagem...</p>
+        </div>
+      );
+    }
     
     switch (selectedModule || module) {
       case 'roteiro':
@@ -94,7 +134,7 @@ export default function TravelPlanner() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        {!currentReport ? (
+        {!currentReport && !module ? (
           <TravelPlanForm 
             onSubmit={handleCreatePlan}
             isLoading={isGenerating}
