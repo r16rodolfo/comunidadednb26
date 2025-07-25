@@ -1,6 +1,23 @@
 
 import { ReactNode } from "react";
-import { Home, Calculator, BookOpen, Target, TrendingUp, ShoppingBag, Menu, User, Settings, Users, BarChart3, LogOut, CreditCard, Plane } from "lucide-react";
+import { 
+  Home, 
+  Calculator, 
+  BookOpen, 
+  Target, 
+  TrendingUp, 
+  ShoppingBag, 
+  Menu, 
+  User, 
+  Settings, 
+  Users, 
+  BarChart3, 
+  LogOut, 
+  CreditCard, 
+  Plane,
+  Bell,
+  ChevronDown 
+} from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/types/auth";
@@ -20,6 +37,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface LayoutProps {
   children: ReactNode;
