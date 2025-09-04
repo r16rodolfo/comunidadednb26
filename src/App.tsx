@@ -16,6 +16,7 @@ import Academy from "./pages/Academy";
 import Achadinhos from "./pages/Achadinhos";
 import AchadinhosPub from "./pages/AchadinhosPub";
 import DnbAnalysis from "./pages/DnbAnalysis";
+import Coupons from "./pages/Coupons";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Unauthorized from "./pages/Unauthorized";
@@ -23,6 +24,7 @@ import AdminSettings from "./pages/admin/Settings";
 import ManagerDashboard from "./pages/manager/Dashboard";
 import Users from "./pages/manager/Users";
 import Content from "./pages/manager/Content";
+import ManagerCoupons from "./pages/manager/Coupons";
 import Analytics from "./pages/manager/Analytics";
 import Subscription from "./pages/Subscription";
 import AdminSubscriptions from "./pages/admin/Subscriptions";
@@ -68,6 +70,12 @@ const App = () => (
               </ProtectedRoute>
             } />
             
+            <Route path="/coupons" element={
+              <ProtectedRoute>
+                <Coupons />
+              </ProtectedRoute>
+            } />
+            
             <Route path="/profile" element={
               <ProtectedRoute>
                 <Profile />
@@ -95,6 +103,11 @@ const App = () => (
             <Route path="/manager/content" element={
               <ProtectedRoute requiredRole={UserRole.MANAGER}>
                 <Content />
+              </ProtectedRoute>
+            } />
+            <Route path="/manager/coupons" element={
+              <ProtectedRoute requiredRole={UserRole.MANAGER}>
+                <ManagerCoupons />
               </ProtectedRoute>
             } />
             <Route path="/manager/analytics" element={

@@ -7,6 +7,7 @@ import {
   Target, 
   TrendingUp, 
   ShoppingBag, 
+  Ticket,
   Menu, 
   User, 
   Settings, 
@@ -80,9 +81,10 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
       {
         title: "FERRAMENTAS DNB",
         items: [
-          { title: "Planner de Compras", url: "/planner", icon: Calculator },
-          { title: "Análise de Mercado", url: "/analise", icon: TrendingUp },
-          { title: "Achadinhos", url: "/achadinhos", icon: ShoppingBag },
+        { title: "Planner de Compras", url: "/planner", icon: Calculator },
+        { title: "Análise de Mercado", url: "/analise", icon: TrendingUp },
+        { title: "Achadinhos", url: "/achadinhos", icon: ShoppingBag },
+        { title: "Cupons de Parceiros", url: "/coupons", icon: Ticket },
         ]
       },
       {
@@ -136,6 +138,7 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
           { title: "Dashboard", url: "/manager/dashboard", icon: BarChart3 },
           { title: "Usuários", url: "/manager/users", icon: Users },
           { title: "Conteúdo", url: "/manager/content", icon: BookOpen },
+          { title: "Cupons", url: "/manager/coupons", icon: Ticket },
           { title: "Analytics", url: "/manager/analytics", icon: TrendingUp },
         ]
       }
@@ -157,6 +160,7 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
         { title: "Planner de Compras", url: "/planner", icon: Calculator },
         { title: "Análise de Mercado", url: "/analise", icon: TrendingUp },
         { title: "Achadinhos", url: "/achadinhos", icon: ShoppingBag },
+        { title: "Cupons de Parceiros", url: "/coupons", icon: Ticket },
       ]
     },
     {
