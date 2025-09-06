@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Ticket, Sparkles } from 'lucide-react';
+import Layout from '@/components/Layout';
 import { CouponFilters } from "@/components/coupons/CouponFilters";
 import { CouponGrid } from "@/components/coupons/CouponGrid";
 import { CouponModal } from "@/components/coupons/CouponModal";
@@ -49,37 +51,40 @@ export default function Coupons() {
   const activeCoupons = coupons.filter(coupon => coupon.isActive);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-7xl mx-auto">
+    <Layout>
+      <div className="space-y-8 animate-fade-in">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-4">
-            Portal de Cupons de Parceiros
-          </h1>
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="p-3 bg-primary/10 rounded-xl">
+              <Ticket className="h-8 w-8 text-primary" />
+            </div>
+            <h1 className="text-3xl font-bold text-foreground">Cupons de Parceiros</h1>
+            <Sparkles className="h-6 w-6 text-yellow-500" />
+          </div>
+          
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Descubra ofertas exclusivas dos nossos parceiros e economize em suas compras favoritas.
           </p>
         </div>
 
-        {/* Filters */}
-        <div className="mb-8">
-          <CouponFilters
-            filters={filters}
-            categories={categories}
-            onFiltersChange={handleFiltersChange}
-            onClearFilters={handleClearFilters}
-            totalResults={filters.status === 'active' ? activeCoupons.length : coupons.length}
-          />
-        </div>
+        {/* Filtros */}
+        <CouponFilters
+          filters={filters}
+          categories={categories}
+          onFiltersChange={handleFiltersChange}
+          onClearFilters={handleClearFilters}
+          totalResults={filters.status === 'active' ? activeCoupons.length : coupons.length}
+        />
 
-        {/* Coupons Grid */}
+        {/* Grid de Cupons */}
         <CouponGrid
           coupons={filters.status === 'active' ? activeCoupons : coupons}
           onGetCoupon={handleGetCoupon}
           loading={loading}
         />
 
-        {/* Coupon Detail Modal */}
+        {/* Modal de Detalhes */}
         <CouponModal
           coupon={selectedCoupon}
           isOpen={isModalOpen}
@@ -88,6 +93,6 @@ export default function Coupons() {
           onVisitSite={handleVisitSite}
         />
       </div>
-    </div>
+    </Layout>
   );
 }
