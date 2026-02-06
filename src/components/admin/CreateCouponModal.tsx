@@ -144,12 +144,15 @@ export const CreateCouponModal = ({
             {/* Category */}
             <div className="space-y-2">
               <Label htmlFor="category">Categoria</Label>
-              <Select value={watchedFields.category} onValueChange={(value) => setValue("category", value)}>
+              <Select
+                value={watchedFields.category || "none"}
+                onValueChange={(value) => setValue("category", value === "none" ? "" : value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar categoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sem categoria</SelectItem>
+                  <SelectItem value="none">Sem categoria</SelectItem>
                   {categories.filter(cat => cat.isActive).map(category => (
                     <SelectItem key={category.id} value={category.name}>
                       {category.name}
