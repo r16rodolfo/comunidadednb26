@@ -16,6 +16,7 @@ import {
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/types/auth";
+import { getRoleLabel, getRoleBadgeVariant } from "@/lib/roles";
 import { NotificationSystem } from "@/components/NotificationSystem";
 import {
   Sidebar,
@@ -38,21 +39,7 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-const getRoleLabel = (role: UserRole) => {
-  switch (role) {
-    case UserRole.ADMIN: return 'Admin';
-    case UserRole.PREMIUM: return 'Premium';
-    case UserRole.FREE: return 'Gratuito';
-  }
-};
-
-const getRoleBadgeVariant = (role: UserRole) => {
-  switch (role) {
-    case UserRole.ADMIN: return 'destructive';
-    case UserRole.PREMIUM: return 'secondary';
-    case UserRole.FREE: return 'outline';
-  }
-};
+// getRoleLabel and getRoleBadgeVariant now imported from @/lib/roles
 
 const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => {
   // If viewing as user, show user navigation

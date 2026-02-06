@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { UserRole } from '@/types/auth';
+import { getRoleFullLabel, getRoleBadgeVariant } from '@/lib/roles';
 import { User, Settings, CreditCard, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -26,21 +27,7 @@ export default function Profile() {
     confirmPassword: ''
   });
 
-  const getRoleLabel = (role: UserRole) => {
-    switch (role) {
-      case UserRole.ADMIN: return 'Administrador Master';
-      case UserRole.PREMIUM: return 'Assinante Premium';
-      case UserRole.FREE: return 'Assinante Gratuito';
-    }
-  };
-
-  const getRoleBadgeVariant = (role: UserRole) => {
-    switch (role) {
-      case UserRole.ADMIN: return 'destructive';
-      case UserRole.PREMIUM: return 'secondary';
-      case UserRole.FREE: return 'outline';
-    }
-  };
+  // getRoleFullLabel and getRoleBadgeVariant imported from @/lib/roles
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,7 +88,7 @@ export default function Profile() {
             <h1 className="text-2xl font-bold">{user.name}</h1>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant={getRoleBadgeVariant(user.role)}>
-                {getRoleLabel(user.role)}
+                {getRoleFullLabel(user.role)}
               </Badge>
               {user.subscription?.status === 'active' && (
                 <Badge variant="secondary">Ativo</Badge>

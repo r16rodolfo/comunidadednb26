@@ -4,70 +4,22 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { 
-  Search, 
-  Filter, 
-  Plus, 
-  MoreHorizontal, 
-  Edit, 
-  Trash2, 
-  Eye,
-  BookOpen,
-  Video
-} from 'lucide-react';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Search, Filter, Plus, MoreHorizontal, Edit, Trash2, Eye, BookOpen, Video, Users } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CreateCourseModal } from '@/components/admin/CreateCourseModal';
 import { useState } from 'react';
-
-// Mock data for courses
-const courses = [
-  {
-    id: '1',
-    title: 'Fundamentos do Câmbio',
-    description: 'Aprenda os conceitos básicos do mercado de câmbio',
-    status: 'Publicado',
-    duration: '2h 30min',
-    lessons: 8,
-    students: 245,
-    category: 'Iniciante',
-    createdAt: '2024-01-10'
-  },
-  {
-    id: '2',
-    title: 'Estratégias Avançadas de Câmbio',
-    description: 'Técnicas avançadas para otimizar suas operações',
-    status: 'Rascunho',
-    duration: '3h 15min',
-    lessons: 12,
-    students: 0,
-    category: 'Avançado',
-    createdAt: '2024-01-15'
-  }
-];
-
+import { StatCard } from '@/components/shared/StatCard';
+import { AdminPageHeader } from '@/components/shared/AdminPageHeader';
+import { mockCourses } from '@/data/mock-admin';
 
 const getStatusVariant = (status: string) => {
   switch (status) {
     case 'Publicado':
-    case 'Ativo': return 'default';
-    case 'Rascunho': return 'secondary';
-    case 'Inativo': return 'destructive';
-    default: return 'outline';
+    case 'Ativo': return 'default' as const;
+    case 'Rascunho': return 'secondary' as const;
+    case 'Inativo': return 'destructive' as const;
+    default: return 'outline' as const;
   }
 };
 
@@ -75,51 +27,48 @@ export default function Content() {
   const [activeTab, setActiveTab] = useState('courses');
   const [showCourseModal, setShowCourseModal] = useState(false);
 
+  const stats = {
+    total: mockCourses.length,
+    published: mockCourses.filter(c => c.status === 'Publicado').length,
+    totalStudents: mockCourses.reduce((sum, c) => sum + c.students, 0),
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Gestão de Conteúdo</h1>
-            <p className="text-muted-foreground">Gerencie aulas da plataforma</p>
-          </div>
+        <AdminPageHeader icon={BookOpen} title="Gestão de Conteúdo" description="Gerencie aulas da plataforma">
+          <Button onClick={() => setShowCourseModal(true)}><Plus className="h-4 w-4 mr-2" />Nova Aula</Button>
+        </AdminPageHeader>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard label="Total de Aulas" value={stats.total} icon={BookOpen} />
+          <StatCard label="Publicadas" value={stats.published} icon={Video} variant="success" />
+          <StatCard label="Total de Alunos" value={stats.totalStudents} icon={Users} variant="info" />
         </div>
 
         {/* Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList>
-            <TabsTrigger value="courses" className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              Aulas DNB Academy
-            </TabsTrigger>
+            <TabsTrigger value="courses" className="flex items-center gap-2"><BookOpen className="h-4 w-4" />Aulas DNB Academy</TabsTrigger>
           </TabsList>
 
-          {/* Courses Tab */}
           <TabsContent value="courses" className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex gap-4">
-                <div className="relative flex-1 min-w-[300px]">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Buscar aulas..." 
-                    className="pl-10"
-                  />
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Buscar aulas..." className="pl-10" />
+                  </div>
+                  <Button variant="outline"><Filter className="h-4 w-4 mr-2" />Filtros</Button>
                 </div>
-                <Button variant="outline">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filtros
-                </Button>
-              </div>
-              <Button onClick={() => setShowCourseModal(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Aula
-              </Button>
-            </div>
+              </CardContent>
+            </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Aulas ({courses.length})</CardTitle>
+                <CardTitle className="text-base">Aulas ({mockCourses.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="rounded-md border">
@@ -136,7 +85,7 @@ export default function Content() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {courses.map((course) => (
+                      {mockCourses.map((course) => (
                         <TableRow key={course.id}>
                           <TableCell>
                             <div>
@@ -144,43 +93,23 @@ export default function Content() {
                               <div className="text-sm text-muted-foreground">{course.description}</div>
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{course.category}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={getStatusVariant(course.status)}>
-                              {course.status}
-                            </Badge>
-                          </TableCell>
+                          <TableCell><Badge variant="outline">{course.category}</Badge></TableCell>
+                          <TableCell><Badge variant={getStatusVariant(course.status)}>{course.status}</Badge></TableCell>
                           <TableCell>{course.duration}</TableCell>
                           <TableCell>{course.lessons}</TableCell>
                           <TableCell>{course.students}</TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
+                                <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
+                              <DropdownMenuContent align="end" className="bg-popover">
                                 <DropdownMenuLabel>Ações</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem>
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  Visualizar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Editar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <Video className="mr-2 h-4 w-4" />
-                                  Gerenciar Vídeos
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive">
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Excluir
-                                </DropdownMenuItem>
+                                <DropdownMenuItem><Eye className="mr-2 h-4 w-4" />Visualizar</DropdownMenuItem>
+                                <DropdownMenuItem><Edit className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
+                                <DropdownMenuItem><Video className="mr-2 h-4 w-4" />Gerenciar Vídeos</DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />Excluir</DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -192,14 +121,9 @@ export default function Content() {
               </CardContent>
             </Card>
           </TabsContent>
-
         </Tabs>
 
-        {/* Modals */}
-        <CreateCourseModal 
-          open={showCourseModal} 
-          onOpenChange={setShowCourseModal}
-        />
+        <CreateCourseModal open={showCourseModal} onOpenChange={setShowCourseModal} />
       </div>
     </Layout>
   );

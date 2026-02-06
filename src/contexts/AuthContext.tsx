@@ -1,6 +1,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { UserProfile, AuthState, LoginCredentials, RegisterData, UserRole } from '@/types/auth';
+import { mockUsers } from '@/data/mock-auth';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<UserProfile>;
@@ -16,38 +17,6 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock data for demonstration
-const mockUsers: UserProfile[] = [
-  {
-    id: '1',
-    email: 'admin@dnb.com',
-    name: 'Administrador Master',
-    role: UserRole.ADMIN,
-    permissions: [
-      { id: 'all', name: 'All Permissions', description: 'Full system access' }
-    ],
-    preferences: { theme: 'light', notifications: true, language: 'pt-BR' },
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: '3',
-    email: 'premium@dnb.com',
-    name: 'Usuario Premium',
-    role: UserRole.PREMIUM,
-    permissions: [],
-    subscription: {
-      plan: 'premium',
-      status: 'active',
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      startedAt: new Date()
-    },
-    preferences: { theme: 'light', notifications: true, language: 'pt-BR' },
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-];
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
@@ -57,16 +26,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [viewAsUser, setViewAsUser] = useState(false);
 
   useEffect(() => {
-    // Check for stored user data
     const storedUser = localStorage.getItem('dnb_user');
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
-        setAuthState({
-          user,
-          isAuthenticated: true,
-          isLoading: false
-        });
+        setAuthState({ user, isAuthenticated: true, isLoading: false });
       } catch {
         localStorage.removeItem('dnb_user');
         setAuthState(prev => ({ ...prev, isLoading: false }));
@@ -77,16 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (credentials: LoginCredentials) => {
-    // Mock authentication
     const user = mockUsers.find(u => u.email === credentials.email);
     if (user) {
       localStorage.setItem('dnb_user', JSON.stringify(user));
-      setAuthState({
-        user,
-        isAuthenticated: true,
-        isLoading: false
-      });
-      
+      setAuthState({ user, isAuthenticated: true, isLoading: false });
       return user;
     } else {
       throw new Error('Credenciais inválidas');
@@ -104,27 +62,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       createdAt: new Date(),
       updatedAt: new Date()
     };
-    
     localStorage.setItem('dnb_user', JSON.stringify(newUser));
-    setAuthState({
-      user: newUser,
-      isAuthenticated: true,
-      isLoading: false
-    });
+    setAuthState({ user: newUser, isAuthenticated: true, isLoading: false });
   };
 
   const logout = () => {
     localStorage.removeItem('dnb_user');
-    setAuthState({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false
-    });
+    setAuthState({ user: null, isAuthenticated: false, isLoading: false });
   };
 
   const updateProfile = async (data: Partial<UserProfile>) => {
     if (!authState.user) return;
-    
     const updatedUser = { ...authState.user, ...data, updatedAt: new Date() };
     localStorage.setItem('dnb_user', JSON.stringify(updatedUser));
     setAuthState(prev => ({ ...prev, user: updatedUser }));
@@ -144,7 +92,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkSubscription = async () => {
     if (!authState.user) return;
-    
     try {
       console.log('Checking subscription for user:', authState.user.email);
     } catch (error) {
@@ -154,14 +101,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value: AuthContextType = {
     ...authState,
-    login,
-    register,
-    logout,
-    updateProfile,
-    hasPermission,
-    hasRole,
-    viewAsUser,
-    setViewAsUser,
+    login, register, logout, updateProfile,
+    hasPermission, hasRole,
+    viewAsUser, setViewAsUser,
     checkSubscription
   };
 

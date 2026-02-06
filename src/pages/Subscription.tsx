@@ -93,10 +93,11 @@ export default function Subscription() {
         subscription_end: user?.role === 'premium' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null
       });
       toast({ title: 'Status da assinatura atualizado!' });
-    } catch (error) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: 'Erro ao verificar assinatura',
-        description: error.message,
+        description: message,
         variant: 'destructive'
       });
     } finally {
@@ -113,10 +114,11 @@ export default function Subscription() {
         title: 'Funcionalidade em desenvolvimento',
         description: 'Conecte ao Supabase para ativar pagamentos'
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: 'Erro ao criar checkout',
-        description: error.message,
+        description: message,
         variant: 'destructive'
       });
     } finally {
@@ -133,10 +135,11 @@ export default function Subscription() {
         title: 'Funcionalidade em desenvolvimento',
         description: 'Conecte ao Supabase para ativar gestão de assinaturas'
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: 'Erro ao abrir portal de gestão',
-        description: error.message,
+        description: message,
         variant: 'destructive'
       });
     } finally {
@@ -239,7 +242,7 @@ export default function Subscription() {
                   <ul className="space-y-2">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-green-600" />
+                        <Check className="h-4 w-4 text-success" />
                         <span className="text-sm">{feature}</span>
                       </li>
                     ))}
