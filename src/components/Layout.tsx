@@ -4,7 +4,6 @@ import {
   Home, 
   Calculator, 
   BookOpen, 
-  Target, 
   TrendingUp, 
    
   Ticket,
@@ -68,7 +67,6 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
         title: "PRIMEIROS PASSOS",
         items: [
           { title: "Home", url: "/", icon: Home },
-          { title: "Meus Objetivos", url: "/objetivos", icon: Target },
         ]
       },
       {
@@ -130,7 +128,6 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
       title: "PRIMEIROS PASSOS",
       items: [
         { title: "Home", url: "/", icon: Home },
-        { title: "Meus Objetivos", url: "/objetivos", icon: Target },
       ]
     },
     {
