@@ -10,82 +10,22 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { 
-  Users, 
-  BookOpen, 
-  TrendingUp, 
-  UserPlus,
-  DollarSign,
-  Activity,
-  Eye,
-  Settings,
-  Key,
-  Database,
-  Shield,
-  AlertTriangle,
-  Ticket,
-  CreditCard,
-  BarChart3,
+  Users, BookOpen, TrendingUp, UserPlus, DollarSign, Activity,
+  Eye, Settings, Key, Database, Shield, AlertTriangle,
+  Ticket, CreditCard, BarChart3,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-
-// ─── Mock Data ──────────────────────────────────────────────
-const stats = {
-  totalUsers: 1234,
-  activeUsers: 567,
-  newUsersThisMonth: 89,
-  totalCourses: 45,
-  monthlyRevenue: 25678
-};
-
-const recentUsers = [
-  { id: '1', name: 'João Silva', email: 'joao@email.com', role: 'premium', joinedAt: '2024-01-15' },
-  { id: '2', name: 'Maria Santos', email: 'maria@email.com', role: 'free', joinedAt: '2024-01-14' },
-  { id: '3', name: 'Pedro Costa', email: 'pedro@email.com', role: 'premium', joinedAt: '2024-01-13' },
-];
-
-const recentActivity = [
-  { action: 'Novo usuário cadastrado', user: 'Ana Oliveira', time: '2 min atrás' },
-  { action: 'Aula "Câmbio Básico" assistida', user: 'Carlos Lima', time: '5 min atrás' },
-  { action: 'Produto adicionado aos favoritos', user: 'Lucia Ferreira', time: '10 min atrás' },
-];
-
-// ─── Stat Card Component ────────────────────────────────────
-function StatCard({ label, value, icon: Icon, variant = 'default' }: {
-  label: string;
-  value: string;
-  icon: React.ElementType;
-  variant?: 'default' | 'success' | 'info';
-}) {
-  const iconClass = variant === 'success'
-    ? 'text-emerald-500'
-    : variant === 'info'
-      ? 'text-sky-500'
-      : 'text-primary';
-
-  return (
-    <Card className="relative overflow-hidden">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-            <p className="text-2xl font-bold tracking-tight">{value}</p>
-          </div>
-          <div className="rounded-xl bg-muted/60 p-2.5">
-            <Icon className={`h-6 w-6 ${iconClass}`} />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+import { StatCard } from '@/components/shared/StatCard';
+import { AdminPageHeader } from '@/components/shared/AdminPageHeader';
+import {
+  adminStats, recentUsers, recentActivity,
+  defaultPlatformConfig, defaultApiConfigs,
+} from '@/data/mock-admin';
 
 // ─── Quick Action Link ──────────────────────────────────────
 function QuickLink({ to, icon: Icon, label, description }: {
-  to: string;
-  icon: React.ElementType;
-  label: string;
-  description: string;
+  to: string; icon: React.ElementType; label: string; description: string;
 }) {
   return (
     <Link to={to}>
@@ -110,31 +50,8 @@ function QuickLink({ to, icon: Icon, label, description }: {
 export default function AdminDashboard() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-
-  const [platformConfig, setPlatformConfig] = useState({
-    siteName: 'Comunidade DNB',
-    siteDescription: 'Viaje com inteligência',
-    maintenanceMode: false,
-    registrationEnabled: true,
-    maxFreeUsers: 1000,
-    features: {
-      planner: true,
-      academy: true,
-      analytics: true
-    },
-    limits: {
-      freeTransactions: 10,
-      premiumTransactions: -1,
-      apiCalls: 1000
-    }
-  });
-
-  const [apiConfigs, setApiConfigs] = useState([
-    { id: '1', name: 'OpenAI API', key: 'sk-...', isActive: true },
-    { id: '2', name: 'PandaVideo API', key: 'pv_...', isActive: true },
-    { id: '3', name: 'Exchange Rate API', key: 'er_...', isActive: false },
-    { id: '4', name: 'Stripe Secret Key', key: 'sk_live_...', isActive: true }
-  ]);
+  const [platformConfig, setPlatformConfig] = useState(defaultPlatformConfig);
+  const [apiConfigs, setApiConfigs] = useState(defaultApiConfigs);
 
   const handleSavePlatformConfig = async () => {
     setIsLoading(true);
@@ -156,58 +73,33 @@ export default function AdminDashboard() {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center">
-            <BarChart3 className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Painel Administrativo</h1>
-            <p className="text-muted-foreground">Gerencie e monitore toda a plataforma</p>
-          </div>
-        </div>
+        <AdminPageHeader icon={BarChart3} title="Painel Administrativo" description="Gerencie e monitore toda a plataforma" />
 
-        {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="w-full justify-start border-b bg-transparent p-0 h-auto rounded-none gap-1">
-            <TabsTrigger value="overview" className="rounded-b-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none px-4 py-2.5">
-              Visão Geral
-            </TabsTrigger>
-            <TabsTrigger value="platform" className="rounded-b-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none px-4 py-2.5">
-              Plataforma
-            </TabsTrigger>
-            <TabsTrigger value="apis" className="rounded-b-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none px-4 py-2.5">
-              APIs
-            </TabsTrigger>
-            <TabsTrigger value="security" className="rounded-b-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none px-4 py-2.5">
-              Segurança
-            </TabsTrigger>
-            <TabsTrigger value="system" className="rounded-b-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none px-4 py-2.5">
-              Sistema
-            </TabsTrigger>
+            {['overview', 'platform', 'apis', 'security', 'system'].map(tab => (
+              <TabsTrigger key={tab} value={tab} className="rounded-b-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none px-4 py-2.5">
+                {{ overview: 'Visão Geral', platform: 'Plataforma', apis: 'APIs', security: 'Segurança', system: 'Sistema' }[tab]}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           {/* ── Visão Geral ───────────────────────────────── */}
           <TabsContent value="overview" className="space-y-6 pt-4">
-            {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard label="Total de Usuários" value={stats.totalUsers.toLocaleString()} icon={Users} />
-              <StatCard label="Usuários Ativos" value={stats.activeUsers.toLocaleString()} icon={Activity} variant="success" />
-              <StatCard label="Novos este Mês" value={`+${stats.newUsersThisMonth}`} icon={UserPlus} variant="info" />
-              <StatCard label="Receita Mensal" value={`R$ ${stats.monthlyRevenue.toLocaleString()}`} icon={DollarSign} variant="success" />
+              <StatCard label="Total de Usuários" value={adminStats.totalUsers.toLocaleString()} icon={Users} />
+              <StatCard label="Usuários Ativos" value={adminStats.activeUsers.toLocaleString()} icon={Activity} variant="success" />
+              <StatCard label="Novos este Mês" value={`+${adminStats.newUsersThisMonth}`} icon={UserPlus} variant="info" />
+              <StatCard label="Receita Mensal" value={`R$ ${adminStats.monthlyRevenue.toLocaleString()}`} icon={DollarSign} variant="success" />
             </div>
 
-            {/* Recent Users + Activity */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base">Usuários Recentes</CardTitle>
                     <Button asChild variant="ghost" size="sm">
-                      <Link to="/admin/users">
-                        <Eye className="h-4 w-4 mr-1.5" />
-                        Ver Todos
-                      </Link>
+                      <Link to="/admin/users"><Eye className="h-4 w-4 mr-1.5" />Ver Todos</Link>
                     </Button>
                   </div>
                 </CardHeader>
@@ -253,12 +145,11 @@ export default function AdminDashboard() {
               </Card>
             </div>
 
-            {/* Quick Actions */}
             <div>
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Acesso Rápido</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <QuickLink to="/admin/users" icon={Users} label="Usuários" description={`${stats.totalUsers} cadastrados`} />
-                <QuickLink to="/admin/content" icon={BookOpen} label="Conteúdo" description={`${stats.totalCourses} aulas`} />
+                <QuickLink to="/admin/users" icon={Users} label="Usuários" description={`${adminStats.totalUsers} cadastrados`} />
+                <QuickLink to="/admin/content" icon={BookOpen} label="Conteúdo" description={`${adminStats.totalCourses} aulas`} />
                 <QuickLink to="/admin/coupons" icon={Ticket} label="Cupons" description="Gerenciar cupons" />
                 <QuickLink to="/admin/subscriptions" icon={CreditCard} label="Assinaturas" description="Planos e receita" />
               </div>
@@ -269,43 +160,24 @@ export default function AdminDashboard() {
           <TabsContent value="platform" className="space-y-6 pt-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Configurações Gerais
-                </CardTitle>
+                <CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5" />Configurações Gerais</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="siteName">Nome do Site</Label>
-                    <Input
-                      id="siteName"
-                      value={platformConfig.siteName}
-                      onChange={(e) => setPlatformConfig(prev => ({ ...prev, siteName: e.target.value }))}
-                    />
+                    <Input id="siteName" value={platformConfig.siteName} onChange={(e) => setPlatformConfig(prev => ({ ...prev, siteName: e.target.value }))} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="maxFreeUsers">Limite de Usuários Gratuitos</Label>
-                    <Input
-                      id="maxFreeUsers"
-                      type="number"
-                      value={platformConfig.maxFreeUsers}
-                      onChange={(e) => setPlatformConfig(prev => ({ ...prev, maxFreeUsers: parseInt(e.target.value) }))}
-                    />
+                    <Input id="maxFreeUsers" type="number" value={platformConfig.maxFreeUsers} onChange={(e) => setPlatformConfig(prev => ({ ...prev, maxFreeUsers: parseInt(e.target.value) }))} />
                   </div>
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="siteDescription">Descrição do Site</Label>
-                  <Textarea
-                    id="siteDescription"
-                    value={platformConfig.siteDescription}
-                    onChange={(e) => setPlatformConfig(prev => ({ ...prev, siteDescription: e.target.value }))}
-                  />
+                  <Textarea id="siteDescription" value={platformConfig.siteDescription} onChange={(e) => setPlatformConfig(prev => ({ ...prev, siteDescription: e.target.value }))} />
                 </div>
-
                 <Separator />
-
                 <div className="space-y-4">
                   <h3 className="text-base font-semibold">Recursos da Plataforma</h3>
                   {Object.entries(platformConfig.features).map(([feature, enabled]) => (
@@ -318,55 +190,28 @@ export default function AdminDashboard() {
                           {feature === 'analytics' && 'Analytics da Plataforma'}
                         </p>
                       </div>
-                      <Switch
-                        checked={enabled}
-                        onCheckedChange={(checked) =>
-                          setPlatformConfig(prev => ({ ...prev, features: { ...prev.features, [feature]: checked } }))
-                        }
-                      />
+                      <Switch checked={enabled} onCheckedChange={(checked) => setPlatformConfig(prev => ({ ...prev, features: { ...prev.features, [feature]: checked } }))} />
                     </div>
                   ))}
                 </div>
-
                 <Separator />
-
                 <div className="space-y-4">
                   <h3 className="text-base font-semibold">Limites de Uso</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label>Transações Gratuitos</Label>
-                      <Input
-                        type="number"
-                        value={platformConfig.limits.freeTransactions}
-                        onChange={(e) => setPlatformConfig(prev => ({
-                          ...prev, limits: { ...prev.limits, freeTransactions: parseInt(e.target.value) }
-                        }))}
-                      />
+                      <Input type="number" value={platformConfig.limits.freeTransactions} onChange={(e) => setPlatformConfig(prev => ({ ...prev, limits: { ...prev.limits, freeTransactions: parseInt(e.target.value) } }))} />
                     </div>
                     <div className="space-y-2">
                       <Label>Transações Premium</Label>
-                      <Input
-                        type="number"
-                        value={platformConfig.limits.premiumTransactions}
-                        onChange={(e) => setPlatformConfig(prev => ({
-                          ...prev, limits: { ...prev.limits, premiumTransactions: parseInt(e.target.value) }
-                        }))}
-                        placeholder="-1 para ilimitado"
-                      />
+                      <Input type="number" value={platformConfig.limits.premiumTransactions} onChange={(e) => setPlatformConfig(prev => ({ ...prev, limits: { ...prev.limits, premiumTransactions: parseInt(e.target.value) } }))} placeholder="-1 para ilimitado" />
                     </div>
                     <div className="space-y-2">
                       <Label>API Calls / Dia</Label>
-                      <Input
-                        type="number"
-                        value={platformConfig.limits.apiCalls}
-                        onChange={(e) => setPlatformConfig(prev => ({
-                          ...prev, limits: { ...prev.limits, apiCalls: parseInt(e.target.value) }
-                        }))}
-                      />
+                      <Input type="number" value={platformConfig.limits.apiCalls} onChange={(e) => setPlatformConfig(prev => ({ ...prev, limits: { ...prev.limits, apiCalls: parseInt(e.target.value) } }))} />
                     </div>
                   </div>
                 </div>
-
                 <Button onClick={handleSavePlatformConfig} disabled={isLoading} className="w-full">
                   {isLoading ? 'Salvando...' : 'Salvar Configurações'}
                 </Button>
@@ -380,13 +225,8 @@ export default function AdminDashboard() {
               <Card key={api.id}>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Key className="h-4 w-4" />
-                      {api.name}
-                    </CardTitle>
-                    <Badge variant={api.isActive ? 'default' : 'secondary'} className="text-xs">
-                      {api.isActive ? 'Ativo' : 'Inativo'}
-                    </Badge>
+                    <CardTitle className="flex items-center gap-2 text-base"><Key className="h-4 w-4" />{api.name}</CardTitle>
+                    <Badge variant={api.isActive ? 'default' : 'secondary'} className="text-xs">{api.isActive ? 'Ativo' : 'Inativo'}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -394,24 +234,15 @@ export default function AdminDashboard() {
                     <Input
                       type="password"
                       value={api.key}
-                      onChange={(e) => setApiConfigs(prev =>
-                        prev.map(a => a.id === api.id ? { ...a, key: e.target.value } : a)
-                      )}
+                      onChange={(e) => setApiConfigs(prev => prev.map(a => a.id === api.id ? { ...a, key: e.target.value } : a))}
                       placeholder="Cole sua chave de API aqui"
                       className="font-mono text-xs"
                     />
-                    <Button onClick={() => handleSaveApiConfig(api.id, api.key)} variant="outline" size="sm">
-                      Salvar
-                    </Button>
+                    <Button onClick={() => handleSaveApiConfig(api.id, api.key)} variant="outline" size="sm">Salvar</Button>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Status</span>
-                    <Switch
-                      checked={api.isActive}
-                      onCheckedChange={(checked) =>
-                        setApiConfigs(prev => prev.map(a => a.id === api.id ? { ...a, isActive: checked } : a))
-                      }
-                    />
+                    <Switch checked={api.isActive} onCheckedChange={(checked) => setApiConfigs(prev => prev.map(a => a.id === api.id ? { ...a, isActive: checked } : a))} />
                   </div>
                 </CardContent>
               </Card>
@@ -422,10 +253,7 @@ export default function AdminDashboard() {
           <TabsContent value="security" className="space-y-6 pt-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Configurações de Segurança
-                </CardTitle>
+                <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" />Configurações de Segurança</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -433,16 +261,9 @@ export default function AdminDashboard() {
                     <p className="text-sm font-medium">Registro de Novos Usuários</p>
                     <p className="text-xs text-muted-foreground">Permitir novos cadastros na plataforma</p>
                   </div>
-                  <Switch
-                    checked={platformConfig.registrationEnabled}
-                    onCheckedChange={(checked) =>
-                      setPlatformConfig(prev => ({ ...prev, registrationEnabled: checked }))
-                    }
-                  />
+                  <Switch checked={platformConfig.registrationEnabled} onCheckedChange={(checked) => setPlatformConfig(prev => ({ ...prev, registrationEnabled: checked }))} />
                 </div>
-
                 <Separator />
-
                 <div className="space-y-3">
                   <h3 className="text-base font-semibold">Logs de Auditoria</h3>
                   <div className="bg-muted/50 p-4 rounded-lg space-y-1.5">
@@ -456,20 +277,16 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* ── Sistema (Monitoramento + Manutenção) ──────── */}
+          {/* ── Sistema ──────────────────────────────────── */}
           <TabsContent value="system" className="space-y-6 pt-4">
-            {/* Monitoring */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Status do Sistema
-                </CardTitle>
+                <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5" />Status do Sistema</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-4 border rounded-lg">
-                    <p className="text-2xl font-bold text-emerald-500">99.9%</p>
+                    <p className="text-2xl font-bold text-success">99.9%</p>
                     <p className="text-xs text-muted-foreground">Uptime</p>
                   </div>
                   <div className="text-center p-4 border rounded-lg">
@@ -488,13 +305,9 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            {/* Maintenance */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5" />
-                  Manutenção
-                </CardTitle>
+                <CardTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5" />Manutenção</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -502,32 +315,18 @@ export default function AdminDashboard() {
                     <p className="text-sm font-medium">Modo de Manutenção</p>
                     <p className="text-xs text-muted-foreground">Bloqueia acesso exceto para administradores</p>
                   </div>
-                  <Switch
-                    checked={platformConfig.maintenanceMode}
-                    onCheckedChange={(checked) =>
-                      setPlatformConfig(prev => ({ ...prev, maintenanceMode: checked }))
-                    }
-                  />
+                  <Switch checked={platformConfig.maintenanceMode} onCheckedChange={(checked) => setPlatformConfig(prev => ({ ...prev, maintenanceMode: checked }))} />
                 </div>
-
                 {platformConfig.maintenanceMode && (
                   <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-lg">
                     <p className="text-destructive font-medium text-sm">⚠️ Modo de Manutenção Ativo</p>
                     <p className="text-destructive/80 text-xs mt-1">A plataforma está em manutenção para usuários regulares</p>
                   </div>
                 )}
-
                 <Separator />
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <Button variant="outline" className="justify-start text-sm">
-                    <Database className="h-4 w-4 mr-2" />
-                    Backup do Banco de Dados
-                  </Button>
-                  <Button variant="outline" className="justify-start text-sm">
-                    <Activity className="h-4 w-4 mr-2" />
-                    Limpar Cache do Sistema
-                  </Button>
+                  <Button variant="outline" className="justify-start text-sm"><Database className="h-4 w-4 mr-2" />Backup do Banco de Dados</Button>
+                  <Button variant="outline" className="justify-start text-sm"><Activity className="h-4 w-4 mr-2" />Limpar Cache do Sistema</Button>
                 </div>
               </CardContent>
             </Card>

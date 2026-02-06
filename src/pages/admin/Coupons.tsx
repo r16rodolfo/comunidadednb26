@@ -15,37 +15,8 @@ import { Coupon, CouponFilters, CreateCouponData } from "@/types/coupons";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-
-// ─── Stat Card (matches Dashboard pattern) ──────────────────
-function StatCard({ label, value, icon: Icon, variant = 'default' }: {
-  label: string;
-  value: string | number;
-  icon: React.ElementType;
-  variant?: 'default' | 'success' | 'warning' | 'info';
-}) {
-  const iconClass = {
-    default: 'text-primary',
-    success: 'text-emerald-500',
-    warning: 'text-amber-500',
-    info: 'text-sky-500',
-  }[variant];
-
-  return (
-    <Card className="relative overflow-hidden">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-            <p className="text-2xl font-bold tracking-tight">{value}</p>
-          </div>
-          <div className="rounded-xl bg-muted/60 p-2.5">
-            <Icon className={`h-6 w-6 ${iconClass}`} />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+import { StatCard } from "@/components/shared/StatCard";
+import { AdminPageHeader } from "@/components/shared/AdminPageHeader";
 
 // ─── Main Component ─────────────────────────────────────────
 export default function AdminCoupons() {
@@ -126,22 +97,12 @@ export default function AdminCoupons() {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header — matches Dashboard pattern */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <Ticket className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Gerenciar Cupons</h1>
-              <p className="text-muted-foreground text-sm">Gerencie cupons de parceiros e acompanhe o desempenho</p>
-            </div>
-          </div>
+        <AdminPageHeader icon={Ticket} title="Gerenciar Cupons" description="Gerencie cupons de parceiros e acompanhe o desempenho">
           <Button onClick={() => setIsCreateModalOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Novo Cupom
           </Button>
-        </div>
+        </AdminPageHeader>
 
         {/* Stats Cards — using design tokens */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
