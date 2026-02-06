@@ -5,7 +5,6 @@ import {
   Calculator, 
   BookOpen, 
   TrendingUp, 
-   
   Ticket,
   Menu, 
   User, 
@@ -35,7 +34,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface LayoutProps {
   children: ReactNode;
@@ -44,7 +42,6 @@ interface LayoutProps {
 const getRoleLabel = (role: UserRole) => {
   switch (role) {
     case UserRole.ADMIN: return 'Admin';
-    case UserRole.MANAGER: return 'Gestor';
     case UserRole.PREMIUM: return 'Premium';
     case UserRole.FREE: return 'Gratuito';
   }
@@ -53,7 +50,6 @@ const getRoleLabel = (role: UserRole) => {
 const getRoleBadgeVariant = (role: UserRole) => {
   switch (role) {
     case UserRole.ADMIN: return 'destructive';
-    case UserRole.MANAGER: return 'default';
     case UserRole.PREMIUM: return 'secondary';
     case UserRole.FREE: return 'outline';
   }
@@ -72,51 +68,44 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
       {
         title: "FERRAMENTAS DNB",
         items: [
-        { title: "Planner de Compras", url: "/planner", icon: Calculator },
-        { title: "Análise de Mercado", url: "/analise", icon: TrendingUp },
-        { title: "Cupons de Parceiros", url: "/coupons", icon: Ticket },
+          { title: "Planner de Compras", url: "/planner", icon: Calculator },
+          { title: "Análise de Mercado", url: "/analise", icon: TrendingUp },
+          { title: "Cupons de Parceiros", url: "/coupons", icon: Ticket },
         ]
       },
-    {
-      title: "DNB ACADEMY",
-      items: [
-        { title: "Aprenda Câmbio", url: "/academy", icon: BookOpen },
-      ]
-    },
-    {
-      title: "CONTA",
-      items: [
-        { title: "Assinatura", url: "/subscription", icon: CreditCard },
-      ]
-    }
-    ];
-  }
-
-  // Admin navigation - focused on administration
-  if (userRole === UserRole.ADMIN) {
-    return [
       {
-        title: "ADMINISTRAÇÃO",
+        title: "DNB ACADEMY",
         items: [
-          { title: "Configurações", url: "/admin/settings", icon: Settings },
-          { title: "Assinaturas", url: "/admin/subscriptions", icon: CreditCard },
-          { title: "Dashboard Gestor", url: "/manager/dashboard", icon: BarChart3 },
+          { title: "Aprenda Câmbio", url: "/academy", icon: BookOpen },
+        ]
+      },
+      {
+        title: "CONTA",
+        items: [
+          { title: "Assinatura", url: "/subscription", icon: CreditCard },
         ]
       }
     ];
   }
 
-  // Manager navigation - focused on management
-  if (userRole === UserRole.MANAGER) {
+  // Admin navigation - all management in one place
+  if (userRole === UserRole.ADMIN) {
     return [
       {
-        title: "GESTÃO",
+        title: "ADMINISTRAÇÃO",
         items: [
-          { title: "Dashboard", url: "/manager/dashboard", icon: BarChart3 },
-          { title: "Usuários", url: "/manager/users", icon: Users },
-          { title: "Conteúdo", url: "/manager/content", icon: BookOpen },
-          { title: "Cupons", url: "/manager/coupons", icon: Ticket },
-          { title: "Analytics", url: "/manager/analytics", icon: TrendingUp },
+          { title: "Dashboard", url: "/admin/dashboard", icon: BarChart3 },
+          { title: "Usuários", url: "/admin/users", icon: Users },
+          { title: "Conteúdo", url: "/admin/content", icon: BookOpen },
+          { title: "Cupons", url: "/admin/coupons", icon: Ticket },
+          { title: "Analytics", url: "/admin/analytics", icon: TrendingUp },
+        ]
+      },
+      {
+        title: "SISTEMA",
+        items: [
+          { title: "Configurações", url: "/admin/settings", icon: Settings },
+          { title: "Assinaturas", url: "/admin/subscriptions", icon: CreditCard },
         ]
       }
     ];
@@ -252,8 +241,7 @@ export default function Layout({ children }: LayoutProps) {
               </SidebarTrigger>
               <div className="hidden sm:block">
                 <h2 className="text-lg font-semibold text-foreground">
-                  {user?.role === UserRole.ADMIN ? 'Administração' : 
-                   user?.role === UserRole.MANAGER ? 'Gestão' : 'Dashboard'}
+                  {user?.role === UserRole.ADMIN ? 'Administração' : 'Dashboard'}
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   {viewAsUser ? 'Visualizando como usuário' : 'Painel de controle'}
@@ -262,13 +250,13 @@ export default function Layout({ children }: LayoutProps) {
             </div>
             
             <div className="flex items-center gap-4">
-              {/* Notifications for Admin/Manager */}
-              {user && (user.role === UserRole.ADMIN || user.role === UserRole.MANAGER) && (
+              {/* Notifications for Admin */}
+              {user && user.role === UserRole.ADMIN && (
                 <NotificationSystem />
               )}
 
-              {/* View Toggle for Admin/Manager */}
-              {user && (user.role === UserRole.ADMIN || user.role === UserRole.MANAGER) && (
+              {/* View Toggle for Admin */}
+              {user && user.role === UserRole.ADMIN && (
                 <Button
                   variant={viewAsUser ? "default" : "outline"}
                   size="sm"

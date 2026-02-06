@@ -31,19 +31,6 @@ const mockUsers: UserProfile[] = [
     updatedAt: new Date()
   },
   {
-    id: '2',
-    email: 'gestor@dnb.com',
-    name: 'Gestor DNB',
-    role: UserRole.MANAGER,
-    permissions: [
-      { id: 'manage_users', name: 'Manage Users', description: 'Manage platform users' },
-      { id: 'manage_content', name: 'Manage Content', description: 'Manage courses and products' }
-    ],
-    preferences: { theme: 'light', notifications: true, language: 'pt-BR' },
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
     id: '3',
     email: 'premium@dnb.com',
     name: 'Usuario Premium',
@@ -100,7 +87,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: false
       });
       
-      // Return user role for redirect logic
       return user;
     } else {
       throw new Error('Credenciais inválidas');
@@ -108,7 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (data: RegisterData) => {
-    // Mock registration
     const newUser: UserProfile = {
       id: String(Date.now()),
       email: data.email,
@@ -161,9 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!authState.user) return;
     
     try {
-      // This would call the Supabase edge function in a real implementation
       console.log('Checking subscription for user:', authState.user.email);
-      // For now, just a mock implementation
     } catch (error) {
       console.error('Error checking subscription:', error);
     }
