@@ -11,7 +11,7 @@ import { UserRole } from "@/types/auth";
 // Pages
 import Index from "./pages/Index";
 import Planner from "./pages/Planner";
-import TravelPlanner from "./pages/TravelPlanner";
+
 import Academy from "./pages/Academy";
 import DnbAnalysis from "./pages/DnbAnalysis";
 import Coupons from "./pages/Coupons";
@@ -133,17 +133,6 @@ const App = () => (
               </ProtectedRoute>
             } />
             
-            <Route path="/agencia" element={
-              <ProtectedRoute>
-                <TravelPlanner />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/agencia/:module" element={
-              <ProtectedRoute>
-                <TravelPlanner />
-              </ProtectedRoute>
-            } />
             
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

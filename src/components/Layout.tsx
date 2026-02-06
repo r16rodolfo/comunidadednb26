@@ -15,13 +15,6 @@ import {
   BarChart3, 
   LogOut, 
   CreditCard, 
-  Plane,
-  Bell,
-  ChevronDown,
-  Calendar,
-  Route,
-  CalendarDays,
-  Luggage
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -86,19 +79,6 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
         { title: "Cupons de Parceiros", url: "/coupons", icon: Ticket },
         ]
       },
-      {
-        title: "AGÊNCIA DNB",
-        items: [
-          { title: "Planejador de Viagem", url: "/agencia", icon: Plane },
-        ],
-        subItems: [
-          { title: "Roteiro Dia a Dia", url: "/agencia/roteiro", icon: Calendar },
-          { title: "Logística e Transporte", url: "/agencia/logistica", icon: Route },
-          { title: "Calendário de Eventos", url: "/agencia/eventos", icon: CalendarDays },
-          { title: "Guias e Dicas", url: "/agencia/guias", icon: BookOpen },
-          { title: "Clima e Bagagem", url: "/agencia/clima", icon: Luggage },
-        ]
-      },
     {
       title: "DNB ACADEMY",
       items: [
@@ -159,19 +139,6 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
         { title: "Planner de Compras", url: "/planner", icon: Calculator },
         { title: "Análise de Mercado", url: "/analise", icon: TrendingUp },
         { title: "Cupons de Parceiros", url: "/coupons", icon: Ticket },
-      ]
-    },
-    {
-      title: "AGÊNCIA DNB",
-      items: [
-        { title: "Planejador de Viagem", url: "/agencia", icon: Plane },
-      ],
-      subItems: [
-        { title: "Roteiro Dia a Dia", url: "/agencia/roteiro", icon: Calendar },
-        { title: "Logística e Transporte", url: "/agencia/logistica", icon: Route },
-        { title: "Calendário de Eventos", url: "/agencia/eventos", icon: CalendarDays },
-        { title: "Guias e Dicas", url: "/agencia/guias", icon: BookOpen },
-        { title: "Clima e Bagagem", url: "/agencia/clima", icon: Luggage },
       ]
     },
     {
@@ -246,8 +213,7 @@ function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1">
                 {section.items.map((item) => (
-                  <div key={item.title}>
-                    <SidebarMenuItem>
+                    <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
                         <NavLink 
                           to={item.url} 
@@ -261,32 +227,6 @@ function AppSidebar() {
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                    
-                    {/* Render sub-items if they exist and parent route is active */}
-                    {section.subItems && !isCollapsed && currentPath.startsWith('/agencia') && (
-                      <div className="ml-6 mt-1 space-y-1">
-                        {section.subItems.map((subItem) => (
-                          <SidebarMenuItem key={subItem.title}>
-                            <SidebarMenuButton asChild>
-                              <NavLink
-                                to={subItem.url}
-                                className={({ isActive }) =>
-                                  `flex items-center gap-2 px-3 py-1.5 rounded text-sm transition-all duration-200 ${
-                                    isActive
-                                      ? 'bg-primary/20 text-primary font-medium'
-                                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
-                                  }`
-                                }
-                              >
-                                <subItem.icon className="h-3 w-3" />
-                                <span>{subItem.title}</span>
-                              </NavLink>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
