@@ -17,7 +17,6 @@ import Coupons from "./pages/Coupons";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Unauthorized from "./pages/Unauthorized";
-import AdminSettings from "./pages/admin/Settings";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
 import AdminContent from "./pages/admin/Content";
@@ -73,11 +72,6 @@ const App = () => (
             } />
             
             {/* Admin Routes */}
-            <Route path="/admin/settings" element={
-              <ProtectedRoute requiredRole={UserRole.ADMIN}>
-                <AdminSettings />
-              </ProtectedRoute>
-            } />
             <Route path="/admin/dashboard" element={
               <ProtectedRoute requiredRole={UserRole.ADMIN}>
                 <AdminDashboard />

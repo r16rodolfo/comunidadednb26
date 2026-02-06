@@ -8,7 +8,6 @@ import {
   Ticket,
   Menu, 
   User, 
-  Settings, 
   Users, 
   BarChart3, 
   LogOut, 
@@ -94,17 +93,11 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
       {
         title: "ADMINISTRAÇÃO",
         items: [
-          { title: "Dashboard", url: "/admin/dashboard", icon: BarChart3 },
+          { title: "Painel Admin", url: "/admin/dashboard", icon: BarChart3 },
           { title: "Usuários", url: "/admin/users", icon: Users },
           { title: "Conteúdo", url: "/admin/content", icon: BookOpen },
           { title: "Cupons", url: "/admin/coupons", icon: Ticket },
           { title: "Analytics", url: "/admin/analytics", icon: TrendingUp },
-        ]
-      },
-      {
-        title: "SISTEMA",
-        items: [
-          { title: "Configurações", url: "/admin/settings", icon: Settings },
           { title: "Assinaturas", url: "/admin/subscriptions", icon: CreditCard },
         ]
       }
