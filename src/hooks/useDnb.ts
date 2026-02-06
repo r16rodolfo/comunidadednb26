@@ -13,6 +13,8 @@ const mockAnalyses: MarketAnalysis[] = [
     euroVariation: -0.67,
     summary: 'Dólar em baixa mas cenário lateral mantido',
     fullAnalysis: 'O dólar fechou em baixa de -0,35% nessa quinta, 17, após chega a subir 0,75% na máxima do dia. A baixa de hoje, influenciada pelas negociações sobre a taxa de 50% dos EUA, anima, mas não muda o cenário. Ainda estamos lateral. É o 6º pregão entre R$5,55 e R$5,63 Para baixo há suporte em R$5,52 e R$5,50. Para cima, R$5,63 e R$5,80. O Euro também recuou 0,67% a R$6,44. Cenário similar. Amanhã avaliaremos novas recomendações.',
+    videoUrl: 'https://example.com/video-latest',
+    imageUrl: 'https://example.com/chart-latest.png',
     supports: [5.50, 5.52],
     resistances: [5.63, 5.80],
     chartData: [
