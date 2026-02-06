@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import Layout from '@/components/Layout';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Select,
   SelectContent,
@@ -8,7 +7,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Info, CalendarSearch, X } from 'lucide-react';
 import { useDnb } from '@/hooks/useDnb';
 import { MarketAnalysis } from '@/types/dnb';
 import AnalysisHero from '@/components/dnb/AnalysisHero';
@@ -27,6 +28,8 @@ export default function DnbAnalysis() {
 
   const [selectedAnalysis, setSelectedAnalysis] = useState<MarketAnalysis | null>(null);
   const [periodFilter, setPeriodFilter] = useState<string>('all');
+  const [specificDate, setSpecificDate] = useState<string>('');
+  const [showAllHistory, setShowAllHistory] = useState(false);
 
   const latestAnalysis = getLatestAnalysis();
   const latestRecommendation = latestAnalysis
@@ -36,9 +39,14 @@ export default function DnbAnalysis() {
   // Filter history (exclude latest which is in the hero)
   const historyAnalyses = analyses.filter((a) => a.id !== latestAnalysis?.id);
 
-  // Period filter logic
+  // Apply filters
   const filteredHistory = historyAnalyses.filter((analysis) => {
-    if (periodFilter === 'all') return true;
+    // Specific date filter
+    if (specificDate) {
+      return analysis.date === specificDate;
+    }
+    // Period filter
+    if (periodFilter === 'all' || showAllHistory) return true;
     const now = new Date();
     const analysisDate = new Date(analysis.date);
     const diffDays = Math.floor(
@@ -53,6 +61,22 @@ export default function DnbAnalysis() {
   const selectedRecommendation = selectedAnalysis
     ? getRecommendationConfig(selectedAnalysis.recommendation)
     : null;
+
+  const INITIAL_DISPLAY = 5;
+  const displayedHistory = showAllHistory
+    ? filteredHistory
+    : filteredHistory.slice(0, INITIAL_DISPLAY);
+  const hasMoreHistory = filteredHistory.length > INITIAL_DISPLAY && !showAllHistory;
+
+  const clearFilters = () => {
+    setPeriodFilter('all');
+    setSpecificDate('');
+    setRecommendationFilter('all');
+    setShowAllHistory(false);
+  };
+
+  const hasActiveFilters =
+    periodFilter !== 'all' || specificDate !== '' || recommendationFilter !== 'all';
 
   if (isLoading) {
     return (
@@ -83,16 +107,15 @@ export default function DnbAnalysis() {
           </p>
         </div>
 
-        {/* Disclaimer */}
-        <Alert className="border-destructive/30 bg-destructive/5 backdrop-blur-sm shadow-sm">
-          <Info className="h-4 w-4 text-destructive" />
-          <AlertDescription className="text-xs text-destructive/80">
-            <strong>Disclaimer:</strong> As análises são baseadas em estudos
-            técnicos e fundamentalistas. O mercado financeiro está sujeito a
-            variações imprevisíveis. As recomendações não constituem verdade
-            absoluta.
-          </AlertDescription>
-        </Alert>
+        {/* Disclaimer — discrete inline */}
+        <p className="text-xs text-muted-foreground/70 flex items-start gap-1.5 leading-relaxed">
+          <Info className="h-3 w-3 mt-0.5 shrink-0" />
+          <span>
+            <strong className="text-muted-foreground/80">Disclaimer:</strong> As
+            análises são opinião técnica baseada em estudos fundamentalistas e
+            técnicos. O mercado está sujeito a variações imprevisíveis.
+          </span>
+        </p>
 
         {/* Hero - Latest Analysis */}
         {latestAnalysis && latestRecommendation && (
@@ -104,25 +127,49 @@ export default function DnbAnalysis() {
 
         {/* History Section */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">Histórico</h2>
-            <div className="flex items-center gap-2">
-              <Select value={periodFilter} onValueChange={setPeriodFilter}>
-                <SelectTrigger className="w-[160px] h-8 text-xs">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Specific date search */}
+              <div className="relative">
+                <CalendarSearch className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="date"
+                  value={specificDate}
+                  onChange={(e) => {
+                    setSpecificDate(e.target.value);
+                    if (e.target.value) setPeriodFilter('all');
+                  }}
+                  className="h-8 text-xs pl-7 w-[150px]"
+                  placeholder="Data específica"
+                />
+              </div>
+
+              <Select
+                value={periodFilter}
+                onValueChange={(v) => {
+                  setPeriodFilter(v);
+                  setSpecificDate('');
+                  setShowAllHistory(false);
+                }}
+                disabled={!!specificDate}
+              >
+                <SelectTrigger className="w-[140px] h-8 text-xs">
                   <SelectValue placeholder="Período" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todo o período</SelectItem>
+                  <SelectItem value="all">Todo período</SelectItem>
                   <SelectItem value="7d">Últimos 7 dias</SelectItem>
                   <SelectItem value="30d">Últimos 30 dias</SelectItem>
                   <SelectItem value="90d">Últimos 90 dias</SelectItem>
                 </SelectContent>
               </Select>
+
               <Select
                 value={recommendationFilter}
                 onValueChange={setRecommendationFilter}
               >
-                <SelectTrigger className="w-[160px] h-8 text-xs">
+                <SelectTrigger className="w-[140px] h-8 text-xs">
                   <SelectValue placeholder="Recomendação" />
                 </SelectTrigger>
                 <SelectContent>
@@ -133,19 +180,31 @@ export default function DnbAnalysis() {
                   <SelectItem value="wait">Aguardar</SelectItem>
                 </SelectContent>
               </Select>
+
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="h-8 text-xs gap-1 text-muted-foreground"
+                >
+                  <X className="h-3 w-3" />
+                  Limpar
+                </Button>
+              )}
             </div>
           </div>
 
           {/* Feed Cards */}
-          {filteredHistory.length === 0 ? (
+          {displayedHistory.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <p className="text-sm">
-                Nenhuma análise encontrada para o período selecionado
+                Nenhuma análise encontrada para os filtros selecionados
               </p>
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredHistory.map((analysis) => {
+              {displayedHistory.map((analysis) => {
                 const rec = getRecommendationConfig(analysis.recommendation);
                 return (
                   <AnalysisFeedCard
@@ -156,6 +215,20 @@ export default function DnbAnalysis() {
                   />
                 );
               })}
+            </div>
+          )}
+
+          {/* See all button */}
+          {hasMoreHistory && (
+            <div className="text-center pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAllHistory(true)}
+                className="text-xs"
+              >
+                Ver todo histórico ({filteredHistory.length} análises)
+              </Button>
             </div>
           )}
         </div>

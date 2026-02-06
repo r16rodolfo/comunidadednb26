@@ -76,7 +76,32 @@ export default function AnalysisDetailModal({
           </div>
         </DialogHeader>
 
-        <div className="space-y-5 pt-2">
+        {/* Media buttons — prominent at top */}
+        {(analysis.videoUrl || analysis.imageUrl) && (
+          <div className="flex gap-2 -mt-1">
+            {analysis.videoUrl && (
+              <Button
+                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground flex-1"
+                size="sm"
+              >
+                <Play className="h-4 w-4" />
+                Assistir Vídeo
+              </Button>
+            )}
+            {analysis.imageUrl && (
+              <Button
+                variant="secondary"
+                className="gap-2 flex-1"
+                size="sm"
+              >
+                <ImageIcon className="h-4 w-4" />
+                Ver Gráfico
+              </Button>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-5 pt-1">
           {/* Quotes */}
           <div className="grid grid-cols-2 gap-3">
             <QuoteCard
@@ -103,8 +128,8 @@ export default function AnalysisDetailModal({
 
           {/* Technical Levels */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 border rounded-lg bg-red-50/50 border-red-200">
-              <h4 className="text-xs font-semibold text-red-600 flex items-center gap-1 mb-2">
+            <div className="p-3 border rounded-lg bg-destructive/5 border-destructive/20">
+              <h4 className="text-xs font-semibold text-destructive flex items-center gap-1 mb-2">
                 <TrendingUp className="h-3 w-3" />
                 Resistências
               </h4>
@@ -113,15 +138,15 @@ export default function AnalysisDetailModal({
                   <Badge
                     key={i}
                     variant="secondary"
-                    className="bg-red-100 text-red-700 text-xs"
+                    className="bg-destructive/10 text-destructive text-xs"
                   >
                     R$ {level.toFixed(2)}
                   </Badge>
                 ))}
               </div>
             </div>
-            <div className="p-3 border rounded-lg bg-green-50/50 border-green-200">
-              <h4 className="text-xs font-semibold text-green-600 flex items-center gap-1 mb-2">
+            <div className="p-3 border rounded-lg bg-primary/5 border-primary/20">
+              <h4 className="text-xs font-semibold text-primary flex items-center gap-1 mb-2">
                 <TrendingDown className="h-3 w-3" />
                 Suportes
               </h4>
@@ -130,7 +155,7 @@ export default function AnalysisDetailModal({
                   <Badge
                     key={i}
                     variant="secondary"
-                    className="bg-green-100 text-green-700 text-xs"
+                    className="bg-primary/10 text-primary text-xs"
                   >
                     R$ {level.toFixed(2)}
                   </Badge>
@@ -138,24 +163,6 @@ export default function AnalysisDetailModal({
               </div>
             </div>
           </div>
-
-          {/* Media Actions */}
-          {(analysis.videoUrl || analysis.imageUrl) && (
-            <div className="flex gap-2 pt-2 border-t">
-              {analysis.videoUrl && (
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Play className="h-4 w-4" />
-                  Assistir Vídeo
-                </Button>
-              )}
-              {analysis.imageUrl && (
-                <Button variant="outline" size="sm" className="gap-2">
-                  <ImageIcon className="h-4 w-4" />
-                  Ver Gráfico
-                </Button>
-              )}
-            </div>
-          )}
         </div>
       </DialogContent>
     </Dialog>
