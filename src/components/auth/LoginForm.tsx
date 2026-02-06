@@ -26,9 +26,7 @@ export function LoginForm() {
       
       // Redirect based on user role
       if (user.role === UserRole.ADMIN) {
-        navigate('/admin/settings');
-      } else if (user.role === UserRole.MANAGER) {
-        navigate('/manager/dashboard');
+        navigate('/admin/dashboard');
       } else {
         navigate('/');
       }
@@ -84,7 +82,6 @@ export function LoginForm() {
             <p>Usuários de teste:</p>
             <div className="mt-2 space-y-1">
               <p><strong>Admin:</strong> admin@dnb.com</p>
-              <p><strong>Gestor:</strong> gestor@dnb.com</p>
               <p><strong>Premium:</strong> premium@dnb.com</p>
             </div>
           </div>

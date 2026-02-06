@@ -13,7 +13,7 @@ export default function PromoBanner() {
   const { user, hasRole } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
-  const isManager = hasRole(UserRole.MANAGER) || hasRole(UserRole.ADMIN);
+  const isAdmin = hasRole(UserRole.ADMIN);
 
   useEffect(() => {
     const stored = localStorage.getItem(BANNER_STORAGE_KEY);
@@ -78,7 +78,7 @@ export default function PromoBanner() {
         </div>
 
         {/* Upload Controls - Only for managers/admins */}
-        {isManager && (
+        {isAdmin && (
           <div className="absolute top-4 right-4 z-10 flex gap-2">
             <input
               ref={fileInputRef}

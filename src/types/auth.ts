@@ -2,7 +2,6 @@
 export enum UserRole {
   FREE = 'free',
   PREMIUM = 'premium',
-  MANAGER = 'manager',
   ADMIN = 'admin'
 }
 

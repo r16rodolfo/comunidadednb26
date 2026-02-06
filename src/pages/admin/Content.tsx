@@ -31,7 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CreateCourseModal } from '@/components/manager/CreateCourseModal';
+import { CreateCourseModal } from '@/components/admin/CreateCourseModal';
 import { useState } from 'react';
 
 // Mock data for courses

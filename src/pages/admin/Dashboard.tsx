@@ -42,18 +42,18 @@ export default function ManagerDashboard() {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Dashboard do Gestor</h1>
-            <p className="text-muted-foreground">Visão geral da plataforma e gestão</p>
+            <h1 className="text-2xl font-bold">Dashboard Administrativo</h1>
+            <p className="text-muted-foreground">Visão geral da plataforma</p>
           </div>
           <div className="flex gap-2">
             <Button asChild variant="outline">
-              <Link to="/manager/users">
+              <Link to="/admin/users">
                 <Users className="h-4 w-4 mr-2" />
                 Gerenciar Usuários
               </Link>
             </Button>
             <Button asChild>
-              <Link to="/manager/content">
+              <Link to="/admin/content">
                 <BookOpen className="h-4 w-4 mr-2" />
                 Gerenciar Conteúdo
               </Link>
@@ -119,7 +119,7 @@ export default function ManagerDashboard() {
               <div className="flex items-center justify-between">
                 <CardTitle>Usuários Recentes</CardTitle>
                 <Button asChild variant="ghost" size="sm">
-                  <Link to="/manager/users">
+                  <Link to="/admin/users">
                     <Eye className="h-4 w-4 mr-2" />
                     Ver Todos
                   </Link>

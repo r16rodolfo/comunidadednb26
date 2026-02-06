@@ -11,7 +11,6 @@ import { UserRole } from "@/types/auth";
 // Pages
 import Index from "./pages/Index";
 import Planner from "./pages/Planner";
-
 import Academy from "./pages/Academy";
 import DnbAnalysis from "./pages/DnbAnalysis";
 import Coupons from "./pages/Coupons";
@@ -19,11 +18,11 @@ import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Unauthorized from "./pages/Unauthorized";
 import AdminSettings from "./pages/admin/Settings";
-import ManagerDashboard from "./pages/manager/Dashboard";
-import Users from "./pages/manager/Users";
-import Content from "./pages/manager/Content";
-import ManagerCoupons from "./pages/manager/Coupons";
-import Analytics from "./pages/manager/Analytics";
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminUsers from "./pages/admin/Users";
+import AdminContent from "./pages/admin/Content";
+import AdminCoupons from "./pages/admin/Coupons";
+import AdminAnalytics from "./pages/admin/Analytics";
 import Subscription from "./pages/Subscription";
 import AdminSubscriptions from "./pages/admin/Subscriptions";
 import NotFound from "./pages/NotFound";
@@ -41,7 +40,6 @@ const App = () => (
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
-            
             
             {/* Protected Routes */}
             <Route path="/" element={
@@ -62,7 +60,6 @@ const App = () => (
               </ProtectedRoute>
             } />
             
-            
             <Route path="/coupons" element={
               <ProtectedRoute>
                 <Coupons />
@@ -81,31 +78,29 @@ const App = () => (
                 <AdminSettings />
               </ProtectedRoute>
             } />
-            
-            {/* Manager Routes */}
-            <Route path="/manager/dashboard" element={
-              <ProtectedRoute requiredRole={UserRole.MANAGER}>
-                <ManagerDashboard />
+            <Route path="/admin/dashboard" element={
+              <ProtectedRoute requiredRole={UserRole.ADMIN}>
+                <AdminDashboard />
               </ProtectedRoute>
             } />
-            <Route path="/manager/users" element={
-              <ProtectedRoute requiredRole={UserRole.MANAGER}>
-                <Users />
+            <Route path="/admin/users" element={
+              <ProtectedRoute requiredRole={UserRole.ADMIN}>
+                <AdminUsers />
               </ProtectedRoute>
             } />
-            <Route path="/manager/content" element={
-              <ProtectedRoute requiredRole={UserRole.MANAGER}>
-                <Content />
+            <Route path="/admin/content" element={
+              <ProtectedRoute requiredRole={UserRole.ADMIN}>
+                <AdminContent />
               </ProtectedRoute>
             } />
-            <Route path="/manager/coupons" element={
-              <ProtectedRoute requiredRole={UserRole.MANAGER}>
-                <ManagerCoupons />
+            <Route path="/admin/coupons" element={
+              <ProtectedRoute requiredRole={UserRole.ADMIN}>
+                <AdminCoupons />
               </ProtectedRoute>
             } />
-            <Route path="/manager/analytics" element={
-              <ProtectedRoute requiredRole={UserRole.MANAGER}>
-                <Analytics />
+            <Route path="/admin/analytics" element={
+              <ProtectedRoute requiredRole={UserRole.ADMIN}>
+                <AdminAnalytics />
               </ProtectedRoute>
             } />
             
@@ -121,13 +116,11 @@ const App = () => (
               </ProtectedRoute>
             } />
             
-            
             <Route path="/analise" element={
               <ProtectedRoute>
                 <DnbAnalysis />
               </ProtectedRoute>
             } />
-            
             
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

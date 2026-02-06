@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Plus, Edit, Trash2, Eye, Search, MoreHorizontal, ToggleLeft, ToggleRight } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { CreateCouponModal } from "@/components/manager/CreateCouponModal";
+import { CreateCouponModal } from "@/components/admin/CreateCouponModal";
 import { useCoupons } from "@/hooks/useCoupons";
 import { Coupon, CouponFilters, CreateCouponData } from "@/types/coupons";
 import { format } from "date-fns";

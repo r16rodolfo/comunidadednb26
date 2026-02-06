@@ -29,7 +29,6 @@ export default function Profile() {
   const getRoleLabel = (role: UserRole) => {
     switch (role) {
       case UserRole.ADMIN: return 'Administrador Master';
-      case UserRole.MANAGER: return 'Gestor';
       case UserRole.PREMIUM: return 'Assinante Premium';
       case UserRole.FREE: return 'Assinante Gratuito';
     }
@@ -38,7 +37,6 @@ export default function Profile() {
   const getRoleBadgeVariant = (role: UserRole) => {
     switch (role) {
       case UserRole.ADMIN: return 'destructive';
-      case UserRole.MANAGER: return 'default';
       case UserRole.PREMIUM: return 'secondary';
       case UserRole.FREE: return 'outline';
     }
