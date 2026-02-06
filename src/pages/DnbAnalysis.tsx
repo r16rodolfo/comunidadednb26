@@ -122,6 +122,8 @@ export default function DnbAnalysis() {
           <AnalysisHero
             analysis={latestAnalysis}
             recommendation={latestRecommendation}
+            onViewVideo={latestAnalysis.videoUrl ? () => window.open(latestAnalysis.videoUrl, '_blank') : undefined}
+            onViewImage={latestAnalysis.imageUrl ? () => window.open(latestAnalysis.imageUrl, '_blank') : undefined}
           />
         )}
 
