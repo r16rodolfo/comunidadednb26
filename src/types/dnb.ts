@@ -9,6 +9,7 @@ export interface MarketAnalysis {
   summary: string;
   fullAnalysis: string;
   videoUrl?: string;
+  imageUrl?: string;
   chartData?: ChartDataPoint[];
   supports: number[];
   resistances: number[];

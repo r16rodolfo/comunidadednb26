@@ -45,6 +45,7 @@ const mockAnalyses: MarketAnalysis[] = [
     summary: 'Momento favorável para compra com dólar em baixa',
     fullAnalysis: 'Excelente oportunidade de compra com dólar recuando para R$5,55. Movimento técnico importante com rompimento de suporte. Recomendamos aproveitar este nível para posições cambiais.',
     videoUrl: 'https://example.com/video1',
+    imageUrl: 'https://example.com/chart1.png',
     supports: [5.50, 5.45],
     resistances: [5.60, 5.65]
   }
