@@ -31,7 +31,7 @@ DNB Platform
 ├── 💰 Planner (Planejamento de Compras)
 ├── ✈️ Travel Planner (Planejamento de Viagens)
 ├── 🎓 Academy (Educação)
-├── 🛍️ Achadinhos (Marketplace de Produtos)
+
 └── 👤 Perfil & Subscrição
 ```
 
@@ -112,16 +112,6 @@ DNB Platform
   - Controle de acesso baseado em subscrição
 - **Integração**: Panda Video API
 
-### 🛍️6. Achadinhos (Marketplace)
-**Status**: ✅ Implementado
-- **Funcionalidades**:
-  - Grid de produtos com filtros
-  - Categorias (eletrônicos, moda, casa, etc.)
-  - Sistema de busca
-  - Modal de detalhes do produto
-  - Links de afiliados
-  - Versão pública sem autenticação
-- **Gestão**: Interface para managers adicionarem produtos
 
 ### 👤 7. Sistema de Autenticação & Perfis
 **Status**: ✅ Implementado
@@ -132,7 +122,7 @@ DNB Platform
   - Rotas protegidas
 - **Tipos de Usuário**:
   - **User**: Acesso básico às ferramentas
-  - **Manager**: Gestão de conteúdo (Academy, Achadinhos)
+  - **Manager**: Gestão de conteúdo (Academy)
   - **Admin**: Controle total do sistema
 
 ### 💳 8. Sistema de Subscrições
@@ -329,19 +319,6 @@ DNB Platform
 
 ---
 
-### 🛍️ **Achadinhos - Marketplace (Semana 7)**
-
-#### **Product Management**
-- ✅ **Product Grid**: Grid de produtos com layout responsivo
-- ✅ **Category System**: Sistema de categorias (eletrônicos, moda, casa, etc.)
-- ✅ **Search Functionality**: Sistema de busca por produtos
-- ✅ **Product Details**: Modal detalhado de produtos
-
-#### **Public Interface**
-- ✅ **Public Access**: Versão pública sem necessidade de login
-- ✅ **Product Filters**: Filtros avançados por categoria e preço
-- ✅ **Affiliate Links**: Sistema de links de afiliados
-- ✅ **Product Management**: Interface para managers adicionarem produtos
 
 ---
 

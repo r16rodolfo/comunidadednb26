@@ -6,7 +6,7 @@ import {
   BookOpen, 
   Target, 
   TrendingUp, 
-  ShoppingBag, 
+   
   Ticket,
   Menu, 
   User, 
@@ -83,7 +83,6 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
         items: [
         { title: "Planner de Compras", url: "/planner", icon: Calculator },
         { title: "Análise de Mercado", url: "/analise", icon: TrendingUp },
-        { title: "Achadinhos", url: "/achadinhos", icon: ShoppingBag },
         { title: "Cupons de Parceiros", url: "/coupons", icon: Ticket },
         ]
       },
@@ -159,7 +158,6 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
       items: [
         { title: "Planner de Compras", url: "/planner", icon: Calculator },
         { title: "Análise de Mercado", url: "/analise", icon: TrendingUp },
-        { title: "Achadinhos", url: "/achadinhos", icon: ShoppingBag },
         { title: "Cupons de Parceiros", url: "/coupons", icon: Ticket },
       ]
     },

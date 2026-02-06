@@ -21,9 +21,7 @@ import {
   Trash2, 
   Eye,
   BookOpen,
-  ShoppingBag,
-  Video,
-  Image
+  Video
 } from 'lucide-react';
 import { 
   DropdownMenu,
@@ -34,7 +32,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { CreateCourseModal } from '@/components/manager/CreateCourseModal';
-import { CreateProductModal } from '@/components/manager/CreateProductModal';
 import { useState } from 'react';
 
 // Mock data for courses
@@ -63,33 +60,6 @@ const courses = [
   }
 ];
 
-// Mock data for products
-const products = [
-  {
-    id: '1',
-    name: 'Cartão Pré-pago Internacional',
-    description: 'Cartão sem IOF para suas viagens',
-    category: 'Cartões',
-    price: 'R$ 15,00',
-    status: 'Ativo',
-    partner: 'Banco XYZ',
-    commission: '2.5%',
-    clicks: 1250,
-    conversions: 45
-  },
-  {
-    id: '2',
-    name: 'Seguro Viagem Premium',
-    description: 'Cobertura completa para viagens internacionais',
-    category: 'Seguros',
-    price: 'R$ 89,00',
-    status: 'Ativo',
-    partner: 'Seguradora ABC',
-    commission: '15%',
-    clicks: 890,
-    conversions: 32
-  }
-];
 
 const getStatusVariant = (status: string) => {
   switch (status) {
@@ -104,7 +74,6 @@ const getStatusVariant = (status: string) => {
 export default function Content() {
   const [activeTab, setActiveTab] = useState('courses');
   const [showCourseModal, setShowCourseModal] = useState(false);
-  const [showProductModal, setShowProductModal] = useState(false);
 
   return (
     <Layout>
@@ -113,20 +82,16 @@ export default function Content() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Gestão de Conteúdo</h1>
-            <p className="text-muted-foreground">Gerencie aulas e produtos da plataforma</p>
+            <p className="text-muted-foreground">Gerencie aulas da plataforma</p>
           </div>
         </div>
 
         {/* Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList>
             <TabsTrigger value="courses" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               Aulas DNB Academy
-            </TabsTrigger>
-            <TabsTrigger value="products" className="flex items-center gap-2">
-              <ShoppingBag className="h-4 w-4" />
-              Produtos Achadinhos
             </TabsTrigger>
           </TabsList>
 
@@ -228,117 +193,12 @@ export default function Content() {
             </Card>
           </TabsContent>
 
-          {/* Products Tab */}
-          <TabsContent value="products" className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex gap-4">
-                <div className="relative flex-1 min-w-[300px]">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Buscar produtos..." 
-                    className="pl-10"
-                  />
-                </div>
-                <Button variant="outline">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filtros
-                </Button>
-              </div>
-              <Button onClick={() => setShowProductModal(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Produto
-              </Button>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Produtos ({products.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Produto</TableHead>
-                        <TableHead>Categoria</TableHead>
-                        <TableHead>Preço</TableHead>
-                        <TableHead>Parceiro</TableHead>
-                        <TableHead>Comissão</TableHead>
-                        <TableHead>Clicks</TableHead>
-                        <TableHead>Conversões</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="w-[50px]">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {products.map((product) => (
-                        <TableRow key={product.id}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{product.name}</div>
-                              <div className="text-sm text-muted-foreground">{product.description}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{product.category}</Badge>
-                          </TableCell>
-                          <TableCell className="font-medium">{product.price}</TableCell>
-                          <TableCell>{product.partner}</TableCell>
-                          <TableCell>{product.commission}</TableCell>
-                          <TableCell>{product.clicks}</TableCell>
-                          <TableCell>{product.conversions}</TableCell>
-                          <TableCell>
-                            <Badge variant={getStatusVariant(product.status)}>
-                              {product.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem>
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  Visualizar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Editar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <Image className="mr-2 h-4 w-4" />
-                                  Gerenciar Imagens
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive">
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Excluir
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
 
         {/* Modals */}
         <CreateCourseModal 
           open={showCourseModal} 
           onOpenChange={setShowCourseModal}
-        />
-        <CreateProductModal 
-          open={showProductModal} 
-          onOpenChange={setShowProductModal}
         />
       </div>
     </Layout>
