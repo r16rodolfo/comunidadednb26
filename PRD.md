@@ -29,7 +29,7 @@ DNB Platform
 ├── 🏠 Home (Landing Page)
 ├── 📊 Análise DNB (Calculadora Financeira)
 ├── 💰 Planner (Planejamento de Compras)
-├── ✈️ Travel Planner (Planejamento de Viagens)
+
 ├── 🎓 Academy (Educação)
 
 └── 👤 Perfil & Subscrição
@@ -73,34 +73,6 @@ DNB Platform
   - `AddTransactionModal`: Adicionar compras
   - `EditGoalModal`: Editar metas
 
-### ✈️ 4. Travel Planner (Planejamento de Viagens)
-**Status**: ✅ Implementado Completo
-
-#### 4.1 Formulário de Criação de Planos ✅
-- Seleção de destino principal e secundários
-- Datas de viagem com calendário
-- Perfil do viajante (solo, casal, família, amigos)
-- Motivo da viagem (lazer, negócios, compras, híbrido)
-- Estilo de viagem (econômico, conforto, luxo)
-- Interesses principais (até 3)
-- Transporte entre cidades
-
-#### 4.2 Dashboard de Viagem ✅
-- Visão geral do plano
-- Métricas da viagem (dias restantes, duração)
-- Cards de módulos (roteiro, logística, eventos, guias, clima)
-- Sistema de monitoramento "Roteiro Vivo"
-- Geração de PDF checklist
-
-#### 4.3 Módulo Roteiro Dia a Dia ✅
-- **Funcionalidades Implementadas**:
-  - Roteiro cronológico detalhado com horários específicos
-  - Dicas de transporte e custos estimados
-  - Pontos instagramáveis identificados
-  - Sugestões de restaurantes com especialidades
-  - Hacks locais e dicas práticas
-  - Informações de trilhas e atividades
-  - Interface rica e detalhada por dia
 
 ### 🎓 5. Academy (Educação)
 **Status**: ✅ Implementado
@@ -138,39 +110,10 @@ DNB Platform
 
 ### 🎯 Próximas Implementações - Alta Prioridade
 
-#### 1. Expansão do Travel Planner
-**Estimativa**: 2-3 semanas
-
-1. **Módulo Logística e Transporte**
-   - Rotas de carro com custos detalhados
-   - Informações de transporte público
-   - Mapas integrados
-   - Cálculo de pedágios e combustível
-
-2. **Módulo Calendário de Eventos**
-   - Integração com APIs de eventos locais
-   - Festivais, shows, exposições
-   - Sistema de compra de ingressos
-   - Alertas personalizados
-
-3. **Módulo Guias e Dicas**
-   - Gastronomia local expandida
-   - Hacks de viagem avançados
-   - Alertas de segurança
-   - Shopping guides detalhados
-   - Cultura local aprofundada
-
-4. **Módulo Clima e Bagagem**
-   - Previsão do tempo detalhada
-   - Dados históricos climáticos
-   - Checklist de bagagem inteligente
-   - Recomendações de vestuário
-
-#### 2. Sistema de Notificações Push
+#### 1. Sistema de Notificações Push
 **Estimativa**: 1 semana
-- Alertas do Roteiro Vivo
-- Lembretes de viagem
-- Atualizações de eventos
+- Lembretes de compras
+- Atualizações de cotações
 
 ### 🚀 Roadmap Futuro (3-6 meses)
 
@@ -338,71 +281,6 @@ DNB Platform
 
 ---
 
-### ✈️ **Travel Planner - Fase 1: Foundation (Semana 9)**
-
-#### **Core Structure**
-- ✅ **Travel Types**: Sistema completo de tipos TypeScript para viagens
-- ✅ **Travel Hook**: Hook `useTravel` para gerenciamento de estado
-- ✅ **Local Storage**: Persistência local de dados de viagem
-- ✅ **Plan Management**: Criação e gestão de planos de viagem
-
-#### **Form System**
-- ✅ **Travel Plan Form**: Formulário completo de criação de planos
-- ✅ **Destination Selection**: Seleção de destino principal e secundários
-- ✅ **Date Picker**: Calendário para seleção de datas
-- ✅ **Travel Preferences**: Perfil do viajante, motivo e estilo da viagem
-- ✅ **Interest Selection**: Seleção de até 3 interesses principais
-- ✅ **Transport Options**: Opções de transporte entre cidades
-
----
-
-### ✈️ **Travel Planner - Fase 2: Dashboard (Semana 10)**
-
-#### **Travel Dashboard**
-- ✅ **Dashboard Layout**: Layout principal do dashboard de viagem
-- ✅ **Trip Overview**: Visão geral completa do plano de viagem
-- ✅ **Trip Metrics**: Métricas da viagem (dias restantes, duração total)
-- ✅ **Module Cards**: Cards de navegação para diferentes módulos
-
-#### **Monitoring System**
-- ✅ **"Roteiro Vivo"**: Sistema de monitoramento ativo da viagem
-- ✅ **Activation Controls**: Controles para ativar/desativar monitoramento
-- ✅ **Notification System**: Base para sistema de notificações
-- ✅ **PDF Generation**: Geração de checklist em PDF
-
-#### **Report Generation**
-- ✅ **Mock Data**: Sistema completo de dados mockados para demonstração
-- ✅ **Report Structure**: Estrutura completa de relatórios de viagem
-- ✅ **Data Persistence**: Salvamento e carregamento de relatórios
-- ✅ **Loading States**: Estados de carregamento durante geração
-
----
-
-### ✈️ **Travel Planner - Fase 3: Roteiro Detalhado (Semana 11)**
-
-#### **Itinerary Module - Implementação Completa**
-- ✅ **Rich Itinerary**: Roteiro dia a dia extremamente detalhado
-- ✅ **Chronological Structure**: Estrutura cronológica com horários específicos
-- ✅ **Activity Details**: Detalhes completos de cada atividade
-- ✅ **Cost Information**: Informações de custos estimados
-- ✅ **Transport Tips**: Dicas detalhadas de transporte
-- ✅ **Instagram Spots**: Pontos instagramáveis identificados
-- ✅ **Restaurant Suggestions**: Sugestões de restaurantes com especialidades
-- ✅ **Local Hacks**: Hacks e dicas práticas locais
-- ✅ **Trail Information**: Informações detalhadas de trilhas e atividades
-
-#### **Bug Fixes e Melhorias**
-- ✅ **Navigation Fix**: Correção do problema de navegação entre módulos
-- ✅ **Blank Page Fix**: Resolução do problema de página em branco no roteiro
-- ✅ **Auto Plan Generation**: Geração automática de plano de exemplo
-- ✅ **Loading States**: Melhorias nos estados de carregamento
-- ✅ **Error Handling**: Tratamento aprimorado de erros
-
-#### **Data Enhancement**
-- ✅ **Rich Mock Data**: Dados de exemplo extremamente detalhados
-- ✅ **Real-world Examples**: Exemplos baseados no Rio de Janeiro
-- ✅ **Practical Information**: Informações práticas e utilizáveis
-- ✅ **Local Context**: Contexto local brasileiro nas recomendações
 
 ---
 
@@ -432,21 +310,6 @@ DNB Platform
 
 ### 🐛 **Bugs Corrigidos**
 
-#### **Semana 11 - Travel Planner Issues**
-1. ✅ **Calendar is not defined**: 
-   - **Problema**: Erro de referência não definida no calendário
-   - **Solução**: Importação correta do componente Calendar
-   - **Commit**: Fix calendar import in TravelPlanForm
-
-2. ✅ **Página em branco no Roteiro Dia a Dia**: 
-   - **Problema**: Módulo não renderizava conteúdo
-   - **Solução**: Geração automática de plano de exemplo + correção de navegação
-   - **Commit**: Fix blank itinerary page with auto-generation
-
-3. ✅ **Navegação entre módulos**: 
-   - **Problema**: Estado de navegação inconsistente
-   - **Solução**: Refatoração do sistema de navegação no TravelPlanner
-   - **Commit**: Improve module navigation in TravelPlanner
 
 ---
 
@@ -459,11 +322,6 @@ DNB Platform
 - **Types**: 5 arquivos de definições TypeScript
 - **Edge Functions**: 3 funções Supabase para pagamentos
 
-### 🏗️ **Arquivos de Destaque (Linhas de Código)**
-- `useTravel.ts`: 241 linhas - **[CANDIDATO A REFATORAÇÃO]**
-- `TravelPlanForm.tsx`: 334 linhas - **[CANDIDATO A REFATORAÇÃO]**
-- `TravelDashboard.tsx`: 247 linhas - **[CANDIDATO A REFATORAÇÃO]**
-- `ItineraryModule.tsx`: Interface rica para roteiro detalhado
 - `PRD.md`: 500+ linhas - Documentação completa
 
 ### ⚡ **Performance**
@@ -477,19 +335,12 @@ DNB Platform
 ## Próximos Passos Prioritários
 
 ### 🔧 **Refatoração Técnica (Próxima 1-2 semanas)**
-1. **Quebrar arquivos grandes**:
-   - `useTravel.ts` → Separar em hooks específicos
-   - `TravelPlanForm.tsx` → Componentes focados
-   - `TravelDashboard.tsx` → Módulos separados
-
-2. **Implementar lazy loading**: Para todos os módulos principais
-
-3. **Otimização de performance**: Bundle splitting e otimização de imagens
+1. **Implementar lazy loading**: Para todos os módulos principais
+2. **Otimização de performance**: Bundle splitting e otimização de imagens
 
 ### 🚀 **Novas Funcionalidades (2-4 semanas)**
-1. **Completar Travel Planner**: Módulos restantes (Logística, Eventos, Guias, Clima)
-2. **Sistema de Notificações**: Push notifications para Roteiro Vivo
-3. **Integração APIs Externas**: Google Maps, Weather, Events
+1. **Sistema de Notificações**: Push notifications
+2. **Integração APIs Externas**: APIs de câmbio em tempo real
 
 ### 📱 **Expansão de Plataforma (1-3 meses)**
 1. **PWA**: Transformar em Progressive Web App
@@ -500,17 +351,15 @@ DNB Platform
 
 **Documento atualizado**: Dezembro 2024  
 **Versão**: 2.0 - Complete Changelog Edition  
-**Última implementação**: Travel Planner Itinerary Module  
-**Próxima milestone**: Travel Planner Module Completion  
+**Última implementação**: Remoção de módulos legados  
+**Próxima milestone**: Integração com backend real  
 **Responsável**: Equipe DNB Platform
 
 ---
 
 ### 📈 **Estatísticas do Projeto**
 
-- **Tempo de desenvolvimento**: 12 semanas
-- **Funcionalidades core**: 8/8 implementadas (100%)
-- **Módulos Travel Planner**: 1/4 completo (25%)
+- **Funcionalidades core**: Planner, Academy, Análise, Cupons
 - **Bugs críticos**: 0 ativos
 - **Cobertura de testes**: Pendente implementação
 - **Deploy status**: Produção ativa
