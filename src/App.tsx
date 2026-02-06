@@ -121,12 +121,7 @@ const App = () => (
               </ProtectedRoute>
             } />
             
-            {/* Placeholder routes for other pages */}
-            <Route path="/objetivos" element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } />
+            
             <Route path="/analise" element={
               <ProtectedRoute>
                 <DnbAnalysis />
