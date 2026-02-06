@@ -44,7 +44,6 @@ export default function Subscription() {
       features: [
         '10 transações no planner',
         'Acesso limitado à academy',
-        'Achadinhos básicos',
         'Suporte por email'
       ],
       color: 'bg-muted'
@@ -58,7 +57,6 @@ export default function Subscription() {
       features: [
         'Transações ilimitadas',
         'Acesso completo à academy',
-        'Todos os achadinhos',
         'Relatórios avançados',
         'Suporte prioritário',
         'Conteúdo exclusivo'
@@ -75,7 +73,6 @@ export default function Subscription() {
       features: [
         'Transações ilimitadas',
         'Acesso completo à academy',
-        'Todos os achadinhos',
         'Relatórios avançados',
         'Suporte prioritário',
         'Conteúdo exclusivo',
@@ -282,9 +279,9 @@ export default function Subscription() {
                 </p>
               </div>
               <div className="space-y-4">
-                <h3 className="font-semibold">Achadinhos VIP</h3>
+                <h3 className="font-semibold">Cupons Exclusivos</h3>
                 <p className="text-sm text-muted-foreground">
-                  Veja todas as ofertas especiais, descontos exclusivos e promoções antes de todos os outros.
+                  Acesse cupons exclusivos de parceiros e economize nas suas compras favoritas.
                 </p>
               </div>
               <div className="space-y-4">

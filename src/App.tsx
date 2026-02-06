@@ -13,8 +13,6 @@ import Index from "./pages/Index";
 import Planner from "./pages/Planner";
 import TravelPlanner from "./pages/TravelPlanner";
 import Academy from "./pages/Academy";
-import Achadinhos from "./pages/Achadinhos";
-import AchadinhosPub from "./pages/AchadinhosPub";
 import DnbAnalysis from "./pages/DnbAnalysis";
 import Coupons from "./pages/Coupons";
 import Profile from "./pages/Profile";
@@ -43,7 +41,7 @@ const App = () => (
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
-            <Route path="/produtos" element={<AchadinhosPub />} />
+            
             
             {/* Protected Routes */}
             <Route path="/" element={
@@ -64,11 +62,6 @@ const App = () => (
               </ProtectedRoute>
             } />
             
-            <Route path="/achadinhos" element={
-              <ProtectedRoute>
-                <Achadinhos />
-              </ProtectedRoute>
-            } />
             
             <Route path="/coupons" element={
               <ProtectedRoute>

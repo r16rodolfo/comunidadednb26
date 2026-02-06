@@ -33,7 +33,6 @@ export default function AdminSettings() {
     features: {
       planner: true,
       academy: true,
-      achadinhos: true,
       analytics: true
     },
     limits: {
@@ -152,7 +151,6 @@ export default function AdminSettings() {
                           <p className="text-sm text-muted-foreground">
                             {feature === 'planner' && 'Planner de Compras'}
                             {feature === 'academy' && 'DNB Academy'}
-                            {feature === 'achadinhos' && 'Achadinhos DNB'}
                             {feature === 'analytics' && 'Analytics da Plataforma'}
                           </p>
                         </div>

@@ -26,7 +26,6 @@ import {
   Eye, 
   MousePointer,
   BookOpen,
-  ShoppingBag,
   Calendar
 } from 'lucide-react';
 
@@ -295,14 +294,14 @@ export default function Analytics() {
           <TabsContent value="revenue" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Top Produtos - Achadinhos</CardTitle>
+                <CardTitle>Top Produtos - Conversões</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {topProducts.map((product, index) => (
                     <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center gap-3">
-                        <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+                        <BookOpen className="h-5 w-5 text-muted-foreground" />
                         <div>
                           <div className="font-medium">{product.name}</div>
                           <div className="text-sm text-muted-foreground">
