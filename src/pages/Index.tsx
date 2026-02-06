@@ -1,30 +1,16 @@
 import Layout from "@/components/Layout";
 import PromoBanner from "@/components/PromoBanner";
 import WelcomeCard from "@/components/WelcomeCard";
-import QuickActionCards from "@/components/QuickActionCards";
 
 const Index = () => {
   return (
     <Layout>
       <div className="space-y-8 animate-fade-in">
-        {/* Hero Banner */}
-        <PromoBanner />
-
         {/* Welcome Section */}
         <WelcomeCard />
 
-        {/* Quick Actions */}
-        <div>
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-foreground mb-2">
-              Ferramentas Principais
-            </h2>
-            <p className="text-muted-foreground">
-              Acesse rapidamente as funcionalidades mais utilizadas da plataforma
-            </p>
-          </div>
-          <QuickActionCards />
-        </div>
+        {/* Hero Banner */}
+        <PromoBanner />
 
         {/* Additional Information */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
