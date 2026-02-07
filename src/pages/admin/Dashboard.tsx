@@ -8,13 +8,11 @@ import { defaultPlatformConfig } from '@/data/mock-admin';
 import { OverviewTab } from '@/components/admin/tabs/OverviewTab';
 import { PlatformTab } from '@/components/admin/tabs/PlatformTab';
 import { SecurityTab } from '@/components/admin/tabs/SecurityTab';
-import { SystemTab } from '@/components/admin/tabs/SystemTab';
 
 const TAB_LABELS: Record<string, string> = {
   overview: 'Visão Geral',
   platform: 'Plataforma',
   security: 'Segurança',
-  system: 'Sistema',
 };
 
 export default function AdminDashboard() {
@@ -63,10 +61,6 @@ export default function AdminDashboard() {
 
           <TabsContent value="security" className="space-y-6 pt-4">
             <SecurityTab platformConfig={platformConfig} setPlatformConfig={setPlatformConfig} />
-          </TabsContent>
-
-          <TabsContent value="system" className="space-y-6 pt-4">
-            <SystemTab platformConfig={platformConfig} setPlatformConfig={setPlatformConfig} />
           </TabsContent>
         </Tabs>
       </div>
