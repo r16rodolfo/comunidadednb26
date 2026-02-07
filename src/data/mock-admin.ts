@@ -19,14 +19,18 @@ export const recentActivity = [
 ];
 
 export const defaultPlatformConfig = {
+  id: 'platform-1',
   siteName: 'Comunidade DNB',
   siteDescription: 'Viaje com inteligência',
+  primaryColor: '#0ea5e9',
+  secondaryColor: '#8b5cf6',
   maintenanceMode: false,
   registrationEnabled: true,
   maxFreeUsers: 1000,
   features: {
     planner: true,
     academy: true,
+    achadinhos: true,
     analytics: true,
   },
   limits: {
