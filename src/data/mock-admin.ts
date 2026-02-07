@@ -37,10 +37,10 @@ export const defaultPlatformConfig = {
 };
 
 export const defaultApiConfigs = [
-  { id: '1', name: 'OpenAI API', key: 'sk-...', isActive: true },
-  { id: '2', name: 'PandaVideo API', key: 'pv_...', isActive: true },
-  { id: '3', name: 'Exchange Rate API', key: 'er_...', isActive: false },
-  { id: '4', name: 'Stripe Secret Key', key: 'sk_live_...', isActive: true },
+  { id: '1', name: 'OpenAI API', maskedKey: 'sk-••••••••abc1', isActive: true, isConfigured: true },
+  { id: '2', name: 'PandaVideo API', maskedKey: 'pv_••••••••d2e3', isActive: true, isConfigured: true },
+  { id: '3', name: 'Exchange Rate API', maskedKey: '', isActive: false, isConfigured: false },
+  { id: '4', name: 'Stripe Secret Key', maskedKey: 'sk_live_••••f4g5', isActive: true, isConfigured: true },
 ];
 
 // Admin Users page

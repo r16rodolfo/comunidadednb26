@@ -25,10 +25,11 @@ export interface PlatformConfig {
 export interface APIConfig {
   id: string;
   name: string;
-  key: string;
+  /** Masked key for display only (e.g. "sk-...abc1"). Raw keys must NEVER be stored in frontend state. */
+  maskedKey: string;
   endpoint?: string;
   isActive: boolean;
-  lastUpdated: Date;
+  isConfigured: boolean;
 }
 
 export interface SubscriptionPlan {

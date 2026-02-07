@@ -10,6 +10,7 @@ import { TransactionTable } from "@/components/planner/TransactionTable";
 import { AddTransactionModal } from "@/components/planner/AddTransactionModal";
 import { EditGoalModal } from "@/components/planner/EditGoalModal";
 import { useToast } from "@/hooks/use-toast";
+import { TripGoal, Transaction } from "@/types/planner";
 
 export default function Planner() {
   const {
@@ -27,7 +28,7 @@ export default function Planner() {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showEditGoal, setShowEditGoal] = useState(false);
 
-  const handleCreateGoal = (goal: any) => {
+  const handleCreateGoal = (goal: Omit<TripGoal, 'id' | 'createdAt'>) => {
     createGoal(goal);
     toast({
       title: "Meta criada com sucesso!",
@@ -35,7 +36,7 @@ export default function Planner() {
     });
   };
 
-  const handleUpdateGoal = (goal: any) => {
+  const handleUpdateGoal = (goal: Omit<TripGoal, 'id' | 'createdAt'>) => {
     updateGoal(goal);
     toast({
       title: "Meta atualizada!",
@@ -43,7 +44,7 @@ export default function Planner() {
     });
   };
 
-  const handleAddTransaction = (transaction: any) => {
+  const handleAddTransaction = (transaction: Omit<Transaction, 'id' | 'createdAt'>) => {
     addTransaction(transaction);
     toast({
       title: "Transação adicionada!",

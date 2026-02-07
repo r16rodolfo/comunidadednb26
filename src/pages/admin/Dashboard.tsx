@@ -65,9 +65,17 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleSaveApiConfig = async (apiId: string, newKey: string) => {
-    setApiConfigs(prev => prev.map(api => api.id === apiId ? { ...api, key: newKey } : api));
-    toast({ title: 'API configurada com sucesso!' });
+  const handleToggleApi = (apiId: string, checked: boolean) => {
+    setApiConfigs(prev => prev.map(api => api.id === apiId ? { ...api, isActive: checked } : api));
+    toast({ title: checked ? 'API ativada!' : 'API desativada!' });
+  };
+
+  const handleConfigureApi = (apiName: string) => {
+    toast({
+      title: 'Configuração requer backend',
+      description: `Para configurar a chave da ${apiName} com segurança, ative o Lovable Cloud.`,
+      variant: 'destructive',
+    });
   };
 
   return (
@@ -221,28 +229,39 @@ export default function AdminDashboard() {
 
           {/* ── APIs ──────────────────────────────────────── */}
           <TabsContent value="apis" className="space-y-4 pt-4">
+            <div className="bg-warning/10 border border-warning/30 p-4 rounded-lg mb-2">
+              <p className="text-sm font-medium text-warning">⚠️ Chaves de API são gerenciadas pelo backend</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Para adicionar ou alterar chaves, ative o Lovable Cloud. Chaves nunca são expostas no frontend.
+              </p>
+            </div>
             {apiConfigs.map((api) => (
               <Card key={api.id}>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2 text-base"><Key className="h-4 w-4" />{api.name}</CardTitle>
-                    <Badge variant={api.isActive ? 'default' : 'secondary'} className="text-xs">{api.isActive ? 'Ativo' : 'Inativo'}</Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={api.isConfigured ? 'default' : 'outline'} className="text-xs">
+                        {api.isConfigured ? 'Configurada' : 'Não configurada'}
+                      </Badge>
+                      <Badge variant={api.isActive ? 'default' : 'secondary'} className="text-xs">
+                        {api.isActive ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex gap-2">
-                    <Input
-                      type="password"
-                      value={api.key}
-                      onChange={(e) => setApiConfigs(prev => prev.map(a => a.id === api.id ? { ...a, key: e.target.value } : a))}
-                      placeholder="Cole sua chave de API aqui"
-                      className="font-mono text-xs"
-                    />
-                    <Button onClick={() => handleSaveApiConfig(api.id, api.key)} variant="outline" size="sm">Salvar</Button>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-muted/50 rounded-md px-3 py-2 font-mono text-xs text-muted-foreground">
+                      {api.isConfigured ? api.maskedKey : 'Nenhuma chave configurada'}
+                    </div>
+                    <Button onClick={() => handleConfigureApi(api.name)} variant="outline" size="sm">
+                      {api.isConfigured ? 'Alterar' : 'Configurar'}
+                    </Button>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Status</span>
-                    <Switch checked={api.isActive} onCheckedChange={(checked) => setApiConfigs(prev => prev.map(a => a.id === api.id ? { ...a, isActive: checked } : a))} />
+                    <Switch checked={api.isActive} onCheckedChange={(checked) => handleToggleApi(api.id, checked)} />
                   </div>
                 </CardContent>
               </Card>
