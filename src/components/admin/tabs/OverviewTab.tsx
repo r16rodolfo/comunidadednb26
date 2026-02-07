@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Users, Activity, UserPlus, DollarSign, BookOpen, Eye, Ticket, CreditCard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { StatCard } from '@/components/shared/StatCard';
-import { adminStats, recentUsers, recentActivity } from '@/data/mock-admin';
+import { adminStats, recentUsers } from '@/data/mock-admin';
 
 function QuickLink({ to, icon: Icon, label, description }: {
   to: string; icon: React.ElementType; label: string; description: string;
@@ -38,57 +38,36 @@ export function OverviewTab() {
         <StatCard label="Receita Mensal" value={`R$ ${adminStats.monthlyRevenue.toLocaleString()}`} icon={DollarSign} variant="success" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Usuários Recentes</CardTitle>
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/admin/users"><Eye className="h-4 w-4 mr-1.5" />Ver Todos</Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentUsers.map((user) => (
-                <div key={user.id} className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">{user.name}</p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
-                  </div>
-                  <div className="text-right space-y-1">
-                    <Badge variant={user.role === 'premium' ? 'default' : 'outline'} className="text-xs">
-                      {user.role === 'premium' ? 'Premium' : 'Gratuito'}
-                    </Badge>
-                    <p className="text-[10px] text-muted-foreground">
-                      {new Date(user.joinedAt).toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Usuários Recentes</CardTitle>
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/admin/users"><Eye className="h-4 w-4 mr-1.5" />Ver Todos</Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {recentUsers.map((user) => (
+              <div key={user.id} className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Atividade Recente</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-primary rounded-full mt-1.5 shrink-0"></div>
-                  <div>
-                    <p className="text-sm">{activity.action}</p>
-                    <p className="text-xs text-muted-foreground">{activity.user} • {activity.time}</p>
-                  </div>
+                <div className="text-right space-y-1">
+                  <Badge variant={user.role === 'premium' ? 'default' : 'outline'} className="text-xs">
+                    {user.role === 'premium' ? 'Premium' : 'Gratuito'}
+                  </Badge>
+                  <p className="text-[10px] text-muted-foreground">
+                    {new Date(user.joinedAt).toLocaleDateString('pt-BR')}
+                  </p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <div>
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Acesso Rápido</h3>

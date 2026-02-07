@@ -12,12 +12,6 @@ export const recentUsers = [
   { id: '3', name: 'Pedro Costa', email: 'pedro@email.com', role: 'premium', joinedAt: '2024-01-13' },
 ];
 
-export const recentActivity = [
-  { action: 'Novo usuário cadastrado', user: 'Ana Oliveira', time: '2 min atrás' },
-  { action: 'Aula "Câmbio Básico" assistida', user: 'Carlos Lima', time: '5 min atrás' },
-  { action: 'Produto adicionado aos favoritos', user: 'Lucia Ferreira', time: '10 min atrás' },
-];
-
 export const defaultPlatformConfig = {
   id: 'platform-1',
   siteName: 'Comunidade DNB',
