@@ -130,6 +130,52 @@ export const topProducts = [
   { name: 'Conta Global', clicks: 1420, conversions: 38, revenue: 1900 },
 ];
 
+// Revenue by payment method
+export const monthlyRevenueByGateway = [
+  { month: 'Jan', pix: 8520, cartao: 6900, total: 15420 },
+  { month: 'Fev', pix: 10200, cartao: 8550, total: 18750 },
+  { month: 'Mar', pix: 12800, cartao: 9350, total: 22150 },
+  { month: 'Abr', pix: 10900, cartao: 8900, total: 19800 },
+  { month: 'Mai', pix: 14200, cartao: 11400, total: 25600 },
+  { month: 'Jun', pix: 16100, cartao: 12800, total: 28900 },
+];
+
+export const paymentMethodDistribution = [
+  { name: 'PIX', value: 56, color: 'hsl(var(--success))' },
+  { name: 'Cartão de Crédito', value: 44, color: 'hsl(var(--primary))' },
+];
+
+export const paymentStats = {
+  totalPayments: 1847,
+  pixPayments: 1034,
+  cardPayments: 813,
+  totalRevenue: 130620,
+  pixRevenue: 72720,
+  cardRevenue: 57900,
+  avgTicketPix: 70.33,
+  avgTicketCard: 71.22,
+  failedPayments: 42,
+  refunds: 8,
+};
+
+export const recentPayments = [
+  { id: 'pay_1', user: 'Ana Silva', method: 'pix' as const, plan: 'Trimestral', amount: 6000, status: 'paid' as const, date: '2025-02-07' },
+  { id: 'pay_2', user: 'Carlos Santos', method: 'card' as const, plan: 'Anual', amount: 18500, status: 'paid' as const, date: '2025-02-06' },
+  { id: 'pay_3', user: 'Fernanda Lima', method: 'pix' as const, plan: 'Mensal', amount: 3000, status: 'paid' as const, date: '2025-02-06' },
+  { id: 'pay_4', user: 'Pedro Costa', method: 'card' as const, plan: 'Semestral', amount: 10500, status: 'paid' as const, date: '2025-02-05' },
+  { id: 'pay_5', user: 'Maria Oliveira', method: 'pix' as const, plan: 'Mensal', amount: 3000, status: 'failed' as const, date: '2025-02-05' },
+  { id: 'pay_6', user: 'João Costa', method: 'card' as const, plan: 'Trimestral', amount: 6000, status: 'paid' as const, date: '2025-02-04' },
+  { id: 'pay_7', user: 'Lucia Mendes', method: 'pix' as const, plan: 'Anual', amount: 18500, status: 'paid' as const, date: '2025-02-03' },
+  { id: 'pay_8', user: 'Roberto Alves', method: 'pix' as const, plan: 'Mensal', amount: 3000, status: 'refunded' as const, date: '2025-02-02' },
+];
+
+export const revenueByPlan = [
+  { name: 'Mensal', pix: 42, cartao: 58, totalRevenue: 28500 },
+  { name: 'Trimestral', pix: 61, cartao: 39, totalRevenue: 38400 },
+  { name: 'Semestral', pix: 55, cartao: 45, totalRevenue: 31500 },
+  { name: 'Anual', pix: 48, cartao: 52, totalRevenue: 32220 },
+];
+
 // Admin Subscriptions page
 export const mockSubscriptions = [
   {
