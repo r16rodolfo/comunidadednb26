@@ -11,81 +11,27 @@ import {
   Check, 
   RefreshCw,
   Settings as SettingsIcon,
-  Star
+  Star,
+  TrendingDown
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-// Mock functions for now - will be replaced with Supabase integration later
-const mockSupabase = {
-  functions: {
-    invoke: async (functionName: string, options?: any) => {
-      console.log(`Mock call to ${functionName}:`, options);
-      throw new Error('Supabase não conectado ainda');
-    }
-  }
-};
+import { usePlans } from '@/hooks/usePlans';
+import { formatPrice, formatMonthlyEquivalent } from '@/data/mock-plans';
 
 export default function Subscription() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { activePlans, isLoading: plansLoading } = usePlans();
   const [isLoading, setIsLoading] = useState(false);
   const [subscriptionData, setSubscriptionData] = useState({
     subscribed: false,
-    subscription_tier: null,
-    subscription_end: null
+    subscription_tier: null as string | null,
+    subscription_end: null as string | null,
   });
-
-  const plans = [
-    {
-      id: 'free',
-      name: 'Gratuito',
-      price: 'R$ 0',
-      period: '/mês',
-      description: 'Para começar sua jornada',
-      features: [
-        '10 transações no planner',
-        'Acesso limitado à academy',
-        'Suporte por email'
-      ],
-      color: 'bg-muted'
-    },
-    {
-      id: 'premium-monthly',
-      name: 'Premium Mensal',
-      price: 'R$ 29,90',
-      period: '/mês',
-      description: 'Acesso completo mensal',
-      features: [
-        'Transações ilimitadas',
-        'Acesso completo à academy',
-        'Relatórios avançados',
-        'Suporte prioritário',
-        'Conteúdo exclusivo'
-      ],
-      color: 'bg-gradient-primary',
-      popular: true
-    },
-    {
-      id: 'premium-yearly',
-      name: 'Premium Anual',
-      price: 'R$ 299,90',
-      period: '/ano',
-      description: 'Melhor custo-benefício',
-      features: [
-        'Transações ilimitadas',
-        'Acesso completo à academy',
-        'Relatórios avançados',
-        'Suporte prioritário',
-        'Conteúdo exclusivo',
-        'Desconto de 17%'
-      ],
-      color: 'bg-gradient-primary'
-    }
-  ];
 
   const checkSubscription = async () => {
     setIsLoading(true);
     try {
-      // Mock implementation - will use Supabase later
       await new Promise(resolve => setTimeout(resolve, 1000));
       setSubscriptionData({
         subscribed: user?.role === 'premium',
@@ -95,32 +41,23 @@ export default function Subscription() {
       toast({ title: 'Status da assinatura atualizado!' });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erro desconhecido';
-      toast({
-        title: 'Erro ao verificar assinatura',
-        description: message,
-        variant: 'destructive'
-      });
+      toast({ title: 'Erro ao verificar assinatura', description: message, variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const createCheckout = async (planId: string) => {
+  const createCheckout = async (planSlug: string) => {
     setIsLoading(true);
     try {
-      // Mock implementation - will use Supabase later
       await new Promise(resolve => setTimeout(resolve, 1000));
       toast({ 
         title: 'Funcionalidade em desenvolvimento',
-        description: 'Conecte ao Supabase para ativar pagamentos'
+        description: 'Conecte ao Lovable Cloud para ativar pagamentos'
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erro desconhecido';
-      toast({
-        title: 'Erro ao criar checkout',
-        description: message,
-        variant: 'destructive'
-      });
+      toast({ title: 'Erro ao criar checkout', description: message, variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -129,19 +66,14 @@ export default function Subscription() {
   const manageSubscription = async () => {
     setIsLoading(true);
     try {
-      // Mock implementation - will use Supabase later
       await new Promise(resolve => setTimeout(resolve, 1000));
       toast({ 
         title: 'Funcionalidade em desenvolvimento',
-        description: 'Conecte ao Supabase para ativar gestão de assinaturas'
+        description: 'Conecte ao Lovable Cloud para ativar gestão de assinaturas'
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erro desconhecido';
-      toast({
-        title: 'Erro ao abrir portal de gestão',
-        description: message,
-        variant: 'destructive'
-      });
+      toast({ title: 'Erro ao abrir portal de gestão', description: message, variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -157,9 +89,13 @@ export default function Subscription() {
     ? subscriptionData.subscription_tier 
     : 'Gratuito';
 
+  const freePlan = activePlans.find(p => p.interval === 'free');
+  const paidPlans = activePlans.filter(p => p.interval !== 'free');
+
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center">
@@ -209,53 +145,92 @@ export default function Subscription() {
           </CardContent>
         </Card>
 
-        {/* Planos Disponíveis */}
+        {/* Planos */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Escolha seu Plano</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            {plans.map((plan) => (
-              <Card key={plan.id} className={`relative ${plan.popular ? 'ring-2 ring-primary' : ''}`}>
+          
+          {/* Plano Gratuito */}
+          {freePlan && (
+            <Card className="border-dashed">
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                      <Crown className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">{freePlan.name}</p>
+                      <p className="text-sm text-muted-foreground">{freePlan.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-2xl font-bold">R$ 0</p>
+                      <p className="text-xs text-muted-foreground">para sempre</p>
+                    </div>
+                    <Button variant="outline" disabled>
+                      {!subscriptionData.subscribed ? 'Plano Atual' : 'Plano Básico'}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Planos Pagos */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {paidPlans.map((plan) => (
+              <Card key={plan.id} className={`relative flex flex-col ${plan.popular ? 'ring-2 ring-primary shadow-lg' : ''}`}>
                 {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
                     <Badge className="bg-primary text-primary-foreground">
                       <Star className="h-3 w-3 mr-1" />
                       Mais Popular
                     </Badge>
                   </div>
                 )}
-                <CardHeader className="text-center">
-                  <div className={`w-16 h-16 ${plan.color} rounded-full mx-auto mb-4 flex items-center justify-center`}>
-                    {plan.id === 'free' ? (
-                      <Crown className="h-8 w-8 text-foreground" />
-                    ) : (
-                      <Crown className="h-8 w-8 text-white" />
-                    )}
+                <CardHeader className="text-center pb-2">
+                  <div className="w-14 h-14 bg-gradient-primary rounded-full mx-auto mb-3 flex items-center justify-center">
+                    <Crown className="h-7 w-7 text-white" />
                   </div>
-                  <CardTitle>{plan.name}</CardTitle>
+                  <CardTitle className="text-lg">{plan.name}</CardTitle>
                   <div className="space-y-1">
-                    <p className="text-3xl font-bold">{plan.price}</p>
-                    <p className="text-sm text-muted-foreground">{plan.period}</p>
+                    <p className="text-3xl font-bold">{formatPrice(plan.priceCents)}</p>
+                    <p className="text-sm text-muted-foreground">{plan.intervalLabel}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">{plan.description}</p>
+                  {plan.savingsPercent && (
+                    <Badge variant="secondary" className="mt-1 mx-auto">
+                      <TrendingDown className="h-3 w-3 mr-1" />
+                      {plan.savingsPercent}% de economia
+                    </Badge>
+                  )}
+                  {plan.interval !== 'monthly' && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      ≈ {formatMonthlyEquivalent(plan)}/mês
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">{plan.description}</p>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="flex-1 flex flex-col justify-between space-y-4">
                   <ul className="space-y-2">
                     {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-success" />
+                      <li key={index} className="flex items-start gap-2">
+                        <Check className="h-4 w-4 text-success mt-0.5 shrink-0" />
                         <span className="text-sm">{feature}</span>
                       </li>
                     ))}
                   </ul>
-                  <Separator />
-                  <Button 
-                    className="w-full" 
-                    variant={plan.id === 'free' ? 'outline' : 'default'}
-                    disabled={plan.id === 'free' || isLoading}
-                    onClick={() => plan.id !== 'free' && createCheckout(plan.id)}
-                  >
-                    {plan.id === 'free' ? 'Plano Atual' : 'Assinar Agora'}
-                  </Button>
+                  <div>
+                    <Separator className="mb-4" />
+                    <Button 
+                      className="w-full" 
+                      variant={plan.popular ? 'default' : 'outline'}
+                      disabled={isLoading}
+                      onClick={() => createCheckout(plan.slug)}
+                    >
+                      Assinar Agora
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}

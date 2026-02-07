@@ -54,16 +54,32 @@ serve(async (req) => {
         priceData = {
           currency: "brl",
           product_data: { name: "Comunidade DNB Premium - Mensal" },
-          unit_amount: 2990, // R$ 29,90
-          recurring: { interval: "month" },
+          unit_amount: 3000, // R$ 30,00
+          recurring: { interval: "month" as const, interval_count: 1 },
+        };
+        break;
+      case 'premium-quarterly':
+        priceData = {
+          currency: "brl",
+          product_data: { name: "Comunidade DNB Premium - Trimestral" },
+          unit_amount: 6000, // R$ 60,00
+          recurring: { interval: "month" as const, interval_count: 3 },
+        };
+        break;
+      case 'premium-semiannual':
+        priceData = {
+          currency: "brl",
+          product_data: { name: "Comunidade DNB Premium - Semestral" },
+          unit_amount: 10500, // R$ 105,00
+          recurring: { interval: "month" as const, interval_count: 6 },
         };
         break;
       case 'premium-yearly':
         priceData = {
           currency: "brl",
           product_data: { name: "Comunidade DNB Premium - Anual" },
-          unit_amount: 29990, // R$ 299,90
-          recurring: { interval: "year" },
+          unit_amount: 18500, // R$ 185,00
+          recurring: { interval: "year" as const },
         };
         break;
       default:

@@ -225,10 +225,13 @@ CREATE TRIGGER on_auth_user_created
 | Plano | Preço | Ciclo | Gateway(s) | Role |
 |-------|-------|-------|------------|------|
 | Gratuito | R$ 0,00 | — | — | `free` |
-| Premium Mensal | R$ 29,90 | Mensal | Stripe / NoxPay | `premium` |
-| Premium Anual | R$ 299,90 | Anual | Stripe / NoxPay | `premium` |
+| Premium Mensal | R$ 30,00 | Mensal | Stripe / NoxPay | `premium` |
+| Premium Trimestral | R$ 60,00 | Trimestral (3 meses) | Stripe / NoxPay | `premium` |
+| Premium Semestral | R$ 105,00 | Semestral (6 meses) | Stripe / NoxPay | `premium` |
+| Premium Anual | R$ 185,00 | Anual | Stripe / NoxPay | `premium` |
 
 > **Nota**: O role `gestor` é atribuído **manualmente** pelo Admin, **não** vinculado a assinaturas.
+> **Nota**: Os preços dos planos podem ser alterados pelo Admin no painel administrativo (/admin/subscriptions).
 
 ### 3.3 Tabelas do Sistema de Pagamentos
 
@@ -236,15 +239,21 @@ CREATE TRIGGER on_auth_user_created
 -- Planos disponíveis
 CREATE TABLE public.plans (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,                        -- 'Premium Mensal', 'Premium Anual'
-    slug TEXT UNIQUE NOT NULL,                 -- 'premium-monthly', 'premium-yearly'
-    price_cents INTEGER NOT NULL,              -- 2990, 29990
+    name TEXT NOT NULL,                        -- 'Mensal', 'Trimestral', 'Semestral', 'Anual'
+    slug TEXT UNIQUE NOT NULL,                 -- 'premium-monthly', 'premium-quarterly', etc.
+    price_cents INTEGER NOT NULL,              -- 3000, 6000, 10500, 18500
     currency TEXT NOT NULL DEFAULT 'BRL',
-    interval TEXT NOT NULL CHECK (interval IN ('monthly', 'yearly')),
+    interval TEXT NOT NULL CHECK (interval IN ('monthly', 'quarterly', 'semiannual', 'yearly')),
+    interval_count INTEGER NOT NULL DEFAULT 1, -- Número de meses (1, 3, 6, 12)
     stripe_price_id TEXT,                      -- price_xxx do Stripe
     role_granted app_role NOT NULL DEFAULT 'premium',
     is_active BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMPTZ DEFAULT now()
+    description TEXT,
+    features JSONB DEFAULT '[]'::jsonb,
+    savings_percent INTEGER,                   -- Percentual de economia vs mensal
+    popular BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Assinaturas ativas
