@@ -24,8 +24,8 @@ export const defaultPlatformConfig = {
   features: {
     planner: true,
     academy: true,
-    achadinhos: true,
-    analytics: true,
+    dnbAnalysis: true,
+    coupons: true,
   },
   limits: {
     freeTransactions: 10,

@@ -46,7 +46,8 @@ export function PlatformTab({ platformConfig, setPlatformConfig, onSave, isLoadi
                 <p className="text-xs text-muted-foreground">
                   {feature === 'planner' && 'Planner de Compras'}
                   {feature === 'academy' && 'DNB Academy'}
-                  {feature === 'analytics' && 'Analytics da Plataforma'}
+                  {feature === 'dnbAnalysis' && 'Análise DNB'}
+                  {feature === 'coupons' && 'Cupons de Desconto'}
                 </p>
               </div>
               <Switch checked={enabled} onCheckedChange={(checked) => setPlatformConfig(prev => ({ ...prev, features: { ...prev.features, [feature]: checked } }))} />

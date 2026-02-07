@@ -12,8 +12,8 @@ export interface PlatformConfig {
   features: {
     planner: boolean;
     academy: boolean;
-    achadinhos: boolean;
-    analytics: boolean;
+    dnbAnalysis: boolean;
+    coupons: boolean;
   };
   limits: {
     freeTransactions: number;
