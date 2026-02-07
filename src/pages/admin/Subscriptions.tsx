@@ -10,6 +10,7 @@ import { CreditCard, Search, Filter, Download, Eye, Ban, CheckCircle, Users, XCi
 import { useToast } from '@/hooks/use-toast';
 import { StatCard } from '@/components/shared/StatCard';
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader';
+import { PlanManagementCard } from '@/components/admin/PlanManagementCard';
 import { mockSubscriptions } from '@/data/mock-admin';
 
 export default function AdminSubscriptions() {
@@ -85,6 +86,9 @@ export default function AdminSubscriptions() {
           <StatCard label="Canceladas" value={stats.cancelled} icon={XCircle} variant="warning" />
           <StatCard label="Receita Mensal" value={`R$ ${stats.revenue.toFixed(2)}`} icon={CreditCard} variant="info" />
         </div>
+
+        {/* Plan Management */}
+        <PlanManagementCard />
 
         {/* Table */}
         <Card>
