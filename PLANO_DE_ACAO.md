@@ -3,7 +3,7 @@
 
 > **Projeto**: DNB (Dinheiro Não Basta)  
 > **Data**: Fevereiro 2025  
-> **Objetivo**: Migrar de dados mockados para um backend real com autenticação, sistema de roles (4 perfis) e integração com Stripe para assinaturas.
+> **Objetivo**: Migrar de dados mockados para um backend real com autenticação, sistema de roles (4 perfis) e integração com gateway duplo (Stripe + NoxPay) para assinaturas.
 
 ---
 
@@ -13,8 +13,9 @@ A plataforma DNB opera atualmente com dados mockados e persistência em `localSt
 
 1. **4 perfis de usuário** com permissões granulares
 2. **Autenticação real** com Supabase Auth
-3. **Sistema de assinaturas** com Stripe (3 planos)
-4. **Controle de acesso** baseado em roles com RLS
+3. **Sistema de assinaturas** com gateway duplo: **Stripe** (cartão de crédito) + **NoxPay** (PIX)
+4. **Motor de faturamento interno** com carência de 3 dias para pagamentos pendentes
+5. **Controle de acesso** baseado em roles com RLS
 
 ---
 
@@ -182,49 +183,395 @@ CREATE TRIGGER on_auth_user_created
 
 ---
 
-## 🏗️ Fase 3 — Sistema de Assinaturas (Stripe)
+## 🏗️ Fase 3 — Sistema de Pagamentos (Gateway Duplo)
 
-### 3.1 Produtos e Preços
+### 3.1 Arquitetura de Gateway Duplo
 
-| Produto | ID Stripe | Preço | Ciclo | Role Atribuído |
-|---------|-----------|-------|-------|----------------|
-| Gratuito | — | R$ 0,00 | — | `free` |
-| Premium Mensal | `prod_xxx` | R$ 29,90 | Mensal | `premium` |
-| Premium Anual | `prod_yyy` | R$ 299,90 | Anual | `premium` |
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    CHECKOUT DO USUÁRIO                        │
+│                                                              │
+│  ┌─────────────────┐          ┌─────────────────────┐        │
+│  │  💳 Cartão de   │          │  📱 PIX             │        │
+│  │  Crédito        │          │  (Pagamento          │        │
+│  │  (Recorrente)   │          │   Instantâneo)       │        │
+│  └────────┬────────┘          └──────────┬──────────┘        │
+└───────────┼──────────────────────────────┼───────────────────┘
+            │                              │
+            ▼                              ▼
+     ┌──────────────┐              ┌──────────────┐
+     │   STRIPE     │              │   NOXPAY     │
+     │              │              │              │
+     │ • Checkout   │              │ • API V2     │
+     │ • Recorrência│              │ • QR Code    │
+     │   automática │              │ • Webhook    │
+     │ • Portal     │              │              │
+     └──────┬───────┘              └──────┬───────┘
+            │                              │
+            ▼                              ▼
+     ┌─────────────────────────────────────────────┐
+     │        MOTOR DE FATURAMENTO INTERNO          │
+     │                                              │
+     │  • Registra pagamento na tabela `payments`   │
+     │  • Atualiza status da `subscription`         │
+     │  • Gerencia ciclos de renovação              │
+     │  • Aplica carência de 3 dias                 │
+     │  • Processa downgrades automáticos           │
+     └─────────────────────────────────────────────┘
+```
+
+### 3.2 Produtos e Preços
+
+| Plano | Preço | Ciclo | Gateway(s) | Role |
+|-------|-------|-------|------------|------|
+| Gratuito | R$ 0,00 | — | — | `free` |
+| Premium Mensal | R$ 29,90 | Mensal | Stripe / NoxPay | `premium` |
+| Premium Anual | R$ 299,90 | Anual | Stripe / NoxPay | `premium` |
 
 > **Nota**: O role `gestor` é atribuído **manualmente** pelo Admin, **não** vinculado a assinaturas.
 
-### 3.2 Edge Functions
+### 3.3 Tabelas do Sistema de Pagamentos
 
-| Função | Endpoint | Descrição |
-|--------|----------|-----------|
-| `create-checkout` | `POST` | Cria sessão de checkout do Stripe |
-| `customer-portal` | `POST` | Redireciona para portal do cliente |
-| `check-subscription` | `POST` | Verifica status da assinatura |
-| `stripe-webhook` | `POST` (público) | Processa eventos do Stripe |
+```sql
+-- Planos disponíveis
+CREATE TABLE public.plans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,                        -- 'Premium Mensal', 'Premium Anual'
+    slug TEXT UNIQUE NOT NULL,                 -- 'premium-monthly', 'premium-yearly'
+    price_cents INTEGER NOT NULL,              -- 2990, 29990
+    currency TEXT NOT NULL DEFAULT 'BRL',
+    interval TEXT NOT NULL CHECK (interval IN ('monthly', 'yearly')),
+    stripe_price_id TEXT,                      -- price_xxx do Stripe
+    role_granted app_role NOT NULL DEFAULT 'premium',
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
 
-### 3.3 Fluxo de Assinatura
+-- Assinaturas ativas
+CREATE TABLE public.subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    plan_id UUID REFERENCES public.plans(id) NOT NULL,
+    status TEXT NOT NULL CHECK (status IN (
+        'active', 'past_due', 'grace_period', 'cancelled', 'expired'
+    )) DEFAULT 'active',
+    gateway TEXT NOT NULL CHECK (gateway IN ('stripe', 'noxpay')),
+    
+    -- IDs externos
+    stripe_subscription_id TEXT,               -- sub_xxx (Stripe)
+    stripe_customer_id TEXT,                   -- cus_xxx (Stripe)
+    noxpay_customer_id TEXT,                   -- ID do cliente NoxPay
+    
+    -- Ciclo de faturamento
+    current_period_start TIMESTAMPTZ NOT NULL DEFAULT now(),
+    current_period_end TIMESTAMPTZ NOT NULL,
+    grace_period_end TIMESTAMPTZ,              -- current_period_end + 3 dias
+    
+    -- Controle
+    cancel_at_period_end BOOLEAN DEFAULT false,
+    cancelled_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    
+    UNIQUE (user_id)  -- Um usuário = uma assinatura ativa
+);
+
+-- Histórico de pagamentos
+CREATE TABLE public.payments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    subscription_id UUID REFERENCES public.subscriptions(id) ON DELETE SET NULL,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    plan_id UUID REFERENCES public.plans(id) NOT NULL,
+    
+    -- Detalhes do pagamento
+    amount_cents INTEGER NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'BRL',
+    status TEXT NOT NULL CHECK (status IN (
+        'pending', 'processing', 'paid', 'failed', 'refunded', 'expired'
+    )) DEFAULT 'pending',
+    gateway TEXT NOT NULL CHECK (gateway IN ('stripe', 'noxpay')),
+    
+    -- IDs externos
+    stripe_payment_intent_id TEXT,             -- pi_xxx
+    stripe_invoice_id TEXT,                    -- in_xxx
+    noxpay_txid TEXT,                          -- TXid do PIX
+    noxpay_transaction_id TEXT,                -- ID da transação NoxPay
+    
+    -- PIX específico
+    pix_qr_code TEXT,                          -- QR Code para pagamento
+    pix_qr_code_url TEXT,                      -- URL da imagem do QR Code
+    pix_expiration TIMESTAMPTZ,                -- Expiração do QR Code
+    
+    -- Metadados
+    paid_at TIMESTAMPTZ,
+    failed_at TIMESTAMPTZ,
+    failure_reason TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- RLS
+ALTER TABLE public.plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+
+-- Planos: leitura pública (planos ativos)
+CREATE POLICY "Qualquer usuário pode ver planos ativos"
+ON public.plans FOR SELECT
+TO authenticated
+USING (is_active = true);
+
+-- Assinaturas: usuário vê a própria, admin vê todas
+CREATE POLICY "Usuário vê própria assinatura"
+ON public.subscriptions FOR SELECT
+TO authenticated
+USING (user_id = auth.uid());
+
+CREATE POLICY "Admins gerenciam todas as assinaturas"
+ON public.subscriptions FOR ALL
+TO authenticated
+USING (public.has_role(auth.uid(), 'admin'));
+
+-- Pagamentos: usuário vê os próprios, admin vê todos
+CREATE POLICY "Usuário vê próprios pagamentos"
+ON public.payments FOR SELECT
+TO authenticated
+USING (user_id = auth.uid());
+
+CREATE POLICY "Admins gerenciam todos os pagamentos"
+ON public.payments FOR ALL
+TO authenticated
+USING (public.has_role(auth.uid(), 'admin'));
+```
+
+### 3.4 Edge Functions — Gateway Duplo
+
+| Função | Método | Auth | Descrição |
+|--------|--------|------|-----------|
+| `create-checkout` | `POST` | ✅ | Cria sessão de checkout Stripe (cartão) |
+| `create-pix-payment` | `POST` | ✅ | Gera cobrança PIX via NoxPay |
+| `check-pix-status` | `POST` | ✅ | Consulta status de pagamento PIX |
+| `customer-portal` | `POST` | ✅ | Redireciona para portal Stripe |
+| `check-subscription` | `POST` | ✅ | Verifica status da assinatura do usuário |
+| `stripe-webhook` | `POST` | ❌ (público) | Processa eventos do Stripe |
+| `noxpay-webhook` | `POST` | ❌ (público) | Processa callbacks da NoxPay |
+| `billing-check` | `POST` | ❌ (cron) | Verifica renovações e aplica downgrades |
+
+### 3.5 Fluxo de Pagamento — Stripe (Cartão)
 
 ```
-Usuário → Página de Planos → Seleciona Plano
+Usuário → Seleciona Plano → Escolhe "Cartão de Crédito"
   ↓
-create-checkout (Edge Function) → Stripe Checkout Session
+create-checkout → Stripe Checkout Session (com success_url e cancel_url)
   ↓
-Stripe → Pagamento → Webhook
+Stripe → Pagamento processado → Webhook disparado
   ↓
-stripe-webhook (Edge Function) → Atualiza user_roles (free → premium)
+stripe-webhook:
+  • checkout.session.completed → Cria subscription + payment + adiciona role 'premium'
+  • invoice.payment_succeeded → Registra payment, renova período
+  • invoice.payment_failed → Marca subscription como 'past_due', inicia carência 3 dias
+  • customer.subscription.deleted → Remove role 'premium'
   ↓
 Frontend → checkSubscription() → Atualiza UI
 ```
 
-### 3.4 Eventos do Webhook
+### 3.6 Fluxo de Pagamento — NoxPay (PIX)
 
-| Evento Stripe | Ação no Backend |
-|---------------|-----------------|
-| `checkout.session.completed` | Adiciona role `premium` ao usuário |
-| `customer.subscription.updated` | Verifica status e atualiza role |
-| `customer.subscription.deleted` | Remove role `premium`, mantém `free` |
-| `invoice.payment_failed` | Notifica usuário, mantém acesso temporário |
+```
+Usuário → Seleciona Plano → Escolhe "PIX"
+  ↓
+create-pix-payment → NoxPay API V2 (POST /api/v2/pix/qrcode)
+  ↓
+Retorna QR Code + txid + expiration
+  ↓
+Frontend exibe QR Code → Usuário paga via app bancário
+  ↓
+Duas formas de confirmação:
+  1. noxpay-webhook (callback da NoxPay) → Confirma pagamento
+  2. Polling: check-pix-status (a cada 5s) → Consulta status via API NoxPay
+  ↓
+Ao confirmar pagamento:
+  • Cria/atualiza subscription
+  • Registra payment (status: 'paid')
+  • Adiciona role 'premium' ao user_roles
+  ↓
+Frontend → checkSubscription() → Atualiza UI
+```
+
+### 3.7 NoxPay — Detalhes Técnicos
+
+**API Base**: `https://api2.noxpay.io`  
+**Payment Link API**: `https://paglink.noxpay.io`  
+**Autenticação**: Header `api-key: {NOXPAY_API_KEY}`
+
+**Endpoints utilizados:**
+
+| Endpoint | Método | Descrição |
+|----------|--------|-----------|
+| `/api/v2/pix/qrcode` | `POST` | Gera cobrança PIX (QR Code) |
+| `/api/v2/pix/qrcode/{txid}` | `GET` | Consulta status do pagamento |
+| `/api/v2/pix/qrcode/{txid}` | `DELETE` | Cancela cobrança PIX |
+
+**Payload de criação (PIX):**
+```json
+{
+  "value": 29.90,
+  "webhook_url": "https://<project>.supabase.co/functions/v1/noxpay-webhook",
+  "external_id": "sub_user123_monthly_20250207",
+  "payer": {
+    "name": "João Silva",
+    "document": "12345678900"
+  }
+}
+```
+
+**Validação de Webhook:**
+```typescript
+// Validar X-Signature header
+const signature = req.headers.get('X-Signature');
+const payload = await req.text();
+const expectedSignature = btoa(
+  String.fromCharCode(
+    ...new Uint8Array(
+      await crypto.subtle.digest(
+        'SHA-256',
+        new TextEncoder().encode(payload + NOXPAY_SECRET)
+      )
+    )
+  )
+);
+const isValid = signature === expectedSignature;
+```
+
+### 3.8 Motor de Faturamento — Carência de 3 Dias
+
+O motor de faturamento é executado via **cron job** (`billing-check`) e gerencia o ciclo de vida das assinaturas:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              CICLO DE VIDA DA ASSINATURA                 │
+│                                                          │
+│  ACTIVE ──────────────────────────────────────────────── │
+│    │   (período ativo, pagamento em dia)                 │
+│    │                                                     │
+│    ▼ (vencimento do período)                             │
+│  PAST_DUE ───────────────────────────────────────────── │
+│    │   (tentativa de cobrança falhou)                    │
+│    │   → Stripe: retry automático                        │
+│    │   → NoxPay: gera novo QR Code PIX                   │
+│    │   → Notifica usuário via e-mail/app                 │
+│    │                                                     │
+│    ▼ (inicia carência de 3 dias)                         │
+│  GRACE_PERIOD ───────────────────────────────────────── │
+│    │   (3 dias para regularizar)                         │
+│    │   → Usuário mantém acesso premium                   │
+│    │   → Banner de alerta no app                         │
+│    │   → Notificações diárias                            │
+│    │                                                     │
+│    ├── Pagou? → volta para ACTIVE ✅                     │
+│    │                                                     │
+│    ▼ (3 dias expirados sem pagamento)                    │
+│  EXPIRED ────────────────────────────────────────────── │
+│    │   → Remove role 'premium'                           │
+│    │   → Adiciona role 'free'                            │
+│    │   → Cancela assinatura nos gateways                 │
+│    │   → Notifica usuário do downgrade                   │
+│    │                                                     │
+│  CANCELLED ──────────────────────────────────────────── │
+│      (cancelamento voluntário pelo usuário)              │
+│      → Mantém acesso até current_period_end              │
+│      → Depois: mesmo fluxo de EXPIRED                    │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Lógica do Cron Job (`billing-check`):**
+
+```
+A cada 1 hora:
+
+1. Buscar assinaturas com status 'active' e current_period_end < now()
+   → Marcar como 'past_due'
+   → Definir grace_period_end = now() + 3 dias
+   → Se gateway = 'noxpay': gerar novo QR Code PIX
+   → Se gateway = 'stripe': Stripe faz retry automático
+
+2. Buscar assinaturas com status 'grace_period' e grace_period_end < now()
+   → Marcar como 'expired'
+   → Remover role 'premium' do user_roles
+   → Garantir role 'free' está presente
+   → Cancelar no gateway (Stripe: cancel subscription / NoxPay: nada)
+
+3. Buscar assinaturas com cancel_at_period_end = true e current_period_end < now()
+   → Marcar como 'cancelled' → 'expired'
+   → Mesmo fluxo de downgrade acima
+```
+
+### 3.9 Secrets Necessários
+
+| Secret | Descrição | Usado em |
+|--------|-----------|----------|
+| `STRIPE_SECRET_KEY` | Chave secreta do Stripe | Edge Functions (checkout, webhook, portal) |
+| `STRIPE_WEBHOOK_SECRET` | Secret do endpoint de webhook Stripe | `stripe-webhook` |
+| `NOXPAY_API_KEY` | API Key da NoxPay | Edge Functions (PIX) |
+| `NOXPAY_SECRET` | Secret para validação de webhook | `noxpay-webhook` |
+
+### 3.10 Componentes Frontend — Checkout
+
+```
+┌─────────────────────────────────────────────────┐
+│           PÁGINA DE ASSINATURA                   │
+│                                                  │
+│  ┌────────────────┐  ┌────────────────────────┐  │
+│  │  Plano Mensal   │  │  Plano Anual          │  │
+│  │  R$ 29,90/mês   │  │  R$ 299,90/ano        │  │
+│  │                 │  │  (economia de 16%)     │  │
+│  │  [Assinar]      │  │  [Assinar]             │  │
+│  └────────────────┘  └────────────────────────┘  │
+│                                                  │
+│  Ao clicar "Assinar":                            │
+│                                                  │
+│  ┌──────────────────────────────────────────────┐│
+│  │  SELETOR DE MÉTODO DE PAGAMENTO              ││
+│  │                                              ││
+│  │  ┌──────────────┐  ┌─────────────────────┐  ││
+│  │  │ 💳 Cartão    │  │ 📱 PIX              │  ││
+│  │  │ de Crédito   │  │ Pagamento            │  ││
+│  │  │              │  │ Instantâneo          │  ││
+│  │  │ Recorrência  │  │                      │  ││
+│  │  │ automática   │  │ Renovação manual     │  ││
+│  │  │              │  │ (lembrete por email)  │  ││
+│  │  └──────────────┘  └─────────────────────┘  ││
+│  └──────────────────────────────────────────────┘│
+│                                                  │
+│  Se PIX selecionado:                             │
+│                                                  │
+│  ┌──────────────────────────────────────────────┐│
+│  │  CHECKOUT PIX                                ││
+│  │                                              ││
+│  │  ┌──────────────────┐                        ││
+│  │  │                  │  Escaneie o QR Code    ││
+│  │  │   [QR CODE]      │  com o app do seu      ││
+│  │  │                  │  banco                  ││
+│  │  └──────────────────┘                        ││
+│  │                                              ││
+│  │  Ou copie o código:                          ││
+│  │  ┌──────────────────────────────┐            ││
+│  │  │ 00020126580014br.gov...     │ [Copiar]   ││
+│  │  └──────────────────────────────┘            ││
+│  │                                              ││
+│  │  ⏰ Expira em: 29:45                        ││
+│  │  🔄 Verificando pagamento...                ││
+│  │                                              ││
+│  │  Status: ⏳ Aguardando pagamento             ││
+│  └──────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────┘
+```
+
+**Componentes a criar:**
+- `PaymentMethodSelector` — Escolha entre Cartão e PIX
+- `PixCheckout` — Exibe QR Code, código copia-e-cola, timer de expiração
+- `PixStatusPolling` — Hook que faz polling do status a cada 5s
+- `SubscriptionStatus` — Badge mostrando status atual da assinatura
+- `GracePeriodBanner` — Banner de alerta quando em carência
 
 ---
 
@@ -263,17 +610,22 @@ Frontend → checkSubscription() → Atualiza UI
 - [ ] Função `has_role()` como `SECURITY DEFINER`
 - [ ] RLS habilitado em TODAS as tabelas
 - [ ] Validação server-side em Edge Functions
-- [ ] Webhook do Stripe com verificação de assinatura
+- [ ] Webhook do Stripe com verificação de assinatura (`stripe-webhook-secret`)
+- [ ] Webhook da NoxPay com verificação de `X-Signature` (SHA256)
 - [ ] Sem credenciais hardcoded no frontend
 - [ ] Sem verificação de admin via `localStorage`
-- [ ] API keys do Stripe apenas em secrets (Edge Functions)
+- [ ] API keys (Stripe + NoxPay) apenas em secrets (Edge Functions)
+- [ ] Carência de 3 dias implementada server-side (não no frontend)
 
 ### 5.2 Testes End-to-End
 
 - [ ] Fluxo de signup → login → verificação de role
-- [ ] Upgrade de plano: free → premium (Stripe Checkout)
-- [ ] Downgrade/cancelamento → volta para free
-- [ ] Gestor: acesso a conteúdo e cupons, sem acesso a dashboard
+- [ ] Upgrade via Stripe: free → premium (Checkout cartão)
+- [ ] Upgrade via NoxPay: free → premium (PIX)
+- [ ] Renovação automática (Stripe) e manual (NoxPay/PIX)
+- [ ] Fluxo de carência: past_due → grace_period → expired → downgrade
+- [ ] Cancelamento voluntário → mantém acesso até fim do período
+- [ ] Gestor: acesso a conteúdo e cupons, sem acesso a dashboard financeiro
 - [ ] Admin: acesso total, atribuição de roles
 - [ ] Rotas protegidas: redirecionamento correto por role
 
@@ -285,51 +637,59 @@ Frontend → checkSubscription() → Atualiza UI
 |------|---------|-------------|
 | **Fase 1** — Infraestrutura & Auth | 2-3 dias | Ativação do Cloud |
 | **Fase 2** — Roles & Permissões | 1-2 dias | Fase 1 |
-| **Fase 3** — Stripe & Assinaturas | 2-3 dias | Fase 1 + Stripe API Key |
+| **Fase 3** — Gateway Duplo (Stripe + NoxPay) | 3-5 dias | Fase 1 + API Keys |
 | **Fase 4** — Migração de Dados | 2-3 dias | Fase 1 |
 | **Fase 5** — Segurança & Testes | 1-2 dias | Fases 1-4 |
-| **Total** | ~8-13 dias | — |
+| **Total** | ~9-15 dias | — |
 
 ---
 
 ## 📐 Diagrama de Arquitetura
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    FRONTEND (React)                  │
-│                                                      │
-│  AuthContext ←→ Supabase Client ←→ ProtectedRoute    │
-│       ↓              ↓                    ↓          │
-│  user + role    RLS queries         Role check       │
-│       ↓              ↓                    ↓          │
-│  UI adapta      Dados filtrados    Rota permitida    │
-└─────────────────┬───────────────────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────────────────┐
-│              LOVABLE CLOUD (Supabase)                │
-│                                                      │
-│  ┌──────────┐  ┌──────────────┐  ┌───────────────┐  │
-│  │   Auth   │  │  PostgreSQL  │  │ Edge Functions │  │
-│  │          │  │              │  │                │  │
-│  │ - Login  │  │ - profiles   │  │ - checkout     │  │
-│  │ - Signup │  │ - user_roles │  │ - portal       │  │
-│  │ - OAuth  │  │ - courses    │  │ - webhook      │  │
-│  │          │  │ - coupons    │  │ - check-sub    │  │
-│  │          │  │ - goals      │  │                │  │
-│  │          │  │ - etc.       │  │                │  │
-│  └──────────┘  └──────────────┘  └───────┬───────┘  │
-└──────────────────────────────────────────┼──────────┘
-                                           │
-                                           ▼
-                                    ┌──────────────┐
-                                    │    STRIPE     │
-                                    │              │
-                                    │ - Products   │
-                                    │ - Prices     │
-                                    │ - Webhooks   │
-                                    │ - Portal     │
-                                    └──────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                       FRONTEND (React)                           │
+│                                                                  │
+│  AuthContext ←→ Supabase Client ←→ ProtectedRoute                │
+│       ↓              ↓                    ↓                      │
+│  user + role    RLS queries         Role check                   │
+│       ↓              ↓                    ↓                      │
+│  UI adapta      Dados filtrados    Rota permitida                │
+│                                                                  │
+│  PaymentMethodSelector → PixCheckout (QR) / Stripe Checkout      │
+│  GracePeriodBanner → Alerta de carência (3 dias)                 │
+│  SubscriptionStatus → Badge com status atual                     │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   LOVABLE CLOUD (Supabase)                       │
+│                                                                  │
+│  ┌──────────┐  ┌──────────────────┐  ┌────────────────────────┐ │
+│  │   Auth   │  │    PostgreSQL    │  │    Edge Functions      │ │
+│  │          │  │                  │  │                        │ │
+│  │ - Login  │  │ - profiles       │  │ - create-checkout      │ │
+│  │ - Signup │  │ - user_roles     │  │ - create-pix-payment   │ │
+│  │ - OAuth  │  │ - plans          │  │ - check-pix-status     │ │
+│  │          │  │ - subscriptions  │  │ - customer-portal      │ │
+│  │          │  │ - payments       │  │ - check-subscription   │ │
+│  │          │  │ - courses        │  │ - stripe-webhook       │ │
+│  │          │  │ - coupons        │  │ - noxpay-webhook       │ │
+│  │          │  │ - goals          │  │ - billing-check (cron) │ │
+│  └──────────┘  └──────────────────┘  └─────────┬──────────────┘ │
+└──────────────────────────────────────────────── ┼───────────────┘
+                                                  │
+                            ┌─────────────────────┴───────────────┐
+                            │                                     │
+                            ▼                                     ▼
+                     ┌──────────────┐                      ┌──────────────┐
+                     │    STRIPE    │                      │   NOXPAY     │
+                     │              │                      │              │
+                     │ • Checkout   │                      │ • PIX API V2 │
+                     │ • Recorrência│                      │ • QR Code    │
+                     │ • Portal     │                      │ • Webhook    │
+                     │ • Webhooks   │                      │              │
+                     └──────────────┘                      └──────────────┘
 ```
 
 ---
@@ -341,9 +701,15 @@ Frontend → checkSubscription() → Atualiza UI
 3. **Um usuário pode ter múltiplos roles**: A tabela suporta isso (ex: `premium` + `gestor`)
 4. **Cálculos DNB ficam client-side**: Não há necessidade de persistir no banco
 5. **Webhook do Stripe gerencia roles automaticamente**: Sem intervenção manual para assinaturas
+6. **Gateway duplo**: Stripe para cartão (recorrência automática) + NoxPay para PIX (renovação via cron)
+7. **Carência de 3 dias**: Aplica-se a ambos os gateways antes do downgrade automático
+8. **PIX não tem recorrência nativa**: O motor de faturamento gera novas cobranças e notifica o usuário
+9. **Stripe é fonte de verdade para cartão**: O Stripe gerencia a recorrência, nosso backend sincroniza
+10. **NoxPay requer CPF**: O checkout PIX deve coletar nome e CPF do pagador
 
 ---
 
 **Documento criado**: Fevereiro 2025  
-**Status**: 📋 Planejamento  
+**Última atualização**: Fevereiro 2025  
+**Status**: 📋 Planejamento Refinado  
 **Próximo passo**: Ativar Lovable Cloud e iniciar Fase 1
