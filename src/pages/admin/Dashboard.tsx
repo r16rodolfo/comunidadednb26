@@ -4,17 +4,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader';
-import { defaultPlatformConfig, defaultApiConfigs } from '@/data/mock-admin';
+import { defaultPlatformConfig } from '@/data/mock-admin';
 import { OverviewTab } from '@/components/admin/tabs/OverviewTab';
 import { PlatformTab } from '@/components/admin/tabs/PlatformTab';
-import { ApisTab } from '@/components/admin/tabs/ApisTab';
 import { SecurityTab } from '@/components/admin/tabs/SecurityTab';
 import { SystemTab } from '@/components/admin/tabs/SystemTab';
 
 const TAB_LABELS: Record<string, string> = {
   overview: 'Visão Geral',
   platform: 'Plataforma',
-  apis: 'APIs',
   security: 'Segurança',
   system: 'Sistema',
 };
@@ -23,7 +21,6 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [platformConfig, setPlatformConfig] = useState(defaultPlatformConfig);
-  const [apiConfigs, setApiConfigs] = useState(defaultApiConfigs);
 
   const handleSavePlatformConfig = async () => {
     setIsLoading(true);
@@ -35,19 +32,6 @@ export default function AdminDashboard() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleToggleApi = (apiId: string, checked: boolean) => {
-    setApiConfigs(prev => prev.map(api => api.id === apiId ? { ...api, isActive: checked } : api));
-    toast({ title: checked ? 'API ativada!' : 'API desativada!' });
-  };
-
-  const handleConfigureApi = (apiName: string) => {
-    toast({
-      title: 'Configuração requer backend',
-      description: `Para configurar a chave da ${apiName} com segurança, ative o Lovable Cloud.`,
-      variant: 'destructive',
-    });
   };
 
   return (
@@ -74,14 +58,6 @@ export default function AdminDashboard() {
               setPlatformConfig={setPlatformConfig}
               onSave={handleSavePlatformConfig}
               isLoading={isLoading}
-            />
-          </TabsContent>
-
-          <TabsContent value="apis" className="space-y-4 pt-4">
-            <ApisTab
-              apiConfigs={apiConfigs}
-              onToggleApi={handleToggleApi}
-              onConfigureApi={handleConfigureApi}
             />
           </TabsContent>
 
