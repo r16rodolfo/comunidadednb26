@@ -40,13 +40,6 @@ export const defaultPlatformConfig = {
   },
 };
 
-export const defaultApiConfigs = [
-  { id: '1', name: 'OpenAI API', maskedKey: 'sk-••••••••abc1', isActive: true, isConfigured: true },
-  { id: '2', name: 'PandaVideo API', maskedKey: 'pv_••••••••d2e3', isActive: true, isConfigured: true },
-  { id: '3', name: 'Exchange Rate API', maskedKey: '', isActive: false, isConfigured: false },
-  { id: '4', name: 'Stripe Secret Key', maskedKey: 'sk_live_••••f4g5', isActive: true, isConfigured: true },
-];
-
 // Admin Users page
 export const mockAdminUsers = [
   {
