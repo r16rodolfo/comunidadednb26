@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, Search, MoreHorizontal, ToggleLeft, ToggleRight, Ticket, MousePointerClick, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Plus, Edit, Trash2, Search, MoreHorizontal, ToggleLeft, ToggleRight, Ticket, MousePointerClick, CheckCircle, XCircle, Clock, Tag } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CreateCouponModal } from "@/components/admin/CreateCouponModal";
+import { CategoryManagement } from "@/components/admin/CategoryManagement";
 import { useCoupons } from "@/hooks/useCoupons";
 import { Coupon, CouponFilters, CreateCouponData } from "@/types/coupons";
 import { format } from "date-fns";
@@ -20,8 +21,9 @@ import { AdminPageHeader } from "@/components/shared/AdminPageHeader";
 
 // ─── Main Component ─────────────────────────────────────────
 export default function AdminCoupons() {
-  const { coupons, categories, loading, getCoupons, createCoupon, updateCoupon, deleteCoupon } = useCoupons();
+  const { coupons, categories, loading, getCoupons, createCoupon, updateCoupon, deleteCoupon, addCategory, updateCategory, toggleCategory, deleteCategory, getCouponsCountByCategory } = useCoupons();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [filters, setFilters] = useState<CouponFilters>({
     status: 'all',
@@ -98,10 +100,16 @@ export default function AdminCoupons() {
     <Layout>
       <div className="space-y-6">
         <AdminPageHeader icon={Ticket} title="Gerenciar Cupons" description="Gerencie cupons de parceiros e acompanhe o desempenho">
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Cupom
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setIsCategorySheetOpen(true)}>
+              <Tag className="w-4 h-4 mr-2" />
+              Categorias
+            </Button>
+            <Button onClick={() => setIsCreateModalOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Cupom
+            </Button>
+          </div>
         </AdminPageHeader>
 
         {/* Stats Cards — using design tokens */}
@@ -305,6 +313,18 @@ export default function AdminCoupons() {
           categories={categories}
           onSubmit={editingCoupon ? handleUpdateCoupon : handleCreateCoupon}
           editingCoupon={editingCoupon}
+        />
+
+        {/* Category Management Sheet */}
+        <CategoryManagement
+          open={isCategorySheetOpen}
+          onOpenChange={setIsCategorySheetOpen}
+          categories={categories}
+          onAdd={addCategory}
+          onUpdate={updateCategory}
+          onToggle={toggleCategory}
+          onDelete={deleteCategory}
+          getCouponsCount={getCouponsCountByCategory}
         />
       </div>
     </Layout>
