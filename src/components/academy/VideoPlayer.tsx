@@ -40,12 +40,12 @@ export function VideoPlayer({
 
   if (!lesson) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-muted/20">
+      <div className="flex-1 flex items-center justify-center bg-muted/20 p-4">
         <div className="text-center">
-          <PlayCircle className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-xl font-semibold mb-2">Selecione uma aula</h3>
-          <p className="text-muted-foreground">
-            Escolha uma aula na navegação lateral para começar a assistir
+          <PlayCircle className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg sm:text-xl font-semibold mb-2">Selecione uma aula</h3>
+          <p className="text-sm text-muted-foreground">
+            Escolha uma aula na navegação para começar
           </p>
         </div>
       </div>
@@ -56,9 +56,9 @@ export function VideoPlayer({
   const hasAccess = canWatch(lesson);
 
   return (
-    <div className="flex-1 flex flex-col bg-background">
+    <div className="flex-1 flex flex-col bg-background min-h-0 overflow-y-auto">
       {/* Video Container */}
-      <div className="bg-black flex-1 flex items-center justify-center min-h-[400px]">
+      <div className="bg-black flex items-center justify-center">
         {hasAccess ? (
           embedUrl ? (
             <div style={{ position: 'relative', paddingTop: '56.25%', width: '100%' }}>
@@ -77,25 +77,25 @@ export function VideoPlayer({
               />
             </div>
           ) : (
-          <div className="w-full h-full flex items-center justify-center text-white bg-muted/10 min-h-[400px]">
-              <div className="text-center">
-                <PlayCircle className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium">Vídeo não configurado</p>
-                <p className="text-sm opacity-75 mt-1">
-                  O ID do vídeo do Bunny.net ainda não foi adicionado a esta aula.
+            <div className="w-full flex items-center justify-center text-white bg-muted/10 aspect-video">
+              <div className="text-center p-4">
+                <PlayCircle className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-4 opacity-50" />
+                <p className="text-base sm:text-lg font-medium">Vídeo não configurado</p>
+                <p className="text-xs sm:text-sm opacity-75 mt-1">
+                  O ID do vídeo do Bunny.net ainda não foi adicionado.
                 </p>
               </div>
             </div>
           )
         ) : (
-          <div className="text-center text-white">
-            <div className="bg-black/50 p-8 rounded-lg">
-              <Lock className="h-16 w-16 mx-auto mb-4 text-primary" />
-              <h3 className="text-xl font-semibold mb-2">Aula Premium</h3>
-              <p className="text-white/80">
-                Esta aula está disponível apenas para assinantes premium
+          <div className="text-center text-white aspect-video w-full flex items-center justify-center">
+            <div className="bg-black/50 p-6 sm:p-8 rounded-lg">
+              <Lock className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-4 text-primary" />
+              <h3 className="text-lg sm:text-xl font-semibold mb-2">Aula Premium</h3>
+              <p className="text-white/80 text-sm">
+                Disponível apenas para assinantes premium
               </p>
-              <Button className="mt-4" variant="secondary">
+              <Button className="mt-4" variant="secondary" size="sm">
                 Fazer Upgrade
               </Button>
             </div>
@@ -104,29 +104,29 @@ export function VideoPlayer({
       </div>
 
       {/* Lesson Info */}
-      <Card className="m-6 mb-4">
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <CardTitle className="text-xl">{lesson.title}</CardTitle>
+      <Card className="mx-3 sm:mx-6 mt-3 sm:mt-6 mb-2 sm:mb-4">
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <CardTitle className="text-base sm:text-xl">{lesson.title}</CardTitle>
                 {lesson.is_completed && (
-                  <Badge variant="secondary" className="bg-accent/20 text-accent">
+                  <Badge variant="secondary" className="bg-accent/20 text-accent text-xs">
                     <CheckCircle2 className="h-3 w-3 mr-1" />
                     Concluído
                   </Badge>
                 )}
                 {lesson.is_free ? (
-                  <Badge variant="outline">Gratuito</Badge>
+                  <Badge variant="outline" className="text-xs">Gratuito</Badge>
                 ) : (
-                  <Badge variant="secondary">Premium</Badge>
+                  <Badge variant="secondary" className="text-xs">Premium</Badge>
                 )}
               </div>
               {lesson.description && (
-                <p className="text-muted-foreground">{lesson.description}</p>
+                <p className="text-sm text-muted-foreground">{lesson.description}</p>
               )}
             </div>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground ml-4">
+            <div className="flex items-center gap-1 text-sm text-muted-foreground shrink-0">
               <Clock className="h-4 w-4" />
               {formatDuration(lesson.duration)}
             </div>
@@ -135,37 +135,41 @@ export function VideoPlayer({
       </Card>
 
       {/* Controls */}
-      <div className="border-t bg-card/50 p-6">
-        <div className="flex items-center justify-between">
+      <div className="border-t bg-card/50 p-3 sm:p-6 mt-auto">
+        <div className="flex items-center justify-between gap-2">
           <Button
             variant="outline"
+            size="sm"
             onClick={onPrevious}
             disabled={!hasPrevious}
-            className="flex items-center gap-2"
+            className="gap-1 sm:gap-2 text-xs sm:text-sm"
           >
             <ChevronLeft className="h-4 w-4" />
-            Anterior
+            <span className="hidden sm:inline">Anterior</span>
           </Button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {!lesson.is_completed && hasAccess && (
               <Button
                 onClick={onMarkCompleted}
-                className="flex items-center gap-2"
+                size="sm"
+                className="gap-1 sm:gap-2 text-xs sm:text-sm"
               >
                 <CheckCircle2 className="h-4 w-4" />
-                Marcar como Concluído
+                <span className="hidden sm:inline">Marcar como Concluído</span>
+                <span className="sm:hidden">Concluir</span>
               </Button>
             )}
           </div>
 
           <Button
             variant="outline"
+            size="sm"
             onClick={onNext}
             disabled={!hasNext}
-            className="flex items-center gap-2"
+            className="gap-1 sm:gap-2 text-xs sm:text-sm"
           >
-            Próximo
+            <span className="hidden sm:inline">Próximo</span>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>

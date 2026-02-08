@@ -31,7 +31,7 @@ export function CourseNavigation({
   };
 
   const renderLessonsList = (lessons: Lesson[], moduleTitle?: string) => (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {lessons.map((lesson) => {
         const hasAccess = lesson.is_free || isPremiumUser;
         return (
@@ -60,7 +60,7 @@ export function CourseNavigation({
                     {lesson.title}
                   </span>
                   {!lesson.is_free && (
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
                       Premium
                     </Badge>
                   )}
@@ -82,10 +82,10 @@ export function CourseNavigation({
   );
 
   return (
-    <div className="w-80 border-r bg-card/50 flex flex-col h-full">
+    <div className="w-full lg:w-80 border-r bg-card/50 flex flex-col h-full">
       {/* Header */}
-      <div className="p-6 border-b">
-        <h2 className="font-bold text-lg mb-2">{course.title}</h2>
+      <div className="p-4 lg:p-6 border-b">
+        <h2 className="font-bold text-base lg:text-lg mb-2">{course.title}</h2>
         <div className="space-y-3">
           <div>
             <div className="flex justify-between text-sm mb-2">
@@ -104,7 +104,7 @@ export function CourseNavigation({
       </div>
 
       {/* Search */}
-      <div className="p-4 border-b">
+      <div className="p-3 lg:p-4 border-b">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -119,7 +119,7 @@ export function CourseNavigation({
       {/* Lessons List */}
       <div className="flex-1 overflow-y-auto">
         {searchTerm ? (
-          <div className="p-4">
+          <div className="p-3 lg:p-4">
             <h3 className="font-medium text-sm mb-4 text-muted-foreground">
               Resultados da busca ({filteredLessons.length})
             </h3>
@@ -133,7 +133,7 @@ export function CourseNavigation({
             )}
           </div>
         ) : (
-          <div className="p-4 space-y-6">
+          <div className="p-3 lg:p-4 space-y-6">
             {course.modules.map((module) => (
               <div key={module.id}>
                 <div className="flex items-center gap-2 mb-3">

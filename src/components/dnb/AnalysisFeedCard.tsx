@@ -78,14 +78,14 @@ export default function AnalysisFeedCard({
               </div>
 
               {/* Prices */}
-              <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-2 sm:gap-3 text-xs flex-wrap">
                 <span className="font-medium">
                   USD <span className="font-bold">R$ {analysis.dollarPrice.toFixed(2)}</span>
                   <span className={`ml-1 ${analysis.dollarVariation >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {analysis.dollarVariation >= 0 ? '+' : ''}{analysis.dollarVariation}%
                   </span>
                 </span>
-                <span className="text-muted-foreground">|</span>
+                <span className="text-muted-foreground hidden sm:inline">|</span>
                 <span className="font-medium">
                   EUR <span className="font-bold">R$ {analysis.euroPrice.toFixed(2)}</span>
                   <span className={`ml-1 ${analysis.euroVariation >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -117,7 +117,7 @@ export default function AnalysisFeedCard({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 text-xs gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-7 text-xs gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                 onClick={(e) => {
                   e.stopPropagation();
                   onViewDetail();

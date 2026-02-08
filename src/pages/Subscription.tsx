@@ -96,17 +96,17 @@ export default function Subscription() {
     <Layout>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <CreditCard className="h-6 w-6 text-white" />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-primary rounded-lg flex items-center justify-center shrink-0">
+              <CreditCard className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Minha Assinatura</h1>
-              <p className="text-muted-foreground">Gerencie seu plano e faturamento</p>
+              <h1 className="text-xl sm:text-2xl font-bold">Minha Assinatura</h1>
+              <p className="text-sm text-muted-foreground">Gerencie seu plano e faturamento</p>
             </div>
           </div>
-          <Button onClick={checkSubscription} disabled={isLoading} variant="outline">
+          <Button onClick={checkSubscription} disabled={isLoading} variant="outline" size="sm" className="self-start sm:self-auto">
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Atualizar Status
           </Button>
@@ -121,10 +121,10 @@ export default function Subscription() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
+           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-lg font-semibold">Plano Atual: {currentPlan}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-base sm:text-lg font-semibold">Plano Atual: {currentPlan}</p>
                   <Badge variant={subscriptionData.subscribed ? 'default' : 'secondary'}>
                     {subscriptionData.subscribed ? 'Ativo' : 'Gratuito'}
                   </Badge>
@@ -136,9 +136,9 @@ export default function Subscription() {
                 )}
               </div>
               {subscriptionData.subscribed && (
-                <Button onClick={manageSubscription} disabled={isLoading}>
+                <Button onClick={manageSubscription} disabled={isLoading} size="sm" className="self-start sm:self-auto">
                   <SettingsIcon className="h-4 w-4 mr-2" />
-                  Gerenciar Assinatura
+                  Gerenciar
                 </Button>
               )}
             </div>
@@ -153,9 +153,9 @@ export default function Subscription() {
           {freePlan && (
             <Card className="border-dashed">
               <CardContent className="py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center shrink-0">
                       <Crown className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
@@ -163,12 +163,12 @@ export default function Subscription() {
                       <p className="text-sm text-muted-foreground">{freePlan.description}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-2xl font-bold">R$ 0</p>
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="text-left sm:text-right">
+                      <p className="text-xl sm:text-2xl font-bold">R$ 0</p>
                       <p className="text-xs text-muted-foreground">para sempre</p>
                     </div>
-                    <Button variant="outline" disabled>
+                    <Button variant="outline" disabled size="sm">
                       {!subscriptionData.subscribed ? 'Plano Atual' : 'Plano Básico'}
                     </Button>
                   </div>
@@ -178,7 +178,7 @@ export default function Subscription() {
           )}
 
           {/* Planos Pagos */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {paidPlans.map((plan) => (
               <Card key={plan.id} className={`relative flex flex-col ${plan.popular ? 'ring-2 ring-primary shadow-lg' : ''}`}>
                 {plan.popular && (

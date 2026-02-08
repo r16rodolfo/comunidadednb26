@@ -80,13 +80,13 @@ export default function Profile() {
   return (
     <Layout>
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center">
-            <User className="h-8 w-8 text-white" />
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-primary rounded-full flex items-center justify-center shrink-0">
+            <User className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold">{user.name}</h1>
-            <div className="flex items-center gap-2 mt-1">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold truncate">{user.name}</h1>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               <Badge variant={getRoleBadgeVariant(user.role)}>
                 {getRoleFullLabel(user.role)}
               </Badge>
@@ -98,22 +98,22 @@ export default function Profile() {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="profile" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+            <TabsTrigger value="profile" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
               <User className="h-4 w-4" />
-              Perfil
+              <span>Perfil</span>
             </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
+            <TabsTrigger value="security" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
               <Shield className="h-4 w-4" />
-              Segurança
+              <span>Segurança</span>
             </TabsTrigger>
-            <TabsTrigger value="subscription" className="flex items-center gap-2">
+            <TabsTrigger value="subscription" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
               <CreditCard className="h-4 w-4" />
-              Assinatura
+              <span>Assinatura</span>
             </TabsTrigger>
-            <TabsTrigger value="preferences" className="flex items-center gap-2">
+            <TabsTrigger value="preferences" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
               <Settings className="h-4 w-4" />
-              Preferências
+              <span>Preferências</span>
             </TabsTrigger>
           </TabsList>
 

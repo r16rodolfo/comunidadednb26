@@ -76,17 +76,17 @@ export function TransactionTable({
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
+      <CardContent className="px-0 sm:px-6">
+        <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Local</TableHead>
-                <TableHead className="text-right">Quantidade</TableHead>
-                <TableHead className="text-right">Taxa</TableHead>
-                <TableHead className="text-right">Total Pago</TableHead>
-                <TableHead className="w-[100px]">Ações</TableHead>
+                <TableHead className="whitespace-nowrap">Data</TableHead>
+                <TableHead className="whitespace-nowrap">Local</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Qtd</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Taxa</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Total</TableHead>
+                <TableHead className="w-[80px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
