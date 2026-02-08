@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,18 +15,18 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
-import { CreateCouponData, CouponCategory } from "@/types/coupons";
+import { CreateCouponData, CouponCategory, Coupon } from "@/types/coupons";
 import { useToast } from "@/hooks/use-toast";
 
 const createCouponSchema = z.object({
   partnerName: z.string().min(1, "Nome do parceiro é obrigatório"),
   partnerLogo: z.string().min(1, "Logo do parceiro é obrigatório"),
-  category: z.string().optional(),
+  categoryId: z.string().optional(),
   offerTitle: z.string().min(1, "Título da oferta é obrigatório"),
   description: z.string().min(1, "Descrição é obrigatória"),
   code: z.string().min(1, "Código do cupom é obrigatório"),
   destinationUrl: z.string().url("URL inválida"),
-  expirationDate: z.date().optional(),
+  expirationDate: z.string().optional(),
   isActive: z.boolean()
 });
 
@@ -35,7 +35,7 @@ interface CreateCouponModalProps {
   onClose: () => void;
   categories: CouponCategory[];
   onSubmit: (data: CreateCouponData) => Promise<void>;
-  editingCoupon?: any;
+  editingCoupon?: Coupon | null;
 }
 
 export const CreateCouponModal = ({ 
@@ -46,8 +46,20 @@ export const CreateCouponModal = ({
   editingCoupon 
 }: CreateCouponModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [logoPreview, setLogoPreview] = useState<string>(editingCoupon?.partnerLogo || "");
+  const [logoPreview, setLogoPreview] = useState<string>("");
   const { toast } = useToast();
+
+  const defaultValues: CreateCouponData = {
+    partnerName: "",
+    partnerLogo: "",
+    categoryId: "",
+    offerTitle: "",
+    description: "",
+    code: "",
+    destinationUrl: "",
+    expirationDate: undefined,
+    isActive: true
+  };
 
   const {
     register,
@@ -58,24 +70,39 @@ export const CreateCouponModal = ({
     formState: { errors }
   } = useForm<CreateCouponData>({
     resolver: zodResolver(createCouponSchema),
-    defaultValues: editingCoupon || {
-      partnerName: "",
-      partnerLogo: "",
-      category: "",
-      offerTitle: "",
-      description: "",
-      code: "",
-      destinationUrl: "",
-      isActive: true
-    }
+    defaultValues,
   });
 
+  // Reset form when editing coupon changes
+  useEffect(() => {
+    if (editingCoupon) {
+      reset({
+        partnerName: editingCoupon.partnerName,
+        partnerLogo: editingCoupon.partnerLogo,
+        categoryId: editingCoupon.categoryId || "",
+        offerTitle: editingCoupon.offerTitle,
+        description: editingCoupon.description,
+        code: editingCoupon.code,
+        destinationUrl: editingCoupon.destinationUrl,
+        expirationDate: editingCoupon.expirationDate,
+        isActive: editingCoupon.isActive,
+      });
+      setLogoPreview(editingCoupon.partnerLogo);
+    } else {
+      reset(defaultValues);
+      setLogoPreview("");
+    }
+  }, [editingCoupon, reset]);
+
   const watchedFields = watch();
+
+  const selectedDate = watchedFields.expirationDate 
+    ? new Date(watchedFields.expirationDate) 
+    : undefined;
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Simulate file upload - in real implementation, upload to storage
       const mockUrl = `https://images.unsplash.com/photo-${Date.now()}?w=100&h=100&fit=crop&crop=center`;
       setLogoPreview(mockUrl);
       setValue("partnerLogo", mockUrl);
@@ -97,7 +124,7 @@ export const CreateCouponModal = ({
           ? "O cupom foi atualizado com sucesso." 
           : "O novo cupom foi criado com sucesso.",
       });
-      reset();
+      reset(defaultValues);
       setLogoPreview("");
       onClose();
     } catch (error) {
@@ -112,7 +139,7 @@ export const CreateCouponModal = ({
   };
 
   const handleClose = () => {
-    reset();
+    reset(defaultValues);
     setLogoPreview("");
     onClose();
   };
@@ -143,10 +170,10 @@ export const CreateCouponModal = ({
 
             {/* Category */}
             <div className="space-y-2">
-              <Label htmlFor="category">Categoria</Label>
+              <Label htmlFor="categoryId">Categoria</Label>
               <Select
-                value={watchedFields.category || "none"}
-                onValueChange={(value) => setValue("category", value === "none" ? "" : value)}
+                value={watchedFields.categoryId || "none"}
+                onValueChange={(value) => setValue("categoryId", value === "none" ? "" : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar categoria" />
@@ -154,7 +181,7 @@ export const CreateCouponModal = ({
                 <SelectContent>
                   <SelectItem value="none">Sem categoria</SelectItem>
                   {categories.filter(cat => cat.isActive).map(category => (
-                    <SelectItem key={category.id} value={category.name}>
+                    <SelectItem key={category.id} value={category.id}>
                       {category.name}
                     </SelectItem>
                   ))}
@@ -259,12 +286,12 @@ export const CreateCouponModal = ({
                   variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal",
-                    !watchedFields.expirationDate && "text-muted-foreground"
+                    !selectedDate && "text-muted-foreground"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {watchedFields.expirationDate ? (
-                    format(watchedFields.expirationDate, "PPP", { locale: ptBR })
+                  {selectedDate ? (
+                    format(selectedDate, "PPP", { locale: ptBR })
                   ) : (
                     <span>Selecionar data</span>
                   )}
@@ -273,8 +300,8 @@ export const CreateCouponModal = ({
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={watchedFields.expirationDate}
-                  onSelect={(date) => setValue("expirationDate", date)}
+                  selected={selectedDate}
+                  onSelect={(date) => setValue("expirationDate", date ? format(date, 'yyyy-MM-dd') : undefined)}
                   disabled={(date) => date < new Date()}
                   initialFocus
                   className="p-3 pointer-events-auto"

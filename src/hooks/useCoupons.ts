@@ -1,215 +1,246 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Coupon, CouponCategory, CouponFilters, CreateCouponData, UpdateCouponData } from '@/types/coupons';
-import { mockCoupons as initialMockCoupons, mockCategories as defaultCategories } from '@/data/mock-coupons';
 
-const CATEGORIES_STORAGE_KEY = 'dnb_coupon_categories';
+// ── Mappers ─────────────────────────────────────────────────
+const mapCouponRow = (row: any): Coupon => ({
+  id: row.id,
+  partnerName: row.partner_name,
+  partnerLogo: row.partner_logo,
+  categoryId: row.category_id ?? undefined,
+  category: row.coupon_categories?.name ?? undefined,
+  offerTitle: row.offer_title,
+  description: row.description,
+  code: row.code,
+  destinationUrl: row.destination_url,
+  expirationDate: row.expiration_date ?? undefined,
+  isActive: row.is_active,
+  clickCount: row.click_count,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
 
-const loadCategories = (): CouponCategory[] => {
-  const stored = localStorage.getItem(CATEGORIES_STORAGE_KEY);
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch {
-      return defaultCategories;
-    }
-  }
-  return defaultCategories;
-};
+const mapCategoryRow = (row: any): CouponCategory => ({
+  id: row.id,
+  name: row.name,
+  isActive: row.is_active,
+});
 
-const saveCategories = (categories: CouponCategory[]) => {
-  localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
-};
-
+// ── Hook ────────────────────────────────────────────────────
 export const useCoupons = () => {
-  const [allCoupons, setAllCoupons] = useState<Coupon[]>(initialMockCoupons);
-  const [coupons, setCoupons] = useState<Coupon[]>(initialMockCoupons);
-  const [categories, setCategories] = useState<CouponCategory[]>(loadCategories);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [categories, setCategories] = useState<CouponCategory[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const getCoupons = useCallback((filters?: CouponFilters) => {
+  // ─── Fetch coupons ────────────────────────────────────────
+  const getCoupons = useCallback(async (filters?: CouponFilters) => {
     setLoading(true);
-    setTimeout(() => {
-      let filtered = [...allCoupons];
+    try {
+      let query = supabase
+        .from('coupons')
+        .select('*, coupon_categories(name)');
 
-      if (filters?.category) {
-        filtered = filtered.filter(coupon => coupon.category === filters.category);
+      if (filters?.status === 'active') {
+        query = query.eq('is_active', true);
+      } else if (filters?.status === 'inactive') {
+        query = query.eq('is_active', false);
       }
 
       if (filters?.search) {
-        const searchLower = filters.search.toLowerCase();
-        filtered = filtered.filter(coupon =>
-          coupon.partnerName.toLowerCase().includes(searchLower) ||
-          coupon.offerTitle.toLowerCase().includes(searchLower)
-        );
+        const searchPattern = `%${filters.search}%`;
+        query = query.or(`partner_name.ilike.${searchPattern},offer_title.ilike.${searchPattern}`);
       }
 
-      if (filters?.status && filters.status !== 'all') {
-        if (filters.status === 'active') {
-          filtered = filtered.filter(coupon => coupon.isActive);
-        } else if (filters.status === 'inactive') {
-          filtered = filtered.filter(coupon => !coupon.isActive);
-        }
+      // Sort
+      switch (filters?.sortBy) {
+        case 'expiring':
+          query = query.order('expiration_date', { ascending: true, nullsFirst: false });
+          break;
+        case 'partner':
+          query = query.order('partner_name', { ascending: true });
+          break;
+        case 'clicks':
+          query = query.order('click_count', { ascending: false });
+          break;
+        case 'newest':
+        default:
+          query = query.order('created_at', { ascending: false });
+          break;
       }
 
-      if (filters?.sortBy) {
-        switch (filters.sortBy) {
-          case 'newest':
-            filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-            break;
-          case 'expiring':
-            filtered.sort((a, b) => {
-              if (!a.expirationDate) return 1;
-              if (!b.expirationDate) return -1;
-              return new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime();
-            });
-            break;
-          case 'partner':
-            filtered.sort((a, b) => a.partnerName.localeCompare(b.partnerName));
-            break;
-          case 'clicks':
-            filtered.sort((a, b) => b.clickCount - a.clickCount);
-            break;
-        }
+      const { data, error } = await query;
+      if (error) throw error;
+
+      let mapped = (data || []).map(mapCouponRow);
+
+      // Client-side category filter (by name)
+      if (filters?.category) {
+        mapped = mapped.filter(c => c.category === filters.category);
       }
 
-      setCoupons(filtered);
+      setCoupons(mapped);
+    } catch (err) {
+      console.error('Error fetching coupons:', err);
+    } finally {
       setLoading(false);
-    }, 500);
-  }, [allCoupons]);
+    }
+  }, []);
+
+  // ─── Fetch categories ─────────────────────────────────────
+  const fetchCategories = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('coupon_categories')
+      .select('*')
+      .order('name');
+
+    if (error) {
+      console.error('Error fetching categories:', error);
+      return;
+    }
+    setCategories((data || []).map(mapCategoryRow));
+  }, []);
 
   // ─── Category CRUD ────────────────────────────────────────
-
-  const addCategory = useCallback((name: string): CouponCategory | null => {
+  const addCategory = useCallback(async (name: string): Promise<CouponCategory | null> => {
     const trimmed = name.trim();
     if (!trimmed) return null;
 
-    const exists = categories.some(c => c.name.toLowerCase() === trimmed.toLowerCase());
-    if (exists) return null;
+    const { data, error } = await supabase
+      .from('coupon_categories')
+      .insert({ name: trimmed })
+      .select()
+      .single();
 
-    const newCategory: CouponCategory = {
-      id: Date.now().toString(),
-      name: trimmed,
-      isActive: true,
-    };
-    const updated = [...categories, newCategory];
-    setCategories(updated);
-    saveCategories(updated);
-    return newCategory;
-  }, [categories]);
+    if (error) {
+      console.error('Error adding category:', error);
+      return null;
+    }
 
-  const updateCategory = useCallback((id: string, name: string): boolean => {
+    const newCat = mapCategoryRow(data);
+    setCategories(prev => [...prev, newCat].sort((a, b) => a.name.localeCompare(b.name)));
+    return newCat;
+  }, []);
+
+  const updateCategory = useCallback(async (id: string, name: string): Promise<boolean> => {
     const trimmed = name.trim();
     if (!trimmed) return false;
 
-    const exists = categories.some(c => c.name.toLowerCase() === trimmed.toLowerCase() && c.id !== id);
-    if (exists) return false;
+    const { error } = await supabase
+      .from('coupon_categories')
+      .update({ name: trimmed })
+      .eq('id', id);
 
-    const oldCategory = categories.find(c => c.id === id);
-    const updated = categories.map(c => c.id === id ? { ...c, name: trimmed } : c);
-    setCategories(updated);
-    saveCategories(updated);
-
-    // Update coupons that use the old category name
-    if (oldCategory && oldCategory.name !== trimmed) {
-      setAllCoupons(prev => prev.map(coupon =>
-        coupon.category === oldCategory.name ? { ...coupon, category: trimmed } : coupon
-      ));
+    if (error) {
+      console.error('Error updating category:', error);
+      return false;
     }
 
+    setCategories(prev =>
+      prev.map(c => c.id === id ? { ...c, name: trimmed } : c)
+        .sort((a, b) => a.name.localeCompare(b.name))
+    );
     return true;
-  }, [categories]);
+  }, []);
 
-  const toggleCategory = useCallback((id: string) => {
-    const updated = categories.map(c => c.id === id ? { ...c, isActive: !c.isActive } : c);
-    setCategories(updated);
-    saveCategories(updated);
-  }, [categories]);
+  const toggleCategory = useCallback(async (id: string) => {
+    const cat = categories.find(c => c.id === id);
+    if (!cat) return;
 
-  const deleteCategory = useCallback((id: string) => {
-    const category = categories.find(c => c.id === id);
-    const updated = categories.filter(c => c.id !== id);
-    setCategories(updated);
-    saveCategories(updated);
+    const { error } = await supabase
+      .from('coupon_categories')
+      .update({ is_active: !cat.isActive })
+      .eq('id', id);
 
-    // Remove category from coupons that use it
-    if (category) {
-      setAllCoupons(prev => prev.map(coupon =>
-        coupon.category === category.name ? { ...coupon, category: undefined } : coupon
-      ));
+    if (error) {
+      console.error('Error toggling category:', error);
+      return;
     }
+
+    setCategories(prev => prev.map(c => c.id === id ? { ...c, isActive: !c.isActive } : c));
   }, [categories]);
+
+  const deleteCategory = useCallback(async (id: string) => {
+    const { error } = await supabase
+      .from('coupon_categories')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting category:', error);
+      return;
+    }
+
+    setCategories(prev => prev.filter(c => c.id !== id));
+  }, []);
 
   const getCouponsCountByCategory = useCallback((categoryName: string): number => {
-    return allCoupons.filter(c => c.category === categoryName).length;
-  }, [allCoupons]);
+    return coupons.filter(c => c.category === categoryName).length;
+  }, [coupons]);
 
   // ─── Coupon CRUD ──────────────────────────────────────────
-
   const createCoupon = async (data: CreateCouponData): Promise<Coupon> => {
-    setLoading(true);
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newCoupon: Coupon = {
-          ...data,
-          id: Date.now().toString(),
-          clickCount: 0,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        setAllCoupons(prev => [newCoupon, ...prev]);
-        setLoading(false);
-        resolve(newCoupon);
-      }, 1000);
-    });
+    const { data: row, error } = await supabase
+      .from('coupons')
+      .insert({
+        partner_name: data.partnerName,
+        partner_logo: data.partnerLogo,
+        category_id: data.categoryId || null,
+        offer_title: data.offerTitle,
+        description: data.description,
+        code: data.code,
+        destination_url: data.destinationUrl,
+        expiration_date: data.expirationDate || null,
+        is_active: data.isActive,
+      })
+      .select('*, coupon_categories(name)')
+      .single();
+
+    if (error) throw error;
+    return mapCouponRow(row);
   };
 
   const updateCoupon = async (data: UpdateCouponData): Promise<Coupon> => {
-    setLoading(true);
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        setAllCoupons(prev => prev.map(coupon =>
-          coupon.id === data.id
-            ? { ...coupon, ...data, updatedAt: new Date() }
-            : coupon
-        ));
-        const updatedCoupon = allCoupons.find(c => c.id === data.id)!;
-        setLoading(false);
-        resolve(updatedCoupon);
-      }, 1000);
-    });
+    const updatePayload: Record<string, any> = {};
+    if (data.partnerName !== undefined) updatePayload.partner_name = data.partnerName;
+    if (data.partnerLogo !== undefined) updatePayload.partner_logo = data.partnerLogo;
+    if (data.categoryId !== undefined) updatePayload.category_id = data.categoryId || null;
+    if (data.offerTitle !== undefined) updatePayload.offer_title = data.offerTitle;
+    if (data.description !== undefined) updatePayload.description = data.description;
+    if (data.code !== undefined) updatePayload.code = data.code;
+    if (data.destinationUrl !== undefined) updatePayload.destination_url = data.destinationUrl;
+    if (data.expirationDate !== undefined) updatePayload.expiration_date = data.expirationDate || null;
+    if (data.isActive !== undefined) updatePayload.is_active = data.isActive;
+
+    const { data: row, error } = await supabase
+      .from('coupons')
+      .update(updatePayload)
+      .eq('id', data.id)
+      .select('*, coupon_categories(name)')
+      .single();
+
+    if (error) throw error;
+    return mapCouponRow(row);
   };
 
   const deleteCoupon = async (id: string): Promise<void> => {
-    setLoading(true);
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        setAllCoupons(prev => prev.filter(coupon => coupon.id !== id));
-        setLoading(false);
-        resolve();
-      }, 500);
-    });
+    const { error } = await supabase
+      .from('coupons')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
   };
 
   const incrementClickCount = async (id: string): Promise<void> => {
-    setAllCoupons(prev => prev.map(coupon =>
-      coupon.id === id
-        ? { ...coupon, clickCount: coupon.clickCount + 1 }
-        : coupon
-    ));
+    await supabase.rpc('increment_coupon_click', { coupon_id: id });
   };
-
-  const getActiveCoupons = () => coupons.filter(coupon => coupon.isActive);
-  const getCouponById = (id: string) => allCoupons.find(coupon => coupon.id === id);
-
-  useEffect(() => {
-    getCoupons();
-  }, [getCoupons]);
 
   return {
     coupons, categories, loading,
-    getCoupons, createCoupon, updateCoupon, deleteCoupon,
-    incrementClickCount, getActiveCoupons, getCouponById,
-    addCategory, updateCategory: updateCategory, toggleCategory, deleteCategory,
+    getCoupons, fetchCategories,
+    createCoupon, updateCoupon, deleteCoupon,
+    incrementClickCount,
+    addCategory, updateCategory, toggleCategory, deleteCategory,
     getCouponsCountByCategory,
   };
 };

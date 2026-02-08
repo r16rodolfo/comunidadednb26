@@ -30,10 +30,10 @@ interface CategoryManagementProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categories: CouponCategory[];
-  onAdd: (name: string) => CouponCategory | null;
-  onUpdate: (id: string, name: string) => boolean;
-  onToggle: (id: string) => void;
-  onDelete: (id: string) => void;
+  onAdd: (name: string) => Promise<CouponCategory | null>;
+  onUpdate: (id: string, name: string) => Promise<boolean>;
+  onToggle: (id: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
   getCouponsCount: (categoryName: string) => number;
 }
 
@@ -52,12 +52,12 @@ export function CategoryManagement({
   const [editingName, setEditingName] = useState('');
   const { toast } = useToast();
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!newCategoryName.trim()) {
       toast({ title: 'Digite um nome para a categoria', variant: 'destructive' });
       return;
     }
-    const result = onAdd(newCategoryName);
+    const result = await onAdd(newCategoryName);
     if (result) {
       setNewCategoryName('');
       toast({ title: 'Categoria criada com sucesso!' });
@@ -71,9 +71,9 @@ export function CategoryManagement({
     setEditingName(category.name);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingId) return;
-    const success = onUpdate(editingId, editingName);
+    const success = await onUpdate(editingId, editingName);
     if (success) {
       setEditingId(null);
       setEditingName('');
@@ -88,8 +88,8 @@ export function CategoryManagement({
     setEditingName('');
   };
 
-  const handleDelete = (id: string) => {
-    onDelete(id);
+  const handleDelete = async (id: string) => {
+    await onDelete(id);
     toast({ title: 'Categoria excluída com sucesso!' });
   };
 
@@ -157,7 +157,6 @@ export function CategoryManagement({
                     }`}
                   >
                     {isEditing ? (
-                      /* Editing mode */
                       <div className="flex items-center gap-2 flex-1">
                         <Input
                           value={editingName}
@@ -175,7 +174,6 @@ export function CategoryManagement({
                         </Button>
                       </div>
                     ) : (
-                      /* Display mode */
                       <>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">

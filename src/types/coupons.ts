@@ -2,16 +2,17 @@ export interface Coupon {
   id: string;
   partnerName: string;
   partnerLogo: string;
-  category?: string;
+  categoryId?: string;
+  category?: string; // resolved category name from join
   offerTitle: string;
   description: string;
   code: string;
   destinationUrl: string;
-  expirationDate?: Date;
+  expirationDate?: string;
   isActive: boolean;
   clickCount: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CouponCategory {
@@ -30,12 +31,12 @@ export interface CouponFilters {
 export interface CreateCouponData {
   partnerName: string;
   partnerLogo: string;
-  category?: string;
+  categoryId?: string;
   offerTitle: string;
   description: string;
   code: string;
   destinationUrl: string;
-  expirationDate?: Date;
+  expirationDate?: string;
   isActive: boolean;
 }
 
