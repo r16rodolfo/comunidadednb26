@@ -80,7 +80,7 @@ export default function AdminSubscriptions() {
         </AdminPageHeader>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard label="Total de Usuários" value={stats.total} icon={Users} />
           <StatCard label="Assinaturas Ativas" value={stats.active} icon={CheckCircle} variant="success" />
           <StatCard label="Canceladas" value={stats.cancelled} icon={XCircle} variant="warning" />
@@ -93,19 +93,19 @@ export default function AdminSubscriptions() {
         {/* Table */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3">
               <CardTitle className="text-base">Lista de Assinaturas</CardTitle>
-              <div className="flex items-center gap-2">
-                <div className="relative">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="relative flex-1">
                   <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-                  <Input placeholder="Buscar usuário ou plano..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 w-64" />
+                  <Input placeholder="Buscar usuário ou plano..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
                 </div>
                 <Button variant="outline" size="sm"><Filter className="h-4 w-4 mr-2" />Filtros</Button>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>

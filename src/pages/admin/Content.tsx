@@ -55,7 +55,7 @@ export default function Content() {
         </AdminPageHeader>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatCard label="Cursos" value={stats.totalCourses} icon={BookOpen} />
           <StatCard label="Aulas" value={stats.totalLessons} icon={Video} variant="info" />
           <StatCard label="Publicados" value={stats.published} icon={Users} variant="success" />
@@ -83,7 +83,7 @@ export default function Content() {
             <CardTitle className="text-base">Cursos ({filteredCourses.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
