@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Ticket, Sparkles } from 'lucide-react';
+import { Ticket } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { CouponFilters } from "@/components/coupons/CouponFilters";
 import { CouponGrid } from "@/components/coupons/CouponGrid";
 import { CouponModal } from "@/components/coupons/CouponModal";
 import { useCoupons } from "@/hooks/useCoupons";
 import { Coupon, CouponFilters as Filters } from "@/types/coupons";
+import { PageHeader } from '@/components/shared/PageHeader';
 
 export default function Coupons() {
   const { coupons, categories, loading, getCoupons, fetchCategories, incrementClickCount } = useCoupons();
@@ -54,21 +55,9 @@ export default function Coupons() {
 
   return (
     <Layout>
-      <div className="space-y-8 animate-fade-in">
+      <div className="space-y-6 animate-fade-in">
         {/* Header */}
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <div className="p-2 sm:p-3 bg-primary/10 rounded-xl">
-              <Ticket className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Cupons de Parceiros</h1>
-            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-accent" />
-          </div>
-          
-          <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-            Descubra ofertas exclusivas dos nossos parceiros.
-          </p>
-        </div>
+        <PageHeader icon={Ticket} title="Cupons de Parceiros" description="Descubra ofertas exclusivas dos nossos parceiros." />
 
         {/* Filtros */}
         <CouponFilters

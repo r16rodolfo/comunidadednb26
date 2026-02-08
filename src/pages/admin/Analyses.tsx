@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Search, Plus, MoreHorizontal, Edit, Trash2, TrendingUp, TrendingDown, AlertTriangle, Clock, Video, ImageIcon, BarChart3 } from 'lucide-react';
-import { AdminPageHeader } from '@/components/shared/AdminPageHeader';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { StatCard } from '@/components/shared/StatCard';
 import { CreateAnalysisModal } from '@/components/admin/CreateAnalysisModal';
 import { MarketAnalysis } from '@/types/dnb';
@@ -95,11 +95,11 @@ export default function AdminAnalyses() {
   return (
     <Layout>
       <div className="space-y-6">
-        <AdminPageHeader icon={TrendingUp} title="Análises de Mercado" description="Gerencie as análises diárias do mercado cambial">
+        <PageHeader icon={TrendingUp} title="Análises de Mercado" description="Gerencie as análises diárias do mercado cambial">
           <Button onClick={handleOpenNew}>
             <Plus className="h-4 w-4 mr-2" />Nova Análise
           </Button>
-        </AdminPageHeader>
+        </PageHeader>
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

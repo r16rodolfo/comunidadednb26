@@ -1,11 +1,11 @@
-interface AdminPageHeaderProps {
+interface PageHeaderProps {
   icon: React.ElementType;
   title: string;
   description: string;
   children?: React.ReactNode;
 }
 
-export function AdminPageHeader({ icon: Icon, title, description, children }: AdminPageHeaderProps) {
+export function PageHeader({ icon: Icon, title, description, children }: PageHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div className="flex items-center gap-3 sm:gap-4">
@@ -21,3 +21,6 @@ export function AdminPageHeader({ icon: Icon, title, description, children }: Ad
     </div>
   );
 }
+
+/** @deprecated Use PageHeader instead */
+export const AdminPageHeader = PageHeader;

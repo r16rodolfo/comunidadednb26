@@ -1,5 +1,5 @@
 import Layout from "@/components/Layout";
-import { AdminPageHeader } from "@/components/shared/AdminPageHeader";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calculator, Construction } from "lucide-react";
 
@@ -7,7 +7,7 @@ export default function AdminPlanner() {
   return (
     <Layout>
       <div className="space-y-8 animate-fade-in">
-        <AdminPageHeader
+        <PageHeader
           icon={Calculator}
           title="Planner de Compras"
           description="Dados agregados das compras de câmbio dos usuários"

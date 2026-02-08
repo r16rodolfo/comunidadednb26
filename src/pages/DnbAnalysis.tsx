@@ -9,12 +9,13 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Info, CalendarSearch, X } from 'lucide-react';
+import { Info, CalendarSearch, X, TrendingUp } from 'lucide-react';
 import { useDnb } from '@/hooks/useDnb';
 import { MarketAnalysis } from '@/types/dnb';
 import AnalysisHero from '@/components/dnb/AnalysisHero';
 import AnalysisFeedCard from '@/components/dnb/AnalysisFeedCard';
 import AnalysisDetailModal from '@/components/dnb/AnalysisDetailModal';
+import { PageHeader } from '@/components/shared/PageHeader';
 
 export default function DnbAnalysis() {
   const {
@@ -98,14 +99,7 @@ export default function DnbAnalysis() {
     <Layout>
       <div className="space-y-6 animate-fade-in">
         {/* Header */}
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Análise de Mercado
-          </h1>
-          <p className="text-muted-foreground text-xs sm:text-sm">
-            Recomendações diárias do mercado cambial
-          </p>
-        </div>
+        <PageHeader icon={TrendingUp} title="Análise de Mercado" description="Recomendações diárias do mercado cambial" />
 
         {/* Disclaimer — discrete inline */}
         <p className="text-xs text-muted-foreground/70 flex items-start gap-1.5 leading-relaxed">

@@ -3,7 +3,7 @@ import Layout from '@/components/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { AdminPageHeader } from '@/components/shared/AdminPageHeader';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { defaultPlatformConfig } from '@/data/defaults';
 import { OverviewTab } from '@/components/admin/tabs/OverviewTab';
 import { PlatformTab } from '@/components/admin/tabs/PlatformTab';
@@ -38,7 +38,7 @@ export default function AdminDashboard() {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto space-y-6">
-        <AdminPageHeader icon={BarChart3} title="Painel Administrativo" description="Gerencie e monitore toda a plataforma" />
+        <PageHeader icon={BarChart3} title="Painel Administrativo" description="Gerencie e monitore toda a plataforma" />
 
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="w-full justify-start border-b bg-transparent p-0 h-auto rounded-none gap-0.5 overflow-x-auto scrollbar-hide">

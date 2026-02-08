@@ -2,7 +2,7 @@ import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Target, TrendingUp } from "lucide-react";
+import { Plus, Target, Calculator } from "lucide-react";
 import { usePlanner } from "@/hooks/usePlanner";
 import { MetricsGrid } from "@/components/planner/MetricsGrid";
 import { BuyingPaceCard } from "@/components/planner/BuyingPaceCard";
@@ -11,6 +11,7 @@ import { AddTransactionModal } from "@/components/planner/AddTransactionModal";
 import { EditGoalModal } from "@/components/planner/EditGoalModal";
 import { useToast } from "@/hooks/use-toast";
 import { TripGoal, Transaction } from "@/types/planner";
+import { PageHeader } from '@/components/shared/PageHeader';
 
 export default function Planner() {
   const {
@@ -66,14 +67,7 @@ export default function Planner() {
     return (
       <Layout>
         <div className="space-y-8 animate-fade-in">
-          <div className="text-center">
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-3 sm:mb-4">
-              Planner de Compras de Câmbio
-            </h1>
-            <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-              Planeje suas compras de moeda estrangeira com inteligência
-            </p>
-          </div>
+          <PageHeader icon={Calculator} title="Planner de Compras de Câmbio" description="Planeje suas compras de moeda estrangeira com inteligência" />
 
           <Card className="max-w-2xl mx-auto">
             <CardHeader className="text-center">
@@ -113,18 +107,10 @@ export default function Planner() {
   return (
     <Layout>
       <div className="space-y-8 animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 sm:mb-4">
-              Planner de Compras
-            </h1>
-            <p className="text-sm sm:text-lg text-muted-foreground">
-              Acompanhe seu progresso e planeje suas compras
-            </p>
-          </div>
+        <PageHeader icon={Calculator} title="Planner de Compras" description="Acompanhe seu progresso e planeje suas compras">
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowEditGoal(true)} className="text-xs sm:text-sm">
-              <TrendingUp className="mr-1.5 h-4 w-4" />
+              <Target className="mr-1.5 h-4 w-4" />
               Editar Meta
             </Button>
             <Button size="sm" onClick={() => setShowAddTransaction(true)} className="text-xs sm:text-sm">
@@ -132,7 +118,7 @@ export default function Planner() {
               Nova Compra
             </Button>
           </div>
-        </div>
+        </PageHeader>
 
         {/* Metrics Grid */}
         {metrics && (
