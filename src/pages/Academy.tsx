@@ -11,6 +11,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 export default function Academy() {
   const {
     course,
+    publishedCourses,
+    activeCourseId,
+    onCourseChange,
     isLoading,
     currentLesson,
     setCurrentLesson,
@@ -64,6 +67,9 @@ export default function Academy() {
       searchTerm={searchTerm}
       onSearchChange={setSearchTerm}
       filteredLessons={filteredLessons}
+      publishedCourses={publishedCourses}
+      activeCourseId={activeCourseId}
+      onCourseChange={onCourseChange}
     />
   );
 

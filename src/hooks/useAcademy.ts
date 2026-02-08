@@ -4,12 +4,30 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Course, Module, Lesson } from '@/types/academy';
 
+/** Fetch all published courses (summary only) */
+async function fetchPublishedCourses(): Promise<Pick<Course, 'id' | 'title' | 'description' | 'is_published'>[]> {
+  const { data, error } = await supabase
+    .from('courses')
+    .select('id, title, description, is_published')
+    .eq('is_published', true)
+    .order('sort_order');
+
+  if (error) throw error;
+  return (data || []).map(c => ({
+    id: c.id,
+    title: c.title,
+    description: c.description,
+    is_published: c.is_published,
+  }));
+}
+
 /** Fetch a single course with nested modules → lessons from the DB */
 async function fetchCourseById(courseId: string): Promise<Course> {
   const { data: course, error: cErr } = await supabase
     .from('courses')
     .select('*')
     .eq('id', courseId)
+    .eq('is_published', true)
     .maybeSingle();
 
   if (cErr) throw cErr;
@@ -51,7 +69,7 @@ async function fetchCourseById(courseId: string): Promise<Course> {
         order: l.sort_order,
         duration: l.duration,
         bunny_video_id: l.bunny_video_id,
-        is_completed: false, // will be merged with progress
+        is_completed: false,
         is_free: l.is_free,
       })),
   }));
@@ -81,16 +99,26 @@ async function fetchUserProgress(userId: string): Promise<Set<string>> {
   return new Set((data || []).map((r) => r.lesson_id));
 }
 
-export function useAcademy(courseId?: string) {
+export function useAcademy() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Default to the first published course
-  const targetCourseId = courseId || 'a1000000-0000-0000-0000-000000000001';
+  // Fetch all published courses for selector
+  const { data: publishedCourses = [], isLoading: isCoursesLoading } = useQuery({
+    queryKey: ['academy-published-courses'],
+    queryFn: fetchPublishedCourses,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Track the selected course ID — defaults to first published course
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+
+  const activeCourseId = selectedCourseId || publishedCourses[0]?.id || null;
 
   const { data: rawCourse, isLoading: isCourseLoading } = useQuery({
-    queryKey: ['academy-course', targetCourseId],
-    queryFn: () => fetchCourseById(targetCourseId),
+    queryKey: ['academy-course', activeCourseId],
+    queryFn: () => fetchCourseById(activeCourseId!),
+    enabled: !!activeCourseId,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -124,6 +152,13 @@ export function useAcademy(courseId?: string) {
 
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Reset lesson when course changes
+  const handleCourseChange = useCallback((courseId: string) => {
+    setSelectedCourseId(courseId);
+    setCurrentLesson(null);
+    setSearchTerm('');
+  }, []);
 
   // Auto-select first lesson when course loads
   const effectiveLesson = useMemo(() => {
@@ -185,12 +220,17 @@ export function useAcademy(courseId?: string) {
     );
   }, [searchTerm, course]);
 
+  const emptyCourse: Course = {
+    id: '', title: '', description: '', modules: [],
+    total_lessons: 0, completed_lessons: 0, progress: 0, is_published: false,
+  };
+
   return {
-    course: course || ({
-      id: '', title: '', description: '', modules: [],
-      total_lessons: 0, completed_lessons: 0, progress: 0, is_published: false,
-    } as Course),
-    isLoading: isCourseLoading,
+    course: course || emptyCourse,
+    publishedCourses,
+    activeCourseId,
+    onCourseChange: handleCourseChange,
+    isLoading: isCoursesLoading || isCourseLoading,
     currentLesson: effectiveLesson,
     setCurrentLesson,
     searchTerm,
