@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,12 +12,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { UserRole } from '@/types/auth';
 import { getRoleFullLabel, getRoleBadgeVariant } from '@/lib/roles';
-import { User, Settings, CreditCard, Shield } from 'lucide-react';
+import { User, Settings, CreditCard, Shield, ExternalLink, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 export default function Profile() {
   const { user, updateProfile } = useAuth();
+  const { subscription, isLoading: isSubLoading, isPortalLoading, openCustomerPortal } = useSubscription();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
@@ -59,15 +64,30 @@ export default function Profile() {
       return;
     }
 
+    if (passwordData.newPassword.length < 6) {
+      toast({
+        title: 'Erro',
+        description: 'A nova senha deve ter no mínimo 6 caracteres',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // Mock password change
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword,
+      });
+
+      if (error) throw error;
+
       toast({ title: 'Senha alterada com sucesso!' });
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (error) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Tente novamente mais tarde';
       toast({
         title: 'Erro ao alterar senha',
-        description: 'Tente novamente mais tarde',
+        description: message,
         variant: 'destructive'
       });
     } finally {
@@ -204,41 +224,54 @@ export default function Profile() {
                 <CardTitle>Gestão da Assinatura</CardTitle>
               </CardHeader>
               <CardContent>
-                {user.subscription ? (
+                {isSubLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : subscription.subscribed ? (
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="text-center p-4 border rounded-lg">
                         <p className="text-sm text-muted-foreground">Plano Atual</p>
-                        <p className="text-lg font-semibold capitalize">{user.subscription.plan}</p>
+                        <p className="text-lg font-semibold capitalize">{subscription.current_plan_slug || subscription.subscription_tier || 'Premium'}</p>
                       </div>
                       <div className="text-center p-4 border rounded-lg">
                         <p className="text-sm text-muted-foreground">Status</p>
-                        <Badge variant={user.subscription.status === 'active' ? 'default' : 'destructive'}>
-                          {user.subscription.status === 'active' ? 'Ativo' : 'Inativo'}
+                        <Badge variant={subscription.cancel_at_period_end ? 'secondary' : 'default'}>
+                          {subscription.cancel_at_period_end ? 'Cancela ao fim do período' : 'Ativo'}
                         </Badge>
                       </div>
                       <div className="text-center p-4 border rounded-lg">
                         <p className="text-sm text-muted-foreground">Renovação</p>
                         <p className="text-lg font-semibold">
-                          {user.subscription.expiresAt ? 
-                            new Date(user.subscription.expiresAt).toLocaleDateString('pt-BR') : 
-                            'N/A'
-                          }
+                          {subscription.subscription_end
+                            ? new Date(subscription.subscription_end).toLocaleDateString('pt-BR')
+                            : 'N/A'}
                         </p>
                       </div>
                     </div>
-                    {user.role === UserRole.FREE && (
-                      <div className="mt-6">
-                        <Button variant="hero" size="lg" className="w-full">
-                          Fazer Upgrade para Premium
-                        </Button>
+                    {subscription.pending_downgrade_to && (
+                      <div className="p-3 bg-muted rounded-lg text-sm text-muted-foreground">
+                        Downgrade agendado para <strong>{subscription.pending_downgrade_to}</strong> em{' '}
+                        {subscription.pending_downgrade_date
+                          ? new Date(subscription.pending_downgrade_date).toLocaleDateString('pt-BR')
+                          : ''}
                       </div>
                     )}
+                    <Button
+                      variant="outline"
+                      className="w-full gap-2"
+                      onClick={openCustomerPortal}
+                      disabled={isPortalLoading}
+                    >
+                      {isPortalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                      Gerenciar Assinatura
+                    </Button>
                   </div>
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground mb-4">Nenhuma assinatura ativa</p>
-                    <Button variant="hero" size="lg">
+                    <Button variant="hero" size="lg" onClick={() => navigate('/subscription')}>
                       Assinar Plano Premium
                     </Button>
                   </div>

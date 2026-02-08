@@ -13,9 +13,7 @@ interface AuthContextType extends AuthState {
   hasRole: (role: UserRole) => boolean;
   viewAsUser: boolean;
   setViewAsUser: (value: boolean) => void;
-  checkSubscription: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -163,17 +161,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw new Error(error.message);
   };
 
-  const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/`,
-      },
-    });
-
-    if (error) throw new Error(error.message);
-  };
-
   const updateProfile = async (data: Partial<UserProfile>) => {
     if (!authState.user) return;
     
@@ -205,18 +192,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return authState.user.role === role;
   };
 
-  const checkSubscription = async () => {
-    // Will be implemented with Stripe integration
-  };
-
   const value: AuthContextType = {
     ...authState,
     login, register, logout, updateProfile,
     hasPermission, hasRole,
     viewAsUser, setViewAsUser,
-    checkSubscription,
     resetPassword,
-    signInWithGoogle,
   };
 
   return (

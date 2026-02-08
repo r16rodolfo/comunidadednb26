@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Course, Lesson } from '@/types/academy';
 import { mockCourse } from '@/data/mock-academy';
 
@@ -8,12 +8,12 @@ export function useAcademy() {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Auto-seleciona a primeira aula ao carregar
-  useState(() => {
+  useEffect(() => {
     if (!currentLesson && course.modules.length > 0) {
       const firstLesson = course.modules[0]?.lessons[0];
       if (firstLesson) setCurrentLesson(firstLesson);
     }
-  });
+  }, []);
 
   const markLessonAsCompleted = (lessonId: string) => {
     setCourse(prev => {
@@ -64,7 +64,7 @@ export function useAcademy() {
     : [];
 
   // Load saved progress from localStorage
-  useState(() => {
+  useEffect(() => {
     const savedProgress = JSON.parse(localStorage.getItem('dnb-academy-progress') || '{}');
     if (Object.keys(savedProgress).length > 0) {
       setCourse(prev => {
@@ -81,7 +81,7 @@ export function useAcademy() {
         return { ...prev, modules: updatedModules, completed_lessons: completedCount, progress };
       });
     }
-  });
+  }, []);
 
   return {
     course, currentLesson, setCurrentLesson,
