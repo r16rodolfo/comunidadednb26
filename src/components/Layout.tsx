@@ -146,6 +146,7 @@ function AppSidebar() {
   const currentPath = location.pathname;
   const isCollapsed = state === "collapsed";
 
+  const platformLogo = localStorage.getItem('platform_logo') || null;
   const navigationItems = user ? getNavigationItems(user.role, viewAsUser) : [];
 
   const isActive = (path: string) => currentPath === path;
@@ -169,18 +170,26 @@ function AppSidebar() {
         <div className="mb-6 px-2">
           {!isCollapsed ? (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">DNB</span>
-              </div>
+              {platformLogo ? (
+                <img src={platformLogo} alt="Logo" className="w-10 h-10 rounded-lg object-contain" />
+              ) : (
+                <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">DNB</span>
+                </div>
+              )}
               <div>
                 <h1 className="font-bold text-lg text-foreground">Comunidade DNB</h1>
                 <p className="text-xs text-muted-foreground">Viaje com inteligência</p>
               </div>
             </div>
           ) : (
-            <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-white font-bold text-lg">DNB</span>
-            </div>
+            platformLogo ? (
+              <img src={platformLogo} alt="Logo" className="w-10 h-10 rounded-lg object-contain mx-auto" />
+            ) : (
+              <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center mx-auto">
+                <span className="text-white font-bold text-lg">DNB</span>
+              </div>
+            )
           )}
         </div>
 
