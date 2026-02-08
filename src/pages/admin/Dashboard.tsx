@@ -9,9 +9,11 @@ import { OverviewTab } from '@/components/admin/tabs/OverviewTab';
 import { PlatformTab } from '@/components/admin/tabs/PlatformTab';
 import { SecurityTab } from '@/components/admin/tabs/SecurityTab';
 import { HomeTab } from '@/components/admin/tabs/HomeTab';
+import { BillingTab } from '@/components/admin/tabs/BillingTab';
 
 const TAB_LABELS: Record<string, string> = {
   overview: 'Visão Geral',
+  billing: 'Faturamento',
   home: 'Página Inicial',
   platform: 'Plataforma',
   security: 'Segurança',
@@ -51,6 +53,10 @@ export default function AdminDashboard() {
 
           <TabsContent value="overview" className="space-y-6 pt-4">
             <OverviewTab />
+          </TabsContent>
+
+          <TabsContent value="billing" className="space-y-6 pt-4">
+            <BillingTab />
           </TabsContent>
 
           <TabsContent value="home" className="space-y-6 pt-4">
