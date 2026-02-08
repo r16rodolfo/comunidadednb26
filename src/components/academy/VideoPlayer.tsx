@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, CheckCircle2, Clock, PlayCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckCircle2, Clock, PlayCircle, Lock } from "lucide-react";
 import { Lesson } from "@/types/academy";
-import { useEffect } from "react";
+import { bunnyStreamConfig } from "@/data/mock-academy";
 
 interface VideoPlayerProps {
   lesson: Lesson | null;
@@ -12,6 +12,7 @@ interface VideoPlayerProps {
   onMarkCompleted: () => void;
   hasNext: boolean;
   hasPrevious: boolean;
+  isPremiumUser?: boolean;
 }
 
 export function VideoPlayer({
@@ -20,26 +21,21 @@ export function VideoPlayer({
   onNext,
   onMarkCompleted,
   hasNext,
-  hasPrevious
+  hasPrevious,
+  isPremiumUser = false
 }: VideoPlayerProps) {
-  useEffect(() => {
-    if (lesson?.video_id) {
-      // Carregar o script da Panda Video dinamicamente
-      const script = document.createElement('script');
-      script.src = 'https://player.pandavideo.com.br/api.v2.js';
-      script.async = true;
-      document.head.appendChild(script);
-
-      return () => {
-        document.head.removeChild(script);
-      };
-    }
-  }, [lesson?.video_id]);
-
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const canWatch = (l: Lesson) => l.is_free || isPremiumUser;
+
+  const getBunnyEmbedUrl = (videoId: string) => {
+    const libraryId = bunnyStreamConfig.library_id;
+    if (!libraryId || !videoId) return null;
+    return `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}?autoplay=false&loop=false&muted=false&preload=true&responsive=true`;
   };
 
   if (!lesson) {
@@ -56,31 +52,48 @@ export function VideoPlayer({
     );
   }
 
+  const embedUrl = getBunnyEmbedUrl(lesson.bunny_video_id);
+  const hasAccess = canWatch(lesson);
+
   return (
     <div className="flex-1 flex flex-col bg-background">
       {/* Video Container */}
       <div className="bg-black flex-1 flex items-center justify-center min-h-[400px]">
-        {lesson.is_free || lesson.is_completed ? (
-          <div
-            id={`panda-player-${lesson.video_id}`}
-            style={{ width: '100%', height: '100%', minHeight: '400px' }}
-          >
-            {/* Placeholder para o player da Panda Video */}
-            <div className="w-full h-full flex items-center justify-center text-white bg-gray-900">
+        {hasAccess ? (
+          embedUrl ? (
+            <div style={{ position: 'relative', paddingTop: '56.25%', width: '100%' }}>
+              <iframe
+                src={embedUrl}
+                loading="lazy"
+                style={{
+                  border: 'none',
+                  position: 'absolute',
+                  top: 0,
+                  height: '100%',
+                  width: '100%',
+                }}
+                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          ) : (
+          <div className="w-full h-full flex items-center justify-center text-white bg-muted/10 min-h-[400px]">
               <div className="text-center">
-                <PlayCircle className="h-16 w-16 mx-auto mb-4" />
-                <p className="text-lg">Player da Panda Video</p>
-                <p className="text-sm opacity-75">Video ID: {lesson.video_id}</p>
+                <PlayCircle className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">Vídeo não configurado</p>
+                <p className="text-sm opacity-75 mt-1">
+                  O ID do vídeo do Bunny.net ainda não foi adicionado a esta aula.
+                </p>
               </div>
             </div>
-          </div>
+          )
         ) : (
           <div className="text-center text-white">
             <div className="bg-black/50 p-8 rounded-lg">
-              <CheckCircle2 className="h-16 w-16 mx-auto mb-4 text-primary" />
+              <Lock className="h-16 w-16 mx-auto mb-4 text-primary" />
               <h3 className="text-xl font-semibold mb-2">Aula Premium</h3>
               <p className="text-white/80">
-                Esta aula está disponível apenas para membros premium
+                Esta aula está disponível apenas para assinantes premium
               </p>
               <Button className="mt-4" variant="secondary">
                 Fazer Upgrade
@@ -103,8 +116,10 @@ export function VideoPlayer({
                     Concluído
                   </Badge>
                 )}
-                {lesson.is_free && (
+                {lesson.is_free ? (
                   <Badge variant="outline">Gratuito</Badge>
+                ) : (
+                  <Badge variant="secondary">Premium</Badge>
                 )}
               </div>
               {lesson.description && (
@@ -133,7 +148,7 @@ export function VideoPlayer({
           </Button>
 
           <div className="flex items-center gap-3">
-            {!lesson.is_completed && (lesson.is_free || lesson.is_completed) && (
+            {!lesson.is_completed && hasAccess && (
               <Button
                 onClick={onMarkCompleted}
                 className="flex items-center gap-2"

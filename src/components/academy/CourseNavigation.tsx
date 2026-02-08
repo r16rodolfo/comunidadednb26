@@ -3,7 +3,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, CheckCircle2, PlayCircle, Lock } from "lucide-react";
-import { Course, Lesson, Module } from "@/types/academy";
+import { Course, Lesson } from "@/types/academy";
 import { cn } from "@/lib/utils";
 
 interface CourseNavigationProps {
@@ -13,6 +13,7 @@ interface CourseNavigationProps {
   searchTerm: string;
   onSearchChange: (term: string) => void;
   filteredLessons: Lesson[];
+  isPremiumUser?: boolean;
 }
 
 export function CourseNavigation({
@@ -21,7 +22,8 @@ export function CourseNavigation({
   onLessonSelect,
   searchTerm,
   onSearchChange,
-  filteredLessons
+  filteredLessons,
+  isPremiumUser = false
 }: CourseNavigationProps) {
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -30,42 +32,52 @@ export function CourseNavigation({
 
   const renderLessonsList = (lessons: Lesson[], moduleTitle?: string) => (
     <div className="space-y-2">
-      {lessons.map((lesson) => (
-        <Button
-          key={lesson.id}
-          variant="ghost"
-          className={cn(
-            "w-full justify-start p-3 h-auto text-left hover:bg-muted/50",
-            currentLesson?.id === lesson.id && "bg-primary/10 border-l-2 border-l-primary"
-          )}
-          onClick={() => onLessonSelect(lesson)}
-        >
-          <div className="flex items-start gap-3 w-full">
-            <div className="flex-shrink-0 mt-0.5">
-              {lesson.is_completed ? (
-                <CheckCircle2 className="h-4 w-4 text-accent" />
-              ) : lesson.is_free ? (
-                <PlayCircle className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <Lock className="h-4 w-4 text-muted-foreground" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-sm leading-tight">
-                {lesson.title}
+      {lessons.map((lesson) => {
+        const hasAccess = lesson.is_free || isPremiumUser;
+        return (
+          <Button
+            key={lesson.id}
+            variant="ghost"
+            className={cn(
+              "w-full justify-start p-3 h-auto text-left hover:bg-muted/50",
+              currentLesson?.id === lesson.id && "bg-primary/10 border-l-2 border-l-primary"
+            )}
+            onClick={() => onLessonSelect(lesson)}
+          >
+            <div className="flex items-start gap-3 w-full">
+              <div className="flex-shrink-0 mt-0.5">
+                {lesson.is_completed ? (
+                  <CheckCircle2 className="h-4 w-4 text-accent" />
+                ) : hasAccess ? (
+                  <PlayCircle className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Lock className="h-4 w-4 text-muted-foreground" />
+                )}
               </div>
-              {moduleTitle && (
-                <div className="text-xs text-muted-foreground mt-1">
-                  {moduleTitle}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm leading-tight">
+                    {lesson.title}
+                  </span>
+                  {!lesson.is_free && (
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                      Premium
+                    </Badge>
+                  )}
                 </div>
-              )}
-              <div className="text-xs text-muted-foreground mt-1">
-                {formatDuration(lesson.duration)}
+                {moduleTitle && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {moduleTitle}
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground mt-1">
+                  {formatDuration(lesson.duration)}
+                </div>
               </div>
             </div>
-          </div>
-        </Button>
-      ))}
+          </Button>
+        );
+      })}
     </div>
   );
 

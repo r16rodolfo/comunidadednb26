@@ -65,31 +65,7 @@ export const mockAdminUsers = [
   },
 ];
 
-// Admin Content page
-export const mockCourses = [
-  {
-    id: '1',
-    title: 'Fundamentos do Câmbio',
-    description: 'Aprenda os conceitos básicos do mercado de câmbio',
-    status: 'Publicado',
-    duration: '2h 30min',
-    lessons: 8,
-    students: 245,
-    category: 'Iniciante',
-    createdAt: '2024-01-10',
-  },
-  {
-    id: '2',
-    title: 'Estratégias Avançadas de Câmbio',
-    description: 'Técnicas avançadas para otimizar suas operações',
-    status: 'Rascunho',
-    duration: '3h 15min',
-    lessons: 12,
-    students: 0,
-    category: 'Avançado',
-    createdAt: '2024-01-15',
-  },
-];
+// Admin Content page - cursos agora em mock-academy.ts (mockAdminCourses)
 
 // Admin Analytics page
 export const monthlyRevenue = [
