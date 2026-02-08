@@ -20,6 +20,9 @@ export interface PlatformConfig {
     premiumTransactions: number;
     apiCalls: number;
   };
+  integrations: {
+    bunnyLibraryId: string;
+  };
 }
 
 export interface SubscriptionPlan {
