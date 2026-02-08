@@ -224,6 +224,60 @@ export type Database = {
           },
         ]
       }
+      market_analyses: {
+        Row: {
+          created_at: string
+          date: string
+          dollar_price: number
+          dollar_variation: number
+          euro_price: number
+          euro_variation: number
+          full_analysis: string
+          id: string
+          image_url: string | null
+          recommendation: string
+          resistances: number[]
+          summary: string
+          supports: number[]
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          dollar_price: number
+          dollar_variation?: number
+          euro_price: number
+          euro_variation?: number
+          full_analysis: string
+          id?: string
+          image_url?: string | null
+          recommendation: string
+          resistances?: number[]
+          summary: string
+          supports?: number[]
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          dollar_price?: number
+          dollar_variation?: number
+          euro_price?: number
+          euro_variation?: number
+          full_analysis?: string
+          id?: string
+          image_url?: string | null
+          recommendation?: string
+          resistances?: number[]
+          summary?: string
+          supports?: number[]
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       modules: {
         Row: {
           course_id: string
