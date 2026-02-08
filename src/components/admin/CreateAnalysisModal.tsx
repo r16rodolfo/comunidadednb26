@@ -19,10 +19,10 @@ interface CreateAnalysisModalProps {
 }
 
 const recommendationOptions = [
-  { value: 'ideal', label: 'Momento Ideal', icon: TrendingUp, color: 'bg-green-100 text-green-800' },
-  { value: 'alert', label: 'Momento de Alerta', icon: AlertTriangle, color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'not-ideal', label: 'Momento Não Ideal', icon: TrendingDown, color: 'bg-red-100 text-red-800' },
-  { value: 'wait', label: 'Momento de Aguardar', icon: Clock, color: 'bg-blue-100 text-blue-800' },
+  { value: 'ideal', label: 'Momento Ideal', icon: TrendingUp, color: 'bg-success/10 text-success' },
+  { value: 'alert', label: 'Momento de Alerta', icon: AlertTriangle, color: 'bg-warning/10 text-warning' },
+  { value: 'not-ideal', label: 'Momento Não Ideal', icon: TrendingDown, color: 'bg-destructive/10 text-destructive' },
+  { value: 'wait', label: 'Momento de Aguardar', icon: Clock, color: 'bg-info/10 text-info' },
 ] as const;
 
 export function CreateAnalysisModal({ open, onOpenChange, onSave, editingAnalysis }: CreateAnalysisModalProps) {

@@ -27,7 +27,6 @@ import AdminSubscriptions from "./pages/admin/Subscriptions";
 import AdminPlanner from "./pages/admin/Planner";
 import AdminAnalyses from "./pages/admin/Analyses";
 import NotFound from "./pages/NotFound";
-import EmailTemplatePreview from "./pages/EmailTemplatePreview";
 
 const queryClient = new QueryClient();
 
@@ -129,8 +128,6 @@ const App = () => (
               </ProtectedRoute>
             } />
             
-            {/* Email Template Preview (dev/admin) */}
-            <Route path="/email-preview" element={<EmailTemplatePreview />} />
             
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

@@ -5,110 +5,94 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Filter, UserPlus, MoreHorizontal, Edit, Trash2, Eye, Users as UsersIcon, Activity, Crown } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Users as UsersIcon, Activity, Crown, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { StatCard } from '@/components/shared/StatCard';
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader';
-import { UserModal, AdminUser, UserFormData } from '@/components/admin/UserModal';
-import { mockAdminUsers as initialUsers } from '@/data/mock-admin';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+
+interface RealUser {
+  id: string;
+  name: string;
+  role: string;
+  createdAt: string;
+}
 
 const getRoleVariant = (role: string) => {
   switch (role) {
-    case 'Premium': return 'default' as const;
-    case 'Gratuito': return 'outline' as const;
-    case 'Admin': return 'destructive' as const;
-    case 'Gestor': return 'secondary' as const;
+    case 'premium': return 'default' as const;
+    case 'free': return 'outline' as const;
+    case 'admin': return 'destructive' as const;
+    case 'gestor': return 'secondary' as const;
     default: return 'secondary' as const;
   }
 };
 
-const getStatusVariant = (status: string) => {
-  switch (status) {
-    case 'Ativo': return 'default' as const;
-    case 'Inativo': return 'destructive' as const;
-    default: return 'secondary' as const;
+const getRoleLabel = (role: string) => {
+  switch (role) {
+    case 'premium': return 'Premium';
+    case 'free': return 'Gratuito';
+    case 'admin': return 'Administrador';
+    case 'gestor': return 'Gestor';
+    default: return role;
   }
 };
 
 export default function AdminUsers() {
-  const [users, setUsers] = useState<AdminUser[]>(initialUsers);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
-  const [viewingUser, setViewingUser] = useState<AdminUser | null>(null);
-  const [deletingUser, setDeletingUser] = useState<AdminUser | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewingUser, setViewingUser] = useState<RealUser | null>(null);
   const { toast } = useToast();
 
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ['admin-users-list'],
+    queryFn: async () => {
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('user_id, name, created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const userIds = (profiles || []).map(p => p.user_id);
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', userIds);
+
+      const roleMap = new Map((roles || []).map(r => [r.user_id, r.role]));
+
+      return (profiles || []).map(p => ({
+        id: p.user_id,
+        name: p.name || 'Sem nome',
+        role: roleMap.get(p.user_id) || 'free',
+        createdAt: p.created_at,
+      }));
+    },
+  });
+
   const filteredUsers = users.filter(
-    (u) =>
-      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase())
+    (u) => u.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const stats = {
     total: users.length,
-    active: users.filter((u) => u.status === 'Ativo').length,
-    premium: users.filter((u) => u.role === 'Premium').length,
-  };
-
-  const handleCreateOrUpdate = (data: UserFormData) => {
-    if (editingUser) {
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === editingUser.id
-            ? { ...u, name: data.name, email: data.email, role: data.role, subscription: data.subscription, status: data.isActive ? 'Ativo' : 'Inativo' }
-            : u
-        )
-      );
-    } else {
-      const newUser: AdminUser = {
-        id: String(Date.now()),
-        name: data.name,
-        email: data.email,
-        role: data.role,
-        status: data.isActive ? 'Ativo' : 'Inativo',
-        lastAccess: new Date().toISOString().split('T')[0],
-        subscription: data.subscription,
-      };
-      setUsers((prev) => [newUser, ...prev]);
-    }
-    setEditingUser(null);
-    setIsModalOpen(false);
-  };
-
-  const handleEdit = (user: AdminUser) => {
-    setEditingUser(user);
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = () => {
-    if (!deletingUser) return;
-    setUsers((prev) => prev.filter((u) => u.id !== deletingUser.id));
-    toast({ title: 'Usuário excluído', description: `${deletingUser.name} foi removido da plataforma.` });
-    setDeletingUser(null);
-  };
-
-  const handleOpenCreate = () => {
-    setEditingUser(null);
-    setIsModalOpen(true);
+    premium: users.filter((u) => u.role === 'premium').length,
+    admin: users.filter((u) => u.role === 'admin' || u.role === 'gestor').length,
   };
 
   return (
     <Layout>
       <div className="space-y-6">
-        <AdminPageHeader icon={UsersIcon} title="Gestão de Usuários" description="Gerencie todos os usuários da plataforma">
-          <Button onClick={handleOpenCreate}>
-            <UserPlus className="h-4 w-4 mr-2" />Novo Usuário
-          </Button>
-        </AdminPageHeader>
+        <AdminPageHeader icon={UsersIcon} title="Gestão de Usuários" description="Visualize todos os usuários da plataforma" />
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <StatCard label="Total de Usuários" value={stats.total} icon={UsersIcon} />
-          <StatCard label="Usuários Ativos" value={stats.active} icon={Activity} variant="success" />
-          <StatCard label="Usuários Premium" value={stats.premium} icon={Crown} variant="info" />
+          <StatCard label="Usuários Premium" value={stats.premium} icon={Crown} variant="success" />
+          <StatCard label="Administradores" value={stats.admin} icon={Activity} variant="info" />
         </div>
 
         {/* Filters */}
@@ -135,71 +119,57 @@ export default function AdminUsers() {
             <CardTitle className="text-base">Lista de Usuários ({filteredUsers.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>E-mail</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Último Acesso</TableHead>
-                    <TableHead>Assinatura</TableHead>
-                    <TableHead className="w-[50px]">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell><Badge variant={getRoleVariant(user.role)}>{user.role}</Badge></TableCell>
-                      <TableCell><Badge variant={getStatusVariant(user.status)}>{user.status}</Badge></TableCell>
-                      <TableCell>{user.lastAccess}</TableCell>
-                      <TableCell>{user.subscription}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-popover">
-                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setViewingUser(user)}>
-                              <Eye className="mr-2 h-4 w-4" />Visualizar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEdit(user)}>
-                              <Edit className="mr-2 h-4 w-4" />Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => setDeletingUser(user)}>
-                              <Trash2 className="mr-2 h-4 w-4" />Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredUsers.length === 0 && (
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                        Nenhum usuário encontrado.
-                      </TableCell>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Cadastro</TableHead>
+                      <TableHead className="w-[50px]">Ações</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell><Badge variant={getRoleVariant(user.role)}>{getRoleLabel(user.role)}</Badge></TableCell>
+                        <TableCell>{new Date(user.createdAt).toLocaleDateString('pt-BR')}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-popover">
+                              <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => setViewingUser(user)}>
+                                <Eye className="mr-2 h-4 w-4" />Visualizar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredUsers.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                          Nenhum usuário encontrado.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
-
-      {/* Create / Edit Modal */}
-      <UserModal
-        isOpen={isModalOpen}
-        onClose={() => { setIsModalOpen(false); setEditingUser(null); }}
-        onSubmit={handleCreateOrUpdate}
-        editingUser={editingUser}
-      />
 
       {/* View Dialog */}
       <AlertDialog open={!!viewingUser} onOpenChange={() => setViewingUser(null)}>
@@ -212,16 +182,10 @@ export default function AdminUsers() {
                   <div className="grid grid-cols-2 gap-2">
                     <span className="text-muted-foreground">Nome:</span>
                     <span className="font-medium">{viewingUser.name}</span>
-                    <span className="text-muted-foreground">E-mail:</span>
-                    <span className="font-medium">{viewingUser.email}</span>
                     <span className="text-muted-foreground">Tipo:</span>
-                    <span><Badge variant={getRoleVariant(viewingUser.role)}>{viewingUser.role}</Badge></span>
-                    <span className="text-muted-foreground">Status:</span>
-                    <span><Badge variant={getStatusVariant(viewingUser.status)}>{viewingUser.status}</Badge></span>
-                    <span className="text-muted-foreground">Último acesso:</span>
-                    <span className="font-medium">{viewingUser.lastAccess}</span>
-                    <span className="text-muted-foreground">Assinatura:</span>
-                    <span className="font-medium">{viewingUser.subscription}</span>
+                    <span><Badge variant={getRoleVariant(viewingUser.role)}>{getRoleLabel(viewingUser.role)}</Badge></span>
+                    <span className="text-muted-foreground">Cadastro:</span>
+                    <span className="font-medium">{new Date(viewingUser.createdAt).toLocaleDateString('pt-BR')}</span>
                   </div>
                 </div>
               )}
@@ -229,27 +193,6 @@ export default function AdminUsers() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Fechar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (viewingUser) { handleEdit(viewingUser); setViewingUser(null); } }}>
-              Editar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deletingUser} onOpenChange={() => setDeletingUser(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Usuário</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir <strong>{deletingUser?.name}</strong>? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Excluir
-            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

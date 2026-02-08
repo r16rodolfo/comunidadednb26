@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader';
-import { defaultPlatformConfig } from '@/data/mock-admin';
+import { defaultPlatformConfig } from '@/data/defaults';
 import { OverviewTab } from '@/components/admin/tabs/OverviewTab';
 import { PlatformTab } from '@/components/admin/tabs/PlatformTab';
 import { SecurityTab } from '@/components/admin/tabs/SecurityTab';

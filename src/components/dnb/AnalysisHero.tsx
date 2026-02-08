@@ -13,6 +13,11 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import {
+  recommendationBadgeStyles,
+  recommendationGradientStyles,
+  getVariationColorClass,
+} from '@/lib/recommendation-styles';
 
 const iconMap = {
   TrendingUp,
@@ -36,34 +41,20 @@ export default function AnalysisHero({
 }: AnalysisHeroProps) {
   const IconComponent = iconMap[recommendation.icon as keyof typeof iconMap];
 
-  const recommendationStyles: Record<string, string> = {
-    ideal: 'from-green-500/20 to-green-600/5 border-green-300/50',
-    alert: 'from-yellow-500/20 to-yellow-600/5 border-yellow-300/50',
-    'not-ideal': 'from-red-500/20 to-red-600/5 border-red-300/50',
-    wait: 'from-blue-500/20 to-blue-600/5 border-blue-300/50',
-  };
-
-  const badgeStyles: Record<string, string> = {
-    ideal: 'bg-green-100 text-green-800 border-green-300',
-    alert: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    'not-ideal': 'bg-red-100 text-red-800 border-red-300',
-    wait: 'bg-blue-100 text-blue-800 border-blue-300',
-  };
-
   return (
-    <Card className={`border-2 bg-gradient-to-br ${recommendationStyles[analysis.recommendation]} shadow-lg overflow-hidden`}>
+    <Card className={`border-2 bg-gradient-to-br ${recommendationGradientStyles[analysis.recommendation]} shadow-lg overflow-hidden`}>
       <CardContent className="p-6 md:p-8">
         <div className="flex flex-col gap-6">
           {/* Top: Badge + Date */}
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               {IconComponent && (
-                <div className={`p-2 rounded-full ${badgeStyles[analysis.recommendation]}`}>
+                <div className={`p-2 rounded-full ${recommendationBadgeStyles[analysis.recommendation]}`}>
                   <IconComponent className="h-5 w-5" />
                 </div>
               )}
               <div>
-                <Badge className={`${badgeStyles[analysis.recommendation]} border text-sm font-semibold px-3 py-1`}>
+                <Badge className={`${recommendationBadgeStyles[analysis.recommendation]} border text-sm font-semibold px-3 py-1`}>
                   {recommendation.label}
                 </Badge>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -135,8 +126,6 @@ function PriceIndicator({
   price: number;
   variation: number;
 }) {
-  const isPositive = variation >= 0;
-
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg bg-background/60 backdrop-blur-sm">
       <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -144,12 +133,8 @@ function PriceIndicator({
         <p className="text-xs text-muted-foreground font-medium">{label}</p>
         <div className="flex items-baseline gap-2">
           <span className="text-lg font-bold">R$ {price.toFixed(2)}</span>
-          <span
-            className={`text-xs font-semibold ${
-              isPositive ? 'text-green-600' : 'text-red-600'
-            }`}
-          >
-            {isPositive ? '+' : ''}
+          <span className={`text-xs font-semibold ${getVariationColorClass(variation)}`}>
+            {variation >= 0 ? '+' : ''}
             {variation}%
           </span>
         </div>
