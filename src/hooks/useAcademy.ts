@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Course, Lesson } from '@/types/academy';
 import { mockCourse } from '@/data/mock-academy';
 
@@ -7,12 +7,13 @@ export function useAcademy() {
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
+  // Auto-seleciona a primeira aula ao carregar
+  useState(() => {
     if (!currentLesson && course.modules.length > 0) {
       const firstLesson = course.modules[0]?.lessons[0];
       if (firstLesson) setCurrentLesson(firstLesson);
     }
-  }, [course, currentLesson]);
+  });
 
   const markLessonAsCompleted = (lessonId: string) => {
     setCourse(prev => {
@@ -33,33 +34,24 @@ export function useAcademy() {
     localStorage.setItem('dnb-academy-progress', JSON.stringify(savedProgress));
   };
 
+  const getAllLessons = (): Lesson[] => {
+    return course.modules.flatMap(m => m.lessons);
+  };
+
   const getNextLesson = () => {
     if (!currentLesson) return null;
-    for (const module of course.modules) {
-      const currentIndex = module.lessons.findIndex(l => l.id === currentLesson.id);
-      if (currentIndex >= 0) {
-        if (currentIndex < module.lessons.length - 1) return module.lessons[currentIndex + 1];
-        const nextModuleIndex = course.modules.findIndex(m => m.id === module.id) + 1;
-        if (nextModuleIndex < course.modules.length) return course.modules[nextModuleIndex].lessons[0];
-      }
-    }
-    return null;
+    const allLessons = getAllLessons();
+    const currentIndex = allLessons.findIndex(l => l.id === currentLesson.id);
+    return currentIndex >= 0 && currentIndex < allLessons.length - 1
+      ? allLessons[currentIndex + 1]
+      : null;
   };
 
   const getPreviousLesson = () => {
     if (!currentLesson) return null;
-    for (let moduleIndex = 0; moduleIndex < course.modules.length; moduleIndex++) {
-      const module = course.modules[moduleIndex];
-      const currentIndex = module.lessons.findIndex(l => l.id === currentLesson.id);
-      if (currentIndex >= 0) {
-        if (currentIndex > 0) return module.lessons[currentIndex - 1];
-        if (moduleIndex > 0) {
-          const prevModule = course.modules[moduleIndex - 1];
-          return prevModule.lessons[prevModule.lessons.length - 1];
-        }
-      }
-    }
-    return null;
+    const allLessons = getAllLessons();
+    const currentIndex = allLessons.findIndex(l => l.id === currentLesson.id);
+    return currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   };
 
   const filteredLessons = searchTerm
@@ -72,7 +64,7 @@ export function useAcademy() {
     : [];
 
   // Load saved progress from localStorage
-  useEffect(() => {
+  useState(() => {
     const savedProgress = JSON.parse(localStorage.getItem('dnb-academy-progress') || '{}');
     if (Object.keys(savedProgress).length > 0) {
       setCourse(prev => {
@@ -89,7 +81,7 @@ export function useAcademy() {
         return { ...prev, modules: updatedModules, completed_lessons: completedCount, progress };
       });
     }
-  }, []);
+  });
 
   return {
     course, currentLesson, setCurrentLesson,

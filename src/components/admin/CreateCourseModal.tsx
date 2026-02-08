@@ -3,106 +3,123 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogFooter 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
 } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { BookOpen, Video, Plus, Trash2 } from 'lucide-react';
+import { BookOpen, Video, Plus, Trash2, GripVertical } from 'lucide-react';
+import { AdminLessonForm } from '@/types/academy';
 
 interface CreateCourseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-interface Lesson {
+interface ModuleForm {
   id: string;
   title: string;
   description: string;
-  videoUrl: string;
-  duration: string;
-  order: number;
+  lessons: (AdminLessonForm & { id: string })[];
 }
 
 export function CreateCourseModal({ open, onOpenChange }: CreateCourseModalProps) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: '',
-    level: '',
-    thumbnail: '',
-    isPremium: false,
-    isPublished: false
+    is_published: false,
   });
 
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [newLesson, setNewLesson] = useState({
-    title: '',
-    description: '',
-    videoUrl: '',
-    duration: ''
-  });
+  const [modules, setModules] = useState<ModuleForm[]>([]);
+  const [newModuleTitle, setNewModuleTitle] = useState('');
 
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Here you would typically send the data to your backend
+
+    if (!formData.title) {
+      toast({ title: 'Erro', description: 'O título do curso é obrigatório.', variant: 'destructive' });
+      return;
+    }
+
     toast({
       title: 'Curso criado com sucesso!',
-      description: `O curso "${formData.title}" foi criado e ${formData.isPublished ? 'publicado' : 'salvo como rascunho'}.`
+      description: `O curso "${formData.title}" foi ${formData.is_published ? 'publicado' : 'salvo como rascunho'}.`
     });
-    
+
     onOpenChange(false);
     resetForm();
   };
 
   const resetForm = () => {
-    setFormData({
-      title: '',
-      description: '',
-      category: '',
-      level: '',
-      thumbnail: '',
-      isPremium: false,
-      isPublished: false
-    });
-    setLessons([]);
-    setNewLesson({ title: '', description: '', videoUrl: '', duration: '' });
+    setFormData({ title: '', description: '', is_published: false });
+    setModules([]);
+    setNewModuleTitle('');
   };
 
-  const addLesson = () => {
-    if (!newLesson.title || !newLesson.videoUrl) {
-      toast({
-        title: 'Erro',
-        description: 'Título e URL do vídeo são obrigatórios.',
-        variant: 'destructive'
-      });
+  const addModule = () => {
+    if (!newModuleTitle.trim()) {
+      toast({ title: 'Erro', description: 'O título do módulo é obrigatório.', variant: 'destructive' });
       return;
     }
-
-    const lesson: Lesson = {
+    setModules(prev => [...prev, {
       id: Date.now().toString(),
-      ...newLesson,
-      order: lessons.length + 1
-    };
-
-    setLessons([...lessons, lesson]);
-    setNewLesson({ title: '', description: '', videoUrl: '', duration: '' });
+      title: newModuleTitle.trim(),
+      description: '',
+      lessons: [],
+    }]);
+    setNewModuleTitle('');
   };
 
-  const removeLesson = (id: string) => {
-    setLessons(lessons.filter(lesson => lesson.id !== id));
+  const removeModule = (moduleId: string) => {
+    setModules(prev => prev.filter(m => m.id !== moduleId));
   };
+
+  const addLesson = (moduleId: string) => {
+    setModules(prev => prev.map(m => {
+      if (m.id !== moduleId) return m;
+      return {
+        ...m,
+        lessons: [...m.lessons, {
+          id: Date.now().toString(),
+          title: '',
+          description: '',
+          bunny_video_id: '',
+          duration: '',
+          is_free: false,
+        }],
+      };
+    }));
+  };
+
+  const updateLesson = (moduleId: string, lessonId: string, field: string, value: string | boolean) => {
+    setModules(prev => prev.map(m => {
+      if (m.id !== moduleId) return m;
+      return {
+        ...m,
+        lessons: m.lessons.map(l =>
+          l.id === lessonId ? { ...l, [field]: value } : l
+        ),
+      };
+    }));
+  };
+
+  const removeLesson = (moduleId: string, lessonId: string) => {
+    setModules(prev => prev.map(m => {
+      if (m.id !== moduleId) return m;
+      return { ...m, lessons: m.lessons.filter(l => l.id !== lessonId) };
+    }));
+  };
+
+  const totalLessons = modules.reduce((sum, m) => sum + m.lessons.length, 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -110,193 +127,192 @@ export function CreateCourseModal({ open, onOpenChange }: CreateCourseModalProps
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
-            Criar Nova Aula
+            Criar Novo Curso
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
           <Tabs defaultValue="info" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="info">Informações Básicas</TabsTrigger>
-              <TabsTrigger value="lessons">Lições</TabsTrigger>
+              <TabsTrigger value="info">Informações</TabsTrigger>
+              <TabsTrigger value="content">
+                Conteúdo {totalLessons > 0 && `(${totalLessons} aulas)`}
+              </TabsTrigger>
             </TabsList>
 
+            {/* Tab: Informações Básicas */}
             <TabsContent value="info" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="title">Título do Curso *</Label>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Ex: Fundamentos do Câmbio"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="category">Categoria *</Label>
-                    <Select onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma categoria" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cambio">Câmbio</SelectItem>
-                        <SelectItem value="investimentos">Investimentos</SelectItem>
-                        <SelectItem value="viagem">Viagem</SelectItem>
-                        <SelectItem value="financas">Finanças</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="level">Nível *</Label>
-                    <Select onValueChange={(value) => setFormData(prev => ({ ...prev, level: value }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o nível" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="iniciante">Iniciante</SelectItem>
-                        <SelectItem value="intermediario">Intermediário</SelectItem>
-                        <SelectItem value="avancado">Avançado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="thumbnail">URL da Thumbnail</Label>
-                    <Input
-                      id="thumbnail"
-                      value={formData.thumbnail}
-                      onChange={(e) => setFormData(prev => ({ ...prev, thumbnail: e.target.value }))}
-                      placeholder="https://..."
-                    />
-                  </div>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="title">Título do Curso *</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Ex: Fundamentos do Câmbio"
+                    required
+                  />
                 </div>
 
-                <div className="space-y-4">
+                <div>
+                  <Label htmlFor="description">Descrição *</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Descreva o que os alunos aprenderão neste curso..."
+                    className="min-h-[100px]"
+                    required
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
-                    <Label htmlFor="description">Descrição *</Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Descreva o que os alunos aprenderão neste curso..."
-                      className="min-h-[120px]"
-                      required
-                    />
+                    <Label htmlFor="isPublished" className="font-medium">Publicar Imediatamente</Label>
+                    <p className="text-sm text-muted-foreground">O curso ficará visível para os usuários</p>
                   </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="isPremium">Curso Premium</Label>
-                      <Switch
-                        id="isPremium"
-                        checked={formData.isPremium}
-                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPremium: checked }))}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="isPublished">Publicar Imediatamente</Label>
-                      <Switch
-                        id="isPublished"
-                        checked={formData.isPublished}
-                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPublished: checked }))}
-                      />
-                    </div>
-                  </div>
+                  <Switch
+                    id="isPublished"
+                    checked={formData.is_published}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_published: checked }))}
+                  />
                 </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="lessons" className="space-y-6">
-              {/* Add New Lesson */}
+            {/* Tab: Módulos e Aulas */}
+            <TabsContent value="content" className="space-y-6">
+              {/* Adicionar Módulo */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Adicionar Nova Lição
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="lessonTitle">Título da Lição</Label>
-                      <Input
-                        id="lessonTitle"
-                        value={newLesson.title}
-                        onChange={(e) => setNewLesson(prev => ({ ...prev, title: e.target.value }))}
-                        placeholder="Ex: Introdução ao Mercado de Câmbio"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="lessonDuration">Duração</Label>
-                      <Input
-                        id="lessonDuration"
-                        value={newLesson.duration}
-                        onChange={(e) => setNewLesson(prev => ({ ...prev, duration: e.target.value }))}
-                        placeholder="Ex: 15min"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="lessonDescription">Descrição</Label>
-                    <Textarea
-                      id="lessonDescription"
-                      value={newLesson.description}
-                      onChange={(e) => setNewLesson(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Descreva o conteúdo desta lição..."
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="videoUrl">URL do Vídeo (PandaVideo)</Label>
+                <CardContent className="pt-6">
+                  <div className="flex gap-2">
                     <Input
-                      id="videoUrl"
-                      value={newLesson.videoUrl}
-                      onChange={(e) => setNewLesson(prev => ({ ...prev, videoUrl: e.target.value }))}
-                      placeholder="https://pandavideo.com/..."
+                      value={newModuleTitle}
+                      onChange={(e) => setNewModuleTitle(e.target.value)}
+                      placeholder="Nome do módulo (ex: Introdução ao Câmbio)"
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addModule())}
                     />
+                    <Button type="button" onClick={addModule} variant="outline">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Módulo
+                    </Button>
                   </div>
-                  <Button type="button" onClick={addLesson} className="w-full">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Adicionar Lição
-                  </Button>
                 </CardContent>
               </Card>
 
-              {/* Lessons List */}
-              {lessons.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Lições do Curso ({lessons.length})</CardTitle>
+              {/* Lista de Módulos */}
+              {modules.map((module, moduleIndex) => (
+                <Card key={module.id}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <GripVertical className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-base">
+                          Módulo {moduleIndex + 1}: {module.title}
+                        </CardTitle>
+                        <Badge variant="secondary" className="text-xs">
+                          {module.lessons.length} {module.lessons.length === 1 ? 'aula' : 'aulas'}
+                        </Badge>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeModule(module.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    {lessons.map((lesson, index) => (
-                      <div key={lesson.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <Badge variant="outline">{index + 1}</Badge>
-                          <Video className="h-4 w-4 text-muted-foreground" />
+                  <CardContent className="space-y-4">
+                    {/* Aulas do módulo */}
+                    {module.lessons.map((lesson, lessonIndex) => (
+                      <div key={lesson.id} className="p-4 border rounded-lg space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-muted-foreground">
+                            Aula {lessonIndex + 1}
+                          </span>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <Label htmlFor={`free-${lesson.id}`} className="text-sm">Gratuita</Label>
+                              <Switch
+                                id={`free-${lesson.id}`}
+                                checked={lesson.is_free}
+                                onCheckedChange={(checked) => updateLesson(module.id, lesson.id, 'is_free', checked)}
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeLesson(module.id, lesson.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
-                            <div className="font-medium">{lesson.title}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {lesson.duration} • {lesson.description}
+                            <Label className="text-xs">Título *</Label>
+                            <Input
+                              value={lesson.title}
+                              onChange={(e) => updateLesson(module.id, lesson.id, 'title', e.target.value)}
+                              placeholder="Título da aula"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-xs">Bunny Video ID</Label>
+                              <Input
+                                value={lesson.bunny_video_id}
+                                onChange={(e) => updateLesson(module.id, lesson.id, 'bunny_video_id', e.target.value)}
+                                placeholder="ex: eb1c4f77-..."
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Duração</Label>
+                              <Input
+                                value={lesson.duration}
+                                onChange={(e) => updateLesson(module.id, lesson.id, 'duration', e.target.value)}
+                                placeholder="ex: 15min"
+                              />
                             </div>
                           </div>
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeLesson(lesson.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+
+                        <div>
+                          <Label className="text-xs">Descrição</Label>
+                          <Textarea
+                            value={lesson.description}
+                            onChange={(e) => updateLesson(module.id, lesson.id, 'description', e.target.value)}
+                            placeholder="Descreva o conteúdo desta aula..."
+                            className="min-h-[60px]"
+                          />
+                        </div>
                       </div>
                     ))}
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => addLesson(module.id)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar Aula
+                    </Button>
                   </CardContent>
                 </Card>
+              ))}
+
+              {modules.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground border rounded-lg border-dashed">
+                  <Video className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                  <p className="font-medium">Nenhum módulo criado</p>
+                  <p className="text-sm mt-1">Adicione um módulo acima para começar a organizar as aulas</p>
+                </div>
               )}
             </TabsContent>
           </Tabs>
@@ -306,7 +322,7 @@ export function CreateCourseModal({ open, onOpenChange }: CreateCourseModalProps
               Cancelar
             </Button>
             <Button type="submit">
-              {formData.isPublished ? 'Criar e Publicar' : 'Salvar Rascunho'}
+              {formData.is_published ? 'Criar e Publicar' : 'Salvar Rascunho'}
             </Button>
           </DialogFooter>
         </form>
