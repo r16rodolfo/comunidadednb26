@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[CUSTOMER-PORTAL] ${step}${detailsStr}`);
+  console.log(`[CANCEL-DOWNGRADE] ${step}${detailsStr}`);
 };
 
 serve(async (req) => {
@@ -39,41 +39,40 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    const { subscriptionId } = await req.json();
+    if (!subscriptionId) throw new Error("subscriptionId is required");
+    logStep("Cancelling downgrade for subscription", { subscriptionId });
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    if (customers.data.length === 0) {
-      throw new Error("No Stripe customer found for this user");
-    }
-    const customerId = customers.data[0].id;
-    logStep("Found Stripe customer", { customerId });
 
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    // Get the subscription to check for schedule
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
-    // Support action parameter for specific portal flows
-    let body: Record<string, any> = {};
-    try {
-      body = await req.json();
-    } catch { /* no body */ }
-
-    const portalConfig: any = {
-      customer: customerId,
-      return_url: `${origin}/subscription`,
-    };
-
-    // If specific flow requested (e.g., cancel_downgrade)
-    if (body?.flow === 'subscription_update') {
-      portalConfig.flow_data = {
-        type: 'subscription_update',
-        subscription_update: {
-          subscription: body.subscriptionId,
-        },
-      };
+    if (subscription.schedule) {
+      // Release the schedule (cancels the planned downgrade)
+      await stripe.subscriptionSchedules.release(subscription.schedule as string);
+      logStep("Schedule released successfully");
     }
 
-    const portalSession = await stripe.billingPortal.sessions.create(portalConfig);
-    logStep("Portal session created", { url: portalSession.url });
+    // Also clear cancel_at_period_end if set
+    if (subscription.cancel_at_period_end) {
+      await stripe.subscriptions.update(subscriptionId, {
+        cancel_at_period_end: false,
+      });
+      logStep("Cancel at period end cleared");
+    }
 
-    return new Response(JSON.stringify({ url: portalSession.url }), {
+    // Update subscriber record
+    await supabaseClient.from("subscribers").update({
+      pending_downgrade_to: null,
+      pending_downgrade_date: null,
+      cancel_at_period_end: false,
+      updated_at: new Date().toISOString(),
+    }).eq('user_id', user.id);
+
+    logStep("Database updated, downgrade cancelled");
+
+    return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

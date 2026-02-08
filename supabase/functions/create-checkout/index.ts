@@ -4,12 +4,40 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
+};
+
+// Plan definitions matching mock-plans.ts
+const planPricing: Record<string, { name: string; amount: number; interval: "month" | "year"; intervalCount: number }> = {
+  'premium-monthly': {
+    name: 'Comunidade DNB Premium - Mensal',
+    amount: 3000,
+    interval: 'month',
+    intervalCount: 1,
+  },
+  'premium-quarterly': {
+    name: 'Comunidade DNB Premium - Trimestral',
+    amount: 6000,
+    interval: 'month',
+    intervalCount: 3,
+  },
+  'premium-semiannual': {
+    name: 'Comunidade DNB Premium - Semestral',
+    amount: 10500,
+    interval: 'month',
+    intervalCount: 6,
+  },
+  'premium-yearly': {
+    name: 'Comunidade DNB Premium - Anual',
+    amount: 18500,
+    interval: 'year',
+    intervalCount: 1,
+  },
 };
 
 serve(async (req) => {
@@ -35,8 +63,11 @@ serve(async (req) => {
     const { planId } = await req.json();
     logStep("Plan requested", { planId });
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { 
-      apiVersion: "2023-10-16" 
+    const plan = planPricing[planId];
+    if (!plan) throw new Error(`Invalid plan: ${planId}`);
+
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+      apiVersion: "2023-10-16"
     });
 
     // Check if customer exists
@@ -47,63 +78,32 @@ serve(async (req) => {
       logStep("Found existing customer", { customerId });
     }
 
-    // Define pricing based on plan
-    let priceData;
-    switch (planId) {
-      case 'premium-monthly':
-        priceData = {
-          currency: "brl",
-          product_data: { name: "Comunidade DNB Premium - Mensal" },
-          unit_amount: 3000, // R$ 30,00
-          recurring: { interval: "month" as const, interval_count: 1 },
-        };
-        break;
-      case 'premium-quarterly':
-        priceData = {
-          currency: "brl",
-          product_data: { name: "Comunidade DNB Premium - Trimestral" },
-          unit_amount: 6000, // R$ 60,00
-          recurring: { interval: "month" as const, interval_count: 3 },
-        };
-        break;
-      case 'premium-semiannual':
-        priceData = {
-          currency: "brl",
-          product_data: { name: "Comunidade DNB Premium - Semestral" },
-          unit_amount: 10500, // R$ 105,00
-          recurring: { interval: "month" as const, interval_count: 6 },
-        };
-        break;
-      case 'premium-yearly':
-        priceData = {
-          currency: "brl",
-          product_data: { name: "Comunidade DNB Premium - Anual" },
-          unit_amount: 18500, // R$ 185,00
-          recurring: { interval: "year" as const },
-        };
-        break;
-      default:
-        throw new Error("Invalid plan selected");
-    }
-
-    logStep("Creating checkout session", { priceData });
+    const origin = req.headers.get("origin") || "http://localhost:3000";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price_data: priceData,
+          price_data: {
+            currency: "brl",
+            product_data: { name: plan.name },
+            unit_amount: plan.amount,
+            recurring: {
+              interval: plan.interval,
+              interval_count: plan.intervalCount,
+            },
+          },
           quantity: 1,
         },
       ],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/subscription?success=true`,
-      cancel_url: `${req.headers.get("origin")}/subscription?cancelled=true`,
+      success_url: `${origin}/subscription?success=true`,
+      cancel_url: `${origin}/subscription?cancelled=true`,
       metadata: {
         user_id: user.id,
-        plan_id: planId
-      }
+        plan_id: planId,
+      },
     });
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
@@ -114,7 +114,7 @@ serve(async (req) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in create-checkout", { message: errorMessage });
+    logStep("ERROR", { message: errorMessage });
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

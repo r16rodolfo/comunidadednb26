@@ -42,19 +42,14 @@ const verificationTemplate = `
     </div>
     <div style="padding: 32px;">
       <p style="color: #1a2b1a; font-size: 16px; line-height: 1.6; margin: 0 0 8px;">Olá, <strong>Maria</strong>! 🎉</p>
-      <p style="color: #4a5a4a; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">Bem-vinda à Comunidade DNB! Para ativar sua conta e começar a planejar suas viagens, confirme seu endereço de e-mail:</p>
+      <p style="color: #4a5a4a; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">Bem-vinda à Comunidade DNB! Para ativar sua conta e começar a planejar suas viagens, clique no botão abaixo para confirmar seu e-mail:</p>
       <div style="text-align: center; margin: 32px 0;">
-        <p style="color: #8a9a8a; font-size: 13px; margin: 0 0 12px;">Seu código de verificação:</p>
-        <div style="display: inline-block; background: #f0faf4; border: 2px dashed #1a8a4a; border-radius: 12px; padding: 16px 32px;">
-          <span style="font-size: 32px; font-weight: 800; color: #1a8a4a; letter-spacing: 8px; font-family: monospace;">847293</span>
-        </div>
-      </div>
-      <div style="text-align: center; margin: 24px 0;">
-        <a href="#" style="display: inline-block; background: linear-gradient(135deg, #1a8a4a 0%, #22a85a 100%); color: #ffffff; text-decoration: none; padding: 14px 40px; border-radius: 10px; font-size: 16px; font-weight: 600; letter-spacing: 0.3px; box-shadow: 0 4px 12px rgba(26,138,74,0.3);">Confirmar E-mail</a>
+        <a href="#" style="display: inline-block; background: linear-gradient(135deg, #1a8a4a 0%, #22a85a 100%); color: #ffffff; text-decoration: none; padding: 14px 40px; border-radius: 10px; font-size: 16px; font-weight: 600; letter-spacing: 0.3px; box-shadow: 0 4px 12px rgba(26,138,74,0.3);">Confirmar Meu E-mail</a>
       </div>
       <div style="background: #f0faf4; border: 1px solid #d0e8d8; border-radius: 10px; padding: 16px; margin: 24px 0;">
-        <p style="color: #1a6a3a; font-size: 13px; line-height: 1.5; margin: 0;">⏰ O código expira em <strong>24 horas</strong>.<br/>🛡️ Se você não criou esta conta, ignore este e-mail.</p>
+        <p style="color: #1a6a3a; font-size: 13px; line-height: 1.5; margin: 0;">⏰ Este link expira em <strong>24 horas</strong>.<br/>🛡️ Se você não criou esta conta, ignore este e-mail.</p>
       </div>
+      <p style="color: #8a9a8a; font-size: 12px; line-height: 1.5; margin: 24px 0 0;">Se o botão não funcionar, copie e cole este link no navegador:<br/><span style="color: #1a8a4a; word-break: break-all;">https://comunidadednb.com/auth/verify?token=abc123xyz</span></p>
     </div>
     <div style="background: #f8faf8; padding: 24px 32px; border-top: 1px solid #e8f0e8;">
       <p style="color: #8a9a8a; font-size: 12px; text-align: center; margin: 0; line-height: 1.5;">© 2026 Comunidade DNB · Todos os direitos reservados<br/><a href="#" style="color: #1a8a4a; text-decoration: none;">Política de Privacidade</a> · <a href="#" style="color: #1a8a4a; text-decoration: none;">Termos de Uso</a></p>
@@ -251,7 +246,7 @@ const downgradeTemplate = `
 
       <div style="background: #f0faf4; border: 1px solid #d0e8d8; border-radius: 10px; padding: 16px; margin: 0 0 24px;">
         <p style="color: #1a6a3a; font-size: 13px; line-height: 1.5; margin: 0;">
-          💡 <strong>Mudou de ideia?</strong> Você pode voltar ao plano anterior a qualquer momento antes da data de transição.
+          💡 <strong>Mudou de ideia?</strong> Acesse a página de <a href="#" style="color: #1a8a4a; text-decoration: underline;">Assinatura</a> e clique em "Manter Plano Atual" para cancelar o downgrade antes da data de transição.
         </p>
       </div>
 
@@ -427,7 +422,7 @@ const cancellationTemplate = `
 
       <div style="background: #f0faf4; border: 1px solid #d0e8d8; border-radius: 10px; padding: 16px; margin: 0 0 24px;">
         <p style="color: #1a6a3a; font-size: 13px; line-height: 1.5; margin: 0;">
-          🔄 <strong>Mudou de ideia?</strong> Você pode reativar sua assinatura a qualquer momento e recuperar todos os seus dados e progresso no Planner.
+          🔄 <strong>Mudou de ideia?</strong> Acesse a página de <a href="#" style="color: #1a8a4a; text-decoration: underline;">Assinatura</a> e clique em "Reativar Assinatura" antes que o período acabe. Todos os seus dados e progresso no Planner serão mantidos.
         </p>
       </div>
 
@@ -492,7 +487,7 @@ export const authTemplates: EmailTemplate[] = [
     label: 'Verificação',
     icon: Mail,
     html: verificationTemplate,
-    description: 'Enviado após o cadastro para confirmar o e-mail',
+    description: 'Enviado após o cadastro com link para confirmar o e-mail (magic link)',
     subject: '✉️ Confirme seu e-mail — Comunidade DNB',
     category: 'auth',
   },
@@ -531,7 +526,7 @@ export const subscriptionTemplates: EmailTemplate[] = [
     label: 'Downgrade',
     icon: ArrowDownCircle,
     html: downgradeTemplate,
-    description: 'Enviado quando o usuário faz downgrade de plano',
+    description: 'Enviado quando o usuário faz downgrade de plano. Inclui link para cancelar o downgrade na plataforma.',
     subject: '📋 Plano alterado — Comunidade DNB',
     category: 'subscription',
   },
@@ -567,7 +562,7 @@ export const subscriptionTemplates: EmailTemplate[] = [
     label: 'Cancelamento',
     icon: XCircle,
     html: cancellationTemplate,
-    description: 'Confirmação de cancelamento voluntário da assinatura',
+    description: 'Confirmação de cancelamento com link para reativar na plataforma',
     subject: '😢 Assinatura cancelada — Comunidade DNB',
     category: 'subscription',
   },
