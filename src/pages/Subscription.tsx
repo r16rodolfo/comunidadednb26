@@ -19,9 +19,8 @@ import {
   Undo2,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { usePlans } from '@/hooks/usePlans';
+import { usePlans, formatPrice, formatMonthlyEquivalent } from '@/hooks/usePlans';
 import { useSubscription } from '@/hooks/useSubscription';
-import { formatPrice, formatMonthlyEquivalent } from '@/data/mock-plans';
 
 export default function Subscription() {
   const { user } = useAuth();
@@ -236,13 +235,13 @@ export default function Subscription() {
                     </div>
                     <CardTitle className="text-lg">{plan.name}</CardTitle>
                     <div className="space-y-1">
-                      <p className="text-3xl font-bold">{formatPrice(plan.priceCents)}</p>
-                      <p className="text-sm text-muted-foreground">{plan.intervalLabel}</p>
+                      <p className="text-3xl font-bold">{formatPrice(plan.price_cents)}</p>
+                      <p className="text-sm text-muted-foreground">{plan.interval_label}</p>
                     </div>
-                    {plan.savingsPercent && (
+                    {plan.savings_percent && (
                       <Badge variant="secondary" className="mt-1 mx-auto">
                         <TrendingDown className="h-3 w-3 mr-1" />
-                        {plan.savingsPercent}% de economia
+                        {plan.savings_percent}% de economia
                       </Badge>
                     )}
                     {plan.interval !== 'monthly' && (

@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      plans: {
+        Row: {
+          created_at: string
+          currency: string
+          description: string
+          features: string[]
+          id: string
+          interval: string
+          interval_label: string
+          is_active: boolean
+          name: string
+          popular: boolean
+          price_cents: number
+          savings_percent: number | null
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          description?: string
+          features?: string[]
+          id?: string
+          interval: string
+          interval_label?: string
+          is_active?: boolean
+          name: string
+          popular?: boolean
+          price_cents?: number
+          savings_percent?: number | null
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          description?: string
+          features?: string[]
+          id?: string
+          interval?: string
+          interval_label?: string
+          is_active?: boolean
+          name?: string
+          popular?: boolean
+          price_cents?: number
+          savings_percent?: number | null
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
