@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      home_config: {
+        Row: {
+          banners: Json
+          id: string
+          step_cards: Json
+          updated_at: string
+          welcome_card: Json
+        }
+        Insert: {
+          banners?: Json
+          id?: string
+          step_cards?: Json
+          updated_at?: string
+          welcome_card?: Json
+        }
+        Update: {
+          banners?: Json
+          id?: string
+          step_cards?: Json
+          updated_at?: string
+          welcome_card?: Json
+        }
+        Relationships: []
+      }
+      planner_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          goal_id: string | null
+          id: string
+          location: string
+          rate: number
+          total_paid: number
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          date: string
+          goal_id?: string | null
+          id?: string
+          location?: string
+          rate: number
+          total_paid: number
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          goal_id?: string | null
+          id?: string
+          location?: string
+          rate?: number
+          total_paid?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planner_transactions_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "trip_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plans: {
         Row: {
           created_at: string
@@ -144,6 +212,36 @@ export type Database = {
           subscribed?: boolean
           subscription_end?: string | null
           subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trip_goals: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          target_amount: number
+          trip_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          target_amount: number
+          trip_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          target_amount?: number
+          trip_date?: string
           updated_at?: string
           user_id?: string
         }
