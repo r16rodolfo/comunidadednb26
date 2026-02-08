@@ -105,7 +105,7 @@ export default function AdminUsers() {
         </AdminPageHeader>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <StatCard label="Total de Usuários" value={stats.total} icon={UsersIcon} />
           <StatCard label="Usuários Ativos" value={stats.active} icon={Activity} variant="success" />
           <StatCard label="Usuários Premium" value={stats.premium} icon={Crown} variant="info" />
@@ -135,7 +135,7 @@ export default function AdminUsers() {
             <CardTitle className="text-base">Lista de Usuários ({filteredUsers.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>

@@ -68,7 +68,7 @@ export function PlanManagementCard() {
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <CardTitle className="text-base flex items-center gap-2">
                 <Crown className="h-5 w-5 text-primary" />
@@ -87,11 +87,11 @@ export function PlanManagementCard() {
             {plans.map((plan) => (
               <div
                 key={plan.id}
-                className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
+                className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg border transition-colors gap-3 ${
                   plan.isActive ? 'bg-card' : 'bg-muted/50 opacity-60'
                 }`}
               >
-                <div className="flex items-center gap-4 flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-1">
                   <div className="min-w-[100px]">
                     <div className="flex items-center gap-2">
                       <p className="font-semibold">{plan.name}</p>
@@ -104,7 +104,7 @@ export function PlanManagementCard() {
                     </Badge>
                   </div>
 
-                  <Separator orientation="vertical" className="h-10" />
+                  <Separator orientation="vertical" className="h-10 hidden sm:block" />
 
                   <div className="min-w-[120px]">
                     <p className="text-lg font-bold">{formatPrice(plan.priceCents)}</p>
@@ -115,7 +115,7 @@ export function PlanManagementCard() {
                     )}
                   </div>
 
-                  <Separator orientation="vertical" className="h-10" />
+                  <Separator orientation="vertical" className="h-10 hidden sm:block" />
 
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">{plan.description}</p>

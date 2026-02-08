@@ -31,7 +31,7 @@ export default function AdminPlanner() {
         />
 
         {/* Stats Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="Usuários Ativos" value={mockPlannerStats.totalUsers} icon={Users} variant="info" />
           <StatCard label="Total de Transações" value={mockPlannerStats.totalTransactions} icon={Receipt} />
           <StatCard label="Volume Total (R$)" value={formatBRL(mockPlannerStats.totalVolumeBRL)} icon={DollarSign} variant="success" />
@@ -45,7 +45,7 @@ export default function AdminPlanner() {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full sm:w-auto sm:inline-grid grid-cols-3 gap-1">
+          <TabsList className="grid w-full sm:w-auto sm:inline-grid grid-cols-3 gap-1 text-xs sm:text-sm">
             <TabsTrigger value="overview">
               <TrendingUp className="h-4 w-4 mr-2" />
               Visão Geral
@@ -62,7 +62,7 @@ export default function AdminPlanner() {
 
           {/* === Overview Tab === */}
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
               {/* Volume Chart */}
               <Card className="lg:col-span-2">
                 <CardHeader>

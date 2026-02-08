@@ -41,9 +41,9 @@ export default function AdminDashboard() {
         <AdminPageHeader icon={BarChart3} title="Painel Administrativo" description="Gerencie e monitore toda a plataforma" />
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="w-full justify-start border-b bg-transparent p-0 h-auto rounded-none gap-1">
+          <TabsList className="w-full justify-start border-b bg-transparent p-0 h-auto rounded-none gap-0.5 overflow-x-auto scrollbar-hide">
             {Object.entries(TAB_LABELS).map(([value, label]) => (
-              <TabsTrigger key={value} value={value} className="rounded-b-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none px-4 py-2.5">
+              <TabsTrigger key={value} value={value} className="rounded-b-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none px-3 sm:px-4 py-2.5 text-xs sm:text-sm whitespace-nowrap flex-shrink-0">
                 {label}
               </TabsTrigger>
             ))}

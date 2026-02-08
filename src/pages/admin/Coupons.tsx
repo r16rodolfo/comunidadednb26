@@ -113,7 +113,7 @@ export default function AdminCoupons() {
         </AdminPageHeader>
 
         {/* Stats Cards — using design tokens */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="Total de Cupons" value={computedStats.total} icon={Ticket} />
           <StatCard label="Cupons Ativos" value={computedStats.active} icon={CheckCircle} variant="success" />
           <StatCard label="Cupons Expirados" value={computedStats.expired} icon={Clock} variant="warning" />
@@ -174,7 +174,7 @@ export default function AdminCoupons() {
             <CardTitle className="text-base">Lista de Cupons ({coupons.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>

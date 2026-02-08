@@ -90,7 +90,7 @@ export function UserPlannerList({ users }: UserPlannerListProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -201,7 +201,7 @@ export function UserPlannerList({ users }: UserPlannerListProps) {
               {/* Transaction Table */}
               <div className="mt-4">
                 <h4 className="text-sm font-semibold mb-2">Histórico de Transações ({userTransactions.length})</h4>
-                <div className="rounded-md border">
+                <div className="rounded-md border overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>

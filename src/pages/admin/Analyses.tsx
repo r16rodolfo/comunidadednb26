@@ -111,7 +111,7 @@ export default function AdminAnalyses() {
         </AdminPageHeader>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatCard label="Total de Análises" value={stats.total} icon={BarChart3} />
           <StatCard label="Com Vídeo" value={stats.withVideo} icon={Video} variant="info" />
           <StatCard label="Com Gráfico" value={stats.withImage} icon={ImageIcon} variant="success" />
@@ -139,7 +139,7 @@ export default function AdminAnalyses() {
             <CardTitle className="text-base">Análises ({sortedAnalyses.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>

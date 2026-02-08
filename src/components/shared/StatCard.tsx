@@ -17,14 +17,14 @@ export function StatCard({ label, value, icon: Icon, variant = 'default' }: Stat
 
   return (
     <Card className="relative overflow-hidden">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-            <p className="text-2xl font-bold tracking-tight">{value}</p>
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="space-y-1 min-w-0">
+            <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-muted-foreground truncate">{label}</p>
+            <p className="text-xl sm:text-2xl font-bold tracking-tight truncate">{value}</p>
           </div>
-          <div className="rounded-xl bg-muted/60 p-2.5">
-            <Icon className={`h-6 w-6 ${iconClass}`} />
+          <div className="rounded-xl bg-muted/60 p-2 sm:p-2.5 flex-shrink-0">
+            <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${iconClass}`} />
           </div>
         </div>
       </CardContent>

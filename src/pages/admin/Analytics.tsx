@@ -24,7 +24,7 @@ export default function Analytics() {
         <AdminPageHeader icon={TrendingUp} title="Analytics e Relatórios" description="Acompanhe o desempenho da plataforma" />
 
         {/* Key Metrics */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
           <StatCard label="Receita Mensal" value="R$ 28.900" icon={DollarSign} variant="success" />
           <StatCard label="Usuários Ativos" value="1.245" icon={Users} variant="info" />
           <StatCard label="Taxa de Conversão" value="3.6%" icon={MousePointer} variant="warning" />
@@ -33,15 +33,15 @@ export default function Analytics() {
 
         {/* Analytics Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="users">Usuários</TabsTrigger>
-            <TabsTrigger value="content">Conteúdo</TabsTrigger>
-            <TabsTrigger value="revenue">Receita</TabsTrigger>
+          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 gap-1">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm">Visão Geral</TabsTrigger>
+            <TabsTrigger value="users" className="text-xs sm:text-sm">Usuários</TabsTrigger>
+            <TabsTrigger value="content" className="text-xs sm:text-sm">Conteúdo</TabsTrigger>
+            <TabsTrigger value="revenue" className="text-xs sm:text-sm">Receita</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
               <Card>
                 <CardHeader><CardTitle>Receita Mensal</CardTitle></CardHeader>
                 <CardContent>
@@ -84,7 +84,7 @@ export default function Analytics() {
           </TabsContent>
 
           <TabsContent value="users" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
               <Card>
                 <CardHeader><CardTitle>Atividade Semanal</CardTitle></CardHeader>
                 <CardContent>
@@ -128,7 +128,7 @@ export default function Analytics() {
                 ? Math.round(publishedCourses.reduce((sum, c) => sum + c.cps, 0) / publishedCourses.length)
                 : 0;
               return (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
                   <StatCard label="Cursos Publicados" value={`${publishedCourses.length} / ${coursePerformance.length}`} icon={BookOpen} />
                   <StatCard label="Visualizações Totais" value={totalViews.toLocaleString('pt-BR')} icon={Eye} variant="info" />
                   <StatCard label="Conclusões" value={totalCompletions.toLocaleString('pt-BR')} icon={GraduationCap} variant="success" />
@@ -138,7 +138,7 @@ export default function Analytics() {
             })()}
 
             {/* Course Performance Cards */}
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
               {coursePerformance.map((course) => (
                 <Card key={course.courseId}>
                   <CardHeader className="pb-3">
@@ -213,7 +213,7 @@ export default function Analytics() {
                   <CardDescription>Detalhamento individual vinculado aos cursos cadastrados</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-md border">
+                  <div className="rounded-md border overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -254,7 +254,7 @@ export default function Analytics() {
 
           <TabsContent value="revenue" className="space-y-6">
             {/* Revenue Stats */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
               <StatCard
                 label="Total de Pagamentos"
                 value={paymentStats.totalPayments.toLocaleString('pt-BR')}
@@ -281,7 +281,7 @@ export default function Analytics() {
             </div>
 
             {/* Revenue charts */}
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
               {/* Revenue by gateway over time */}
               <Card>
                 <CardHeader>
@@ -372,7 +372,7 @@ export default function Analytics() {
               <CardContent>
                 <div className="space-y-3">
                   {revenueByPlan.map((plan) => (
-                    <div key={plan.name} className="flex items-center gap-4 p-3 rounded-lg border">
+                    <div key={plan.name} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 rounded-lg border">
                       <div className="min-w-[90px]">
                         <p className="font-semibold text-sm">{plan.name}</p>
                         <p className="text-xs text-muted-foreground">
@@ -391,7 +391,7 @@ export default function Analytics() {
                           />
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 text-xs min-w-[120px]">
+                      <div className="flex items-center gap-3 text-xs sm:min-w-[120px]">
                         <span className="flex items-center gap-1">
                           <QrCode className="h-3 w-3 text-success" />
                           {plan.pix}%
@@ -414,7 +414,7 @@ export default function Analytics() {
                 <CardDescription>Últimas transações processadas</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="rounded-md border">
+                <div className="rounded-md border overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
