@@ -25,6 +25,44 @@ export interface PlatformConfig {
   };
 }
 
+// ── Home Page Configuration ──
+
+export type LucideIconName =
+  | 'Plane' | 'Globe' | 'Map' | 'Compass' | 'Luggage'
+  | 'Wallet' | 'TrendingUp' | 'BarChart3' | 'PiggyBank' | 'DollarSign'
+  | 'CreditCard' | 'Banknote' | 'Star' | 'Heart' | 'Sparkles'
+  | 'Rocket' | 'Target' | 'Award' | 'Zap' | 'Sun';
+
+export interface WelcomeCardConfig {
+  icon: LucideIconName;
+  title: string;
+  subtitle: string;
+  body: string;
+  ctaLabel: string;
+  ctaUrl: string;
+}
+
+export interface BannerItem {
+  id: string;
+  imageUrl: string; // URL da imagem (Bunny Storage ou base64)
+  redirectUrl: string;
+  alt: string;
+  order: number;
+}
+
+export interface StepCardConfig {
+  id: string;
+  number: string;
+  title: string;
+  description: string;
+}
+
+export interface HomeConfig {
+  welcomeCard: WelcomeCardConfig;
+  banners: BannerItem[];
+  stepCards: StepCardConfig[];
+}
+
 export interface SubscriptionPlan {
   id: string;
   name: string;

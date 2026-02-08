@@ -1,49 +1,34 @@
 import Layout from "@/components/Layout";
 import PromoBanner from "@/components/PromoBanner";
 import WelcomeCard from "@/components/WelcomeCard";
+import { useHomeConfig } from "@/hooks/useHomeConfig";
 
 const Index = () => {
+  const { config } = useHomeConfig();
+
   return (
     <Layout>
       <div className="space-y-8 animate-fade-in">
         {/* Welcome Section */}
-        <WelcomeCard />
+        <WelcomeCard config={config.welcomeCard} />
 
         {/* Hero Banner */}
-        <PromoBanner />
+        <PromoBanner banners={config.banners} />
 
-        {/* Additional Information */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-          <div className="text-center p-6 bg-card rounded-xl border border-border/50">
-            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-primary font-bold text-lg">1</span>
-            </div>
-            <h3 className="font-semibold text-foreground mb-2">Defina suas Metas</h3>
-            <p className="text-sm text-muted-foreground">
-              Estabeleça objetivos claros para suas viagens e compras de câmbio
-            </p>
+        {/* Step Cards */}
+        {config.stepCards.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+            {config.stepCards.map((step, idx) => (
+              <div key={step.id} className="text-center p-6 bg-card rounded-xl border border-border/50">
+                <div className={`w-12 h-12 ${idx % 2 === 0 ? 'bg-primary/10' : 'bg-accent/10'} rounded-xl flex items-center justify-center mx-auto mb-4`}>
+                  <span className={`${idx % 2 === 0 ? 'text-primary' : 'text-accent'} font-bold text-lg`}>{step.number}</span>
+                </div>
+                <h3 className="font-semibold text-foreground mb-2">{step.title}</h3>
+                <p className="text-sm text-muted-foreground">{step.description}</p>
+              </div>
+            ))}
           </div>
-          
-          <div className="text-center p-6 bg-card rounded-xl border border-border/50">
-            <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-accent font-bold text-lg">2</span>
-            </div>
-            <h3 className="font-semibold text-foreground mb-2">Acompanhe o Mercado</h3>
-            <p className="text-sm text-muted-foreground">
-              Monitore cotações e tome decisões inteligentes no momento certo
-            </p>
-          </div>
-          
-          <div className="text-center p-6 bg-card rounded-xl border border-border/50">
-            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-primary font-bold text-lg">3</span>
-            </div>
-            <h3 className="font-semibold text-foreground mb-2">Execute com Confiança</h3>
-            <p className="text-sm text-muted-foreground">
-              Realize suas compras com base em análises e planejamento sólido
-            </p>
-          </div>
-        </div>
+        )}
       </div>
     </Layout>
   );
