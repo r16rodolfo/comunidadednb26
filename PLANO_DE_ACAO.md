@@ -727,6 +727,7 @@ A cada 1 hora:
 | **Lovable Cloud** | ✅ Ativo | Backend configurado e operacional |
 | **Auth (email/senha)** | ✅ Produção | Login, signup, reset de senha, RBAC real |
 | **Tabelas base** | ✅ Criadas | `profiles`, `user_roles`, `subscribers` com RLS |
+| **Trigger `on_auth_user_created`** | ✅ Ativo | Trigger verificado e operacional no banco |
 | **Tabela `plans`** | ✅ Banco | Migrado de localStorage para PostgreSQL |
 | **Tabela `home_config`** | ✅ Banco | Migrado de localStorage, singleton com RLS |
 | **Tabelas `trip_goals` / `planner_transactions`** | ✅ Banco | Planner migrado para dados persistentes por usuário |
@@ -740,18 +741,10 @@ A cada 1 hora:
 | **Análise DNB** | ✅ Banco | Tabela `market_analyses` com RLS + admin/gestor CRUD |
 | **Notificações** | ✅ Banco | Tabela `notifications` com RLS + Realtime + hook persistente |
 | **Motor de Faturamento (cron)** | ❌ Pendente | `billing-check` não implementado |
-
-### ⚠️ Problema Crítico Identificado
-
-**Trigger `on_auth_user_created` ausente no banco de dados.**
-A função `handle_new_user()` existe, mas o trigger que a dispara ao criar um novo usuário **não está ativo**. Isso significa que novos cadastros podem não receber automaticamente o perfil e o role `free`. O usuário admin foi criado manualmente via edge function temporária, contornando este problema.
-
-**Ação necessária:** Recriar o trigger:
-```sql
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-```
+| **Tokens semânticos** | ✅ Feito | `recommendation-styles.ts` + design tokens em `index.css` |
+| **Mock data removida** | ✅ Feito | `mock-admin.ts`, `mock-planner-admin.ts` deletados |
+| **Admin real data** | ✅ Feito | OverviewTab, Users, Subscriptions consultam banco real |
+| **PageHeader unificado** | ✅ Feito | Componente `PageHeader` padronizado para admin + user pages |
 
 ---
 
@@ -785,26 +778,38 @@ ETAPA 4 — Migração de Módulos (P1-P2) ✅ CONCLUÍDA (5/5)
 └── ✅ 4.5 Notificações → tabela notifications (persistente + Realtime)
 
 ETAPA 5 — Integração NoxPay (P1) ❌ PENDENTE
-├── ❌ 5.1 Configurar credenciais NoxPay
+├── ❌ 5.1 Configurar credenciais NoxPay (NOXPAY_API_KEY + NOXPAY_SECRET)
 ├── ❌ 5.2 Edge function create-pix-payment
 ├── ❌ 5.3 Edge function noxpay-webhook
-├── ❌ 5.4 Modal PIX no frontend
+├── ❌ 5.4 Modal PIX no frontend (QR Code + polling + timer)
 └── ❌ 5.5 Motor de faturamento (billing-check cron)
 
-ETAPA 6 — Qualidade & Polish (P2) ❌ PENDENTE
-├── ❌ 6.1 Substituir cores hardcoded por tokens semânticos
-├── ❌ 6.2 Extrair localStorage do render do Layout
-├── ❌ 6.3 Simplificar useCoupons (remover estado duplicado)
-└── ❌ 6.4 Testes end-to-end
+ETAPA 6 — Qualidade & Polish (P2) ✅ CONCLUÍDA (4/5)
+├── ✅ 6.1 Substituir cores hardcoded por tokens semânticos (recommendation-styles.ts)
+├── ✅ 6.2 Remoção completa de dados mockados (mock-admin, mock-planner-admin)
+├── ✅ 6.3 Admin pages migradas para dados reais (OverviewTab, Users, Subscriptions)
+├── ✅ 6.4 Padronização visual (PageHeader unificado admin + user, StatCard semântico)
+└── ❌ 6.5 Testes end-to-end (pendente)
+
+ETAPA 7 — Trigger de Signup ✅ RESOLVIDO
+└── ✅ Trigger on_auth_user_created verificado e ativo no banco
 ```
 
-### 🛠️ Ação Urgente: Recriar Trigger de Signup
+---
 
-O trigger `on_auth_user_created` está ausente. Sem ele, novos usuários não recebem perfil nem role automaticamente. Deve ser recriado antes de qualquer novo cadastro.
+### 📋 Resumo do que Falta
+
+| # | Item | Prioridade | Descrição |
+|---|------|-----------|-----------|
+| 1 | **NoxPay PIX** | P1 | Credenciais + edge functions `create-pix-payment` e `noxpay-webhook` |
+| 2 | **Modal PIX** | P1 | Frontend com QR Code, copia-e-cola, timer e polling de status |
+| 3 | **Motor de Faturamento** | P1 | Edge function `billing-check` (cron) para renovações e downgrades |
+| 4 | **Testes E2E** | P2 | Validar fluxos completos: signup → upgrade → renovação → cancelamento |
+| 5 | **Stripe SDK** | P3 | Verificar e atualizar versão do SDK nas edge functions |
 
 ---
 
 **Documento criado**: Fevereiro 2025  
-**Última atualização**: 8 de Fevereiro de 2026, 19:45 (BRT)  
-**Status**: ✅ Etapas 1-4 Concluídas — Próxima: Etapa 5 (NoxPay)  
+**Última atualização**: 8 de Fevereiro de 2026, 23:30 (BRT)  
+**Status**: ✅ Etapas 1-4, 6, 7 Concluídas — Próxima: Etapa 5 (NoxPay)  
 **Próximo passo**: Iniciar Etapa 5 — Integração NoxPay (PIX)
