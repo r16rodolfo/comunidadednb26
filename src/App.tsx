@@ -25,6 +25,7 @@ import AdminAnalytics from "./pages/admin/Analytics";
 import Subscription from "./pages/Subscription";
 import AdminSubscriptions from "./pages/admin/Subscriptions";
 import AdminPlanner from "./pages/admin/Planner";
+import AdminAnalyses from "./pages/admin/Analyses";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -113,6 +114,11 @@ const App = () => (
             <Route path="/admin/planner" element={
               <ProtectedRoute requiredRole={UserRole.ADMIN}>
                 <AdminPlanner />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/analyses" element={
+              <ProtectedRoute requiredRole={UserRole.ADMIN}>
+                <AdminAnalyses />
               </ProtectedRoute>
             } />
             
