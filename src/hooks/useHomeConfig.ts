@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { HomeConfig } from '@/types/admin';
-import { defaultHomeConfig } from '@/data/mock-admin';
+import { defaultHomeConfig } from '@/data/defaults';
 import type { Json } from '@/integrations/supabase/types';
 
 export function useHomeConfig() {

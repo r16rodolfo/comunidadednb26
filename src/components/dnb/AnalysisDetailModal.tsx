@@ -19,6 +19,10 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import {
+  recommendationBadgeStyles,
+  getVariationColorClass,
+} from '@/lib/recommendation-styles';
 
 const iconMap = {
   TrendingUp,
@@ -44,13 +48,6 @@ export default function AnalysisDetailModal({
 
   const IconComponent = iconMap[recommendation.icon as keyof typeof iconMap];
 
-  const badgeStyles: Record<string, string> = {
-    ideal: 'bg-green-100 text-green-800 border-green-300',
-    alert: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    'not-ideal': 'bg-red-100 text-red-800 border-red-300',
-    wait: 'bg-blue-100 text-blue-800 border-blue-300',
-  };
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -68,7 +65,7 @@ export default function AnalysisDetailModal({
               </DialogDescription>
             </div>
             <Badge
-              className={`${badgeStyles[analysis.recommendation]} border text-xs font-semibold shrink-0`}
+              className={`${recommendationBadgeStyles[analysis.recommendation]} border text-xs font-semibold shrink-0`}
             >
               {IconComponent && <IconComponent className="h-3 w-3 mr-1" />}
               {recommendation.label}
@@ -178,8 +175,6 @@ function QuoteCard({
   price: number;
   variation: number;
 }) {
-  const isPositive = variation >= 0;
-
   return (
     <div className="p-3 rounded-lg bg-muted/50">
       <div className="flex items-center gap-2 mb-1">
@@ -190,12 +185,8 @@ function QuoteCard({
       </div>
       <div className="flex items-baseline gap-2">
         <span className="text-lg font-bold">R$ {price.toFixed(2)}</span>
-        <span
-          className={`text-xs font-semibold ${
-            isPositive ? 'text-green-600' : 'text-red-600'
-          }`}
-        >
-          {isPositive ? '+' : ''}
+        <span className={`text-xs font-semibold ${getVariationColorClass(variation)}`}>
+          {variation >= 0 ? '+' : ''}
           {variation}%
         </span>
       </div>
