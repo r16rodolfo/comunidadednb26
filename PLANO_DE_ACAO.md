@@ -718,130 +718,93 @@ A cada 1 hora:
 
 ---
 
-## 🔎 Auditoria de Código — Fevereiro 2025
+## 🔎 Auditoria de Código — Fevereiro 2026
 
 ### Status Atual de Implementação
 
 | Componente | Status | Observações |
 |------------|--------|-------------|
-| **Lovable Cloud** | ✅ Ativo | Supabase configurado e operacional |
-| **Auth (email/senha)** | ✅ Produção | Login, signup, roles RBAC funcionando |
+| **Lovable Cloud** | ✅ Ativo | Backend configurado e operacional |
+| **Auth (email/senha)** | ✅ Produção | Login, signup, reset de senha, RBAC real |
 | **Tabelas base** | ✅ Criadas | `profiles`, `user_roles`, `subscribers` com RLS |
+| **Tabela `plans`** | ✅ Banco | Migrado de localStorage para PostgreSQL |
+| **Tabela `home_config`** | ✅ Banco | Migrado de localStorage, singleton com RLS |
+| **Tabelas `trip_goals` / `planner_transactions`** | ✅ Banco | Planner migrado para dados persistentes por usuário |
 | **Stripe (cartão)** | ✅ Produção | 4 produtos/preços criados, checkout funcional |
 | **Edge Functions** | ✅ Deployed | `create-checkout`, `check-subscription`, `customer-portal`, `cancel-downgrade`, `stripe-webhook` |
-| **NoxPay (PIX)** | ⏳ Aguardando | Credenciais pendentes |
-| **Academy** | ❌ Mock | Dados em `mock-academy.ts` |
+| **Price ID centralizado** | ✅ Feito | `_shared/plan-config.ts` com mapeamento slug↔price |
+| **Troca de senha** | ✅ Real | `supabase.auth.updateUser()` implementado no Profile |
+| **NoxPay (PIX)** | ❌ Pendente | Credenciais e edge functions não implementadas |
+| **Academy** | ❌ Mock | Dados em `mock-academy.ts` + localStorage |
 | **Cupons** | ❌ Mock | Dados em `mock-coupons.ts` + localStorage |
 | **Análise DNB** | ❌ Mock | Dados em `mock-dnb.ts` |
-| **Planner** | ❌ localStorage | Sem persistência no banco |
-| **Planos (admin)** | ❌ localStorage | `usePlans` usa localStorage, não banco |
 | **Notificações** | ❌ Mock | Dados fake com geração aleatória |
-| **Home Config** | ❌ localStorage | `useHomeConfig` sem persistência backend |
+| **Motor de Faturamento (cron)** | ❌ Pendente | `billing-check` não implementado |
 
-### Bugs e Problemas Críticos Identificados
+### ⚠️ Problema Crítico Identificado
 
-#### 🔴 P0 — Corrigir Imediatamente
+**Trigger `on_auth_user_created` ausente no banco de dados.**
+A função `handle_new_user()` existe, mas o trigger que a dispara ao criar um novo usuário **não está ativo**. Isso significa que novos cadastros podem não receber automaticamente o perfil e o role `free`. O usuário admin foi criado manualmente via edge function temporária, contornando este problema.
 
-1. **`useAcademy` usa `useState` como `useEffect`** (`src/hooks/useAcademy.ts:11,67`)
-   - `useState(() => { sideEffects })` é executado durante render — anti-pattern React
-   - **Fix**: Trocar para `useEffect`
-
-2. **`checkSubscription` no AuthContext é no-op** (`src/contexts/AuthContext.tsx:208-210`)
-   - Função vazia, nunca sincroniza status de assinatura no contexto global
-   - **Fix**: Integrar com `useSubscription` ou remover da interface e usar hook diretamente
-
-3. **Estado duplo de assinatura sem fonte de verdade**
-   - `UserProfile.subscription` nunca é populado (sempre `undefined`)
-   - `useSubscription` tem estado isolado, não conectado ao AuthContext
-   - Profile.tsx aba "Assinatura" mostra dados vazios/incorretos
-   - **Fix**: Unificar — `useSubscription` como fonte de verdade, remover `subscription` de `UserProfile`
-
-4. **Troca de senha é mock** (`src/pages/Profile.tsx:64`)
-   - Faz `toast('Sucesso')` sem chamar `supabase.auth.updateUser()`
-   - **Fix**: Implementar com `supabase.auth.updateUser({ password })`
-
-#### 🟡 P1 — Corrigir em Breve
-
-5. **`usePlans` persiste em localStorage** (`src/hooks/usePlans.ts`)
-   - Planos existem no Stripe como produtos reais mas frontend lê do localStorage
-   - Admin altera planos → só afeta seu próprio browser
-   - **Fix**: Criar tabela `plans` no banco ou ler diretamente do Stripe
-
-6. **Price IDs duplicados em 3 edge functions**
-   - Mesmo mapa em `check-subscription`, `create-checkout`, `stripe-webhook`
-   - Risco de dessincronização ao adicionar/alterar planos
-   - **Fix**: Centralizar mapeamento (tabela `plans` ou constante importável via Deno)
-
-7. **`signInWithGoogle` exposto no AuthContext** (`AuthContext.tsx:166-175`)
-   - Login social foi removido da UI mas função ainda existe
-   - **Fix**: Remover método e referência na interface `AuthContextType`
-
-8. **`mock-auth.ts` ainda existe** (`src/data/mock-auth.ts`)
-   - Auth é real via Supabase, arquivo não é mais usado
-   - **Fix**: Deletar arquivo
-
-9. **Edge functions usam Stripe SDK desatualizado**
-   - `stripe@14.21.0` + `apiVersion: "2023-10-16"` → deveria ser `stripe@18.5.0` + `apiVersion: "2025-08-27.basil"`
-   - **Fix**: Atualizar imports em todas as edge functions
-
-10. **`UserProfile.subscription` type incompatível** (`src/types/auth.ts:27-33`)
-    - Interface usa `plan: 'free' | 'premium'` — não reflete os 4 tiers reais
-    - **Fix**: Remover campo `subscription` de `UserProfile`, usar `useSubscription` hook
-
-#### 🔵 P2 — Melhorias de Qualidade
-
-11. **Cores hardcoded em `NotificationSystem`** — Usar tokens semânticos
-12. **`Layout.tsx` lê localStorage diretamente no render** — Extrair para hook
-13. **`useCoupons` mantém estado duplicado** (`allCoupons` + `coupons`) — Simplificar com `useMemo`
-14. **`useHomeConfig` sem persistência backend** — Migrar para tabela
-15. **`NotificationSystem` 100% mockado** — Implementar notificações reais ou remover geração fake
-
-### Etapas de Correção (Ordem de Prioridade)
-
-```
-ETAPA 1 — Bugs Críticos (P0)
-├── 1.1 Fix useAcademy useState → useEffect
-├── 1.2 Implementar troca de senha real no Profile
-├── 1.3 Unificar estado de assinatura (remover subscription de UserProfile)
-├── 1.4 Conectar useSubscription ao Profile.tsx aba Assinatura
-└── 1.5 Remover checkSubscription vazio do AuthContext
-
-ETAPA 2 — Limpeza de Código Morto (P1)
-├── 2.1 Deletar mock-auth.ts
-├── 2.2 Remover signInWithGoogle do AuthContext
-├── 2.3 Limpar UserProfile.subscription type
-└── 2.4 Atualizar Stripe SDK nas edge functions
-
-ETAPA 3 — Infraestrutura de Dados (P1)
-├── 3.1 Criar tabela plans no banco (migrar de localStorage)
-├── 3.2 Centralizar mapeamento de price IDs
-├── 3.3 Migrar usePlans para ler do banco
-└── 3.4 Migrar useHomeConfig para banco
-
-ETAPA 4 — Migração de Módulos (P1-P2)
-├── 4.1 Academy → tabelas courses/modules/lessons
-├── 4.2 Cupons → tabela coupons
-├── 4.3 Planner → tabelas goals/transactions
-├── 4.4 Análise DNB → avaliar necessidade de persistência
-└── 4.5 Notificações → implementar sistema real ou desabilitar fake
-
-ETAPA 5 — Integração NoxPay (P1)
-├── 5.1 Configurar credenciais NoxPay
-├── 5.2 Edge function create-pix-payment
-├── 5.3 Edge function noxpay-webhook
-├── 5.4 Modal PIX no frontend
-└── 5.5 Motor de faturamento (billing-check cron)
-
-ETAPA 6 — Qualidade & Polish (P2)
-├── 6.1 Substituir cores hardcoded por tokens semânticos
-├── 6.2 Extrair localStorage do render do Layout
-├── 6.3 Simplificar useCoupons (remover estado duplicado)
-└── 6.4 Testes end-to-end
+**Ação necessária:** Recriar o trigger:
+```sql
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 ```
 
 ---
 
+### Etapas de Correção — Status Atualizado
+
+```
+ETAPA 1 — Bugs Críticos (P0) ✅ CONCLUÍDA
+├── ✅ 1.1 Fix useAcademy useState → useEffect (corrigido)
+├── ✅ 1.2 Implementar troca de senha real no Profile (supabase.auth.updateUser)
+├── ✅ 1.3 Unificar estado de assinatura (subscription removido de UserProfile)
+├── ✅ 1.4 Conectar useSubscription ao Profile.tsx aba Assinatura
+└── ✅ 1.5 Remover checkSubscription vazio do AuthContext
+
+ETAPA 2 — Limpeza de Código Morto (P1) ✅ CONCLUÍDA
+├── ✅ 2.1 Deletar mock-auth.ts
+├── ✅ 2.2 Remover signInWithGoogle do AuthContext
+├── ✅ 2.3 Limpar UserProfile.subscription type
+└── ⏳ 2.4 Atualizar Stripe SDK nas edge functions (verificar versão atual)
+
+ETAPA 3 — Infraestrutura de Dados (P1) ✅ CONCLUÍDA
+├── ✅ 3.1 Criar tabela plans no banco (5 planos seedados com RLS)
+├── ✅ 3.2 Centralizar mapeamento de price IDs (_shared/plan-config.ts)
+├── ✅ 3.3 Migrar usePlans para ler do banco (React Query)
+└── ✅ 3.4 Migrar useHomeConfig para banco (tabela home_config)
+
+ETAPA 4 — Migração de Módulos (P1-P2) 🔄 EM ANDAMENTO (1/5)
+├── ❌ 4.1 Academy → tabelas courses/modules/lessons
+├── ❌ 4.2 Cupons → tabela coupons
+├── ✅ 4.3 Planner → tabelas trip_goals/planner_transactions (migrado)
+├── ❌ 4.4 Análise DNB → avaliar necessidade de persistência
+└── ❌ 4.5 Notificações → implementar sistema real ou desabilitar fake
+
+ETAPA 5 — Integração NoxPay (P1) ❌ PENDENTE
+├── ❌ 5.1 Configurar credenciais NoxPay
+├── ❌ 5.2 Edge function create-pix-payment
+├── ❌ 5.3 Edge function noxpay-webhook
+├── ❌ 5.4 Modal PIX no frontend
+└── ❌ 5.5 Motor de faturamento (billing-check cron)
+
+ETAPA 6 — Qualidade & Polish (P2) ❌ PENDENTE
+├── ❌ 6.1 Substituir cores hardcoded por tokens semânticos
+├── ❌ 6.2 Extrair localStorage do render do Layout
+├── ❌ 6.3 Simplificar useCoupons (remover estado duplicado)
+└── ❌ 6.4 Testes end-to-end
+```
+
+### 🛠️ Ação Urgente: Recriar Trigger de Signup
+
+O trigger `on_auth_user_created` está ausente. Sem ele, novos usuários não recebem perfil nem role automaticamente. Deve ser recriado antes de qualquer novo cadastro.
+
+---
+
 **Documento criado**: Fevereiro 2025  
-**Última atualização**: 8 de Fevereiro de 2025  
-**Status**: 🔧 Auditoria Completa — Correções Priorizadas  
-**Próximo passo**: Executar Etapa 1 (Bugs Críticos P0)
+**Última atualização**: 8 de Fevereiro de 2026, 15:30 (BRT)  
+**Status**: 🔄 Etapas 1-3 Concluídas — Etapa 4 em Andamento  
+**Próximo passo**: Recriar trigger `on_auth_user_created` + Continuar Etapa 4 (Academy, Cupons, DNB)
