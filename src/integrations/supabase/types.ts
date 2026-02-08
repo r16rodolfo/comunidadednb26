@@ -313,6 +313,45 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          action_href: string | null
+          action_label: string | null
+          created_at: string
+          icon: string
+          id: string
+          message: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action_href?: string | null
+          action_label?: string | null
+          created_at?: string
+          icon?: string
+          id?: string
+          message: string
+          read?: boolean
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          action_href?: string | null
+          action_label?: string | null
+          created_at?: string
+          icon?: string
+          id?: string
+          message?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       planner_transactions: {
         Row: {
           amount: number
