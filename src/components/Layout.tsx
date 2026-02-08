@@ -49,7 +49,7 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
       {
         title: "DNB ACADEMY",
         items: [
-          { title: "Aprenda Câmbio", url: "/academy", icon: BookOpen },
+          { title: "Academy", url: "/academy", icon: BookOpen },
         ]
       },
       {
@@ -104,12 +104,12 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
         { title: "Cupons de Parceiros", url: "/coupons", icon: Ticket },
       ]
     },
-    {
-      title: "DNB ACADEMY",
-      items: [
-        { title: "Aprenda Câmbio", url: "/academy", icon: BookOpen },
-      ]
-    },
+      {
+        title: "DNB ACADEMY",
+        items: [
+          { title: "Academy", url: "/academy", icon: BookOpen },
+        ]
+      },
     {
       title: "CONTA",
       items: [
