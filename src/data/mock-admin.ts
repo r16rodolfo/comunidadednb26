@@ -89,7 +89,7 @@ export const mockAdminUsers = [
   },
 ];
 
-// Admin Content page - cursos agora em mock-academy.ts (mockAdminCourses)
+// Admin Content page - cursos agora no banco de dados (tabela courses)
 
 // Admin Analytics page
 export const monthlyRevenue = [
@@ -111,7 +111,7 @@ export const userActivity = [
   { day: 'Dom', logins: 98, newUsers: 7 },
 ];
 
-// Performance de conteúdo por curso (vinculado aos cursos de mock-academy.ts)
+// Performance de conteúdo por curso (vinculado aos cursos no banco de dados)
 export interface CoursePerformance {
   courseId: string;
   courseName: string;
