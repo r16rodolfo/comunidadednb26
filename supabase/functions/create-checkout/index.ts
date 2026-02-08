@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import Stripe from "https://esm.sh/stripe@18.5.0";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { planPriceIds } from "../_shared/plan-config.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,14 +11,6 @@ const corsHeaders = {
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
-};
-
-// Map plan slugs to real Stripe price IDs
-const planPriceIds: Record<string, string> = {
-  'premium-monthly': 'price_1Sya3yEuyKN6OMe7YBMomGJK',
-  'premium-quarterly': 'price_1Sya4zEuyKN6OMe7y5jcyG7V',
-  'premium-semiannual': 'price_1Sya51EuyKN6OMe7cj3xHyCS',
-  'premium-yearly': 'price_1Sya69EuyKN6OMe7XLGIXK07',
 };
 
 serve(async (req) => {
@@ -48,7 +41,7 @@ serve(async (req) => {
     logStep("Using Stripe price", { priceId });
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2023-10-16"
+      apiVersion: "2025-08-27.basil"
     });
 
     // Check if customer exists

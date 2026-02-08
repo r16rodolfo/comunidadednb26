@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import Stripe from "https://esm.sh/stripe@18.5.0";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { resolvePlan } from "../_shared/plan-config.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,18 +12,6 @@ const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
 };
-
-// Map Stripe price IDs to plan slugs and tiers
-const priceIdToPlan: Record<string, { tier: string; slug: string }> = {
-  'price_1Sya3yEuyKN6OMe7YBMomGJK': { tier: 'Premium Mensal', slug: 'premium-monthly' },
-  'price_1Sya4zEuyKN6OMe7y5jcyG7V': { tier: 'Premium Trimestral', slug: 'premium-quarterly' },
-  'price_1Sya51EuyKN6OMe7cj3xHyCS': { tier: 'Premium Semestral', slug: 'premium-semiannual' },
-  'price_1Sya69EuyKN6OMe7XLGIXK07': { tier: 'Premium Anual', slug: 'premium-yearly' },
-};
-
-function determinePlanFromPriceId(priceId: string): { tier: string; slug: string } {
-  return priceIdToPlan[priceId] || { tier: 'Premium', slug: 'premium-monthly' };
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -40,7 +29,7 @@ serve(async (req) => {
     });
   }
 
-  const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+  const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
@@ -107,7 +96,6 @@ serve(async (req) => {
 
 /**
  * Handle invoice.paid event
- * Updates subscriber record with confirmed payment and subscription details
  */
 async function handleInvoicePaid(
   invoice: Stripe.Invoice,
@@ -127,7 +115,6 @@ async function handleInvoicePaid(
     return;
   }
 
-  // Get customer email
   const customer = await stripe.customers.retrieve(customerId);
   if (customer.deleted || !customer.email) {
     logStep("Customer deleted or no email", { customerId });
@@ -144,18 +131,12 @@ async function handleInvoicePaid(
     return;
   }
 
-  // Get subscription details
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const priceId = subscription.items.data[0]?.price?.id;
-  const planInfo = priceId ? determinePlanFromPriceId(priceId) : { tier: 'Premium', slug: 'premium-monthly' };
+  const planInfo = priceId ? resolvePlan(priceId) : { tier: 'Premium', slug: 'premium-monthly' };
   const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
 
-  logStep("Updating subscriber after payment", {
-    email,
-    subscriptionId,
-    plan: planInfo,
-    subscriptionEnd,
-  });
+  logStep("Updating subscriber after payment", { email, subscriptionId, plan: planInfo, subscriptionEnd });
 
   const { error } = await supabase.from("subscribers").upsert({
     email,
@@ -179,7 +160,6 @@ async function handleInvoicePaid(
 
 /**
  * Handle customer.subscription.updated event
- * Syncs plan changes, cancellation scheduling, and downgrades
  */
 async function handleSubscriptionUpdated(
   subscription: Stripe.Subscription,
@@ -208,14 +188,13 @@ async function handleSubscriptionUpdated(
   }
   const email = customer.email;
 
-  // Only process active or trialing subscriptions
   if (!['active', 'trialing'].includes(subscription.status)) {
     logStep("Subscription not active/trialing, skipping update", { status: subscription.status });
     return;
   }
 
   const priceId = subscription.items.data[0]?.price?.id;
-  const planInfo = priceId ? determinePlanFromPriceId(priceId) : { tier: 'Premium', slug: 'premium-monthly' };
+  const planInfo = priceId ? resolvePlan(priceId) : { tier: 'Premium', slug: 'premium-monthly' };
   const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
 
   // Check for pending schedule (downgrade)
@@ -228,7 +207,7 @@ async function handleSubscriptionUpdated(
       if (schedule.phases && schedule.phases.length > 1) {
         const nextPhase = schedule.phases[schedule.phases.length - 1];
         const nextPriceId = nextPhase.items[0].price as string;
-        const nextPlanInfo = determinePlanFromPriceId(nextPriceId);
+        const nextPlanInfo = resolvePlan(nextPriceId);
         pendingDowngradeTo = nextPlanInfo.slug;
         pendingDowngradeDate = new Date(nextPhase.start_date * 1000).toISOString();
         logStep("Pending downgrade detected", { pendingDowngradeTo, pendingDowngradeDate });
@@ -268,17 +247,13 @@ async function handleSubscriptionUpdated(
 
 /**
  * Handle customer.subscription.deleted event
- * Marks user as unsubscribed
  */
 async function handleSubscriptionDeleted(
   subscription: Stripe.Subscription,
   supabase: ReturnType<typeof createClient>
 ) {
-  logStep("Processing subscription.deleted", {
-    subscriptionId: subscription.id,
-  });
+  logStep("Processing subscription.deleted", { subscriptionId: subscription.id });
 
-  // Find subscriber by stripe_subscription_id
   const { data: subscriber, error: findError } = await supabase
     .from("subscribers")
     .select("email, user_id, current_plan_slug")
@@ -293,10 +268,7 @@ async function handleSubscriptionDeleted(
     return;
   }
 
-  logStep("Deactivating subscription", {
-    email: subscriber.email,
-    previousPlan: subscriber.current_plan_slug,
-  });
+  logStep("Deactivating subscription", { email: subscriber.email, previousPlan: subscriber.current_plan_slug });
 
   const { error } = await supabase.from("subscribers").update({
     subscribed: false,
@@ -319,7 +291,7 @@ async function handleSubscriptionDeleted(
 }
 
 /**
- * Helper: Get user_id from auth by email
+ * Helper: Get user_id from subscribers or fallback
  */
 async function getUserIdByEmail(
   supabase: ReturnType<typeof createClient>,
@@ -331,14 +303,5 @@ async function getUserIdByEmail(
     .eq("email", email)
     .maybeSingle();
 
-  if (data?.user_id) return data.user_id;
-
-  // Fallback: check profiles
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("user_id")
-    .limit(1);
-
-  // Return empty string as fallback - the upsert on email conflict will still work
   return data?.user_id || '';
 }
