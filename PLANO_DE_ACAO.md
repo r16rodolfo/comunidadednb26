@@ -737,7 +737,7 @@ A cada 1 hora:
 | **NoxPay (PIX)** | ❌ Pendente | Credenciais e edge functions não implementadas |
 | **Academy** | ✅ Banco | Tabelas `courses`, `modules`, `lessons`, `lesson_progress` com RLS |
 | **Cupons** | ✅ Banco | Tabelas `coupons`, `coupon_categories` com RLS + RPC `increment_coupon_click` |
-| **Análise DNB** | ❌ Mock | Dados em `mock-dnb.ts` |
+| **Análise DNB** | ✅ Banco | Tabela `market_analyses` com RLS + admin/gestor CRUD |
 | **Notificações** | ❌ Mock | Dados fake com geração aleatória |
 | **Motor de Faturamento (cron)** | ❌ Pendente | `billing-check` não implementado |
 
@@ -777,11 +777,11 @@ ETAPA 3 — Infraestrutura de Dados (P1) ✅ CONCLUÍDA
 ├── ✅ 3.3 Migrar usePlans para ler do banco (React Query)
 └── ✅ 3.4 Migrar useHomeConfig para banco (tabela home_config)
 
-ETAPA 4 — Migração de Módulos (P1-P2) 🔄 EM ANDAMENTO (3/5)
+ETAPA 4 — Migração de Módulos (P1-P2) 🔄 EM ANDAMENTO (4/5)
 ├── ✅ 4.1 Academy → tabelas courses/modules/lessons/lesson_progress (migrado + admin CRUD)
 ├── ✅ 4.2 Cupons → tabelas coupons/coupon_categories (migrado + admin CRUD + RPC clicks)
 ├── ✅ 4.3 Planner → tabelas trip_goals/planner_transactions (migrado)
-├── ❌ 4.4 Análise DNB → avaliar necessidade de persistência
+├── ✅ 4.4 Análise DNB → tabela market_analyses (migrado + admin CRUD)
 └── ❌ 4.5 Notificações → implementar sistema real ou desabilitar fake
 
 ETAPA 5 — Integração NoxPay (P1) ❌ PENDENTE
@@ -805,6 +805,6 @@ O trigger `on_auth_user_created` está ausente. Sem ele, novos usuários não re
 ---
 
 **Documento criado**: Fevereiro 2025  
-**Última atualização**: 8 de Fevereiro de 2026, 19:00 (BRT)  
-**Status**: 🔄 Etapas 1-3 Concluídas — Etapa 4 em Andamento (3/5 módulos migrados)  
-**Próximo passo**: Avaliar DNB (4.4) + Notificações (4.5) → Iniciar Etapa 5 (NoxPay)
+**Última atualização**: 8 de Fevereiro de 2026, 19:30 (BRT)  
+**Status**: 🔄 Etapas 1-3 Concluídas — Etapa 4 em Andamento (4/5 módulos migrados)  
+**Próximo passo**: Notificações (4.5) → Iniciar Etapa 5 (NoxPay)

@@ -6,15 +6,15 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Search, Plus, MoreHorizontal, Edit, Trash2, Eye, TrendingUp, TrendingDown, AlertTriangle, Clock, Video, ImageIcon, BarChart3 } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, Edit, Trash2, TrendingUp, TrendingDown, AlertTriangle, Clock, Video, ImageIcon, BarChart3 } from 'lucide-react';
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader';
 import { StatCard } from '@/components/shared/StatCard';
 import { CreateAnalysisModal } from '@/components/admin/CreateAnalysisModal';
 import { MarketAnalysis } from '@/types/dnb';
-import { mockAnalyses, recommendations } from '@/data/mock-dnb';
+import { useAdminDnb } from '@/hooks/useAdminDnb';
+import { recommendations } from '@/hooks/useDnb';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,8 +41,7 @@ const badgeStyles: Record<string, string> = {
 };
 
 export default function AdminAnalyses() {
-  const { toast } = useToast();
-  const [analyses, setAnalyses] = useState<MarketAnalysis[]>(mockAnalyses);
+  const { analyses, isLoading, createAnalysis, updateAnalysis, deleteAnalysis } = useAdminDnb();
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingAnalysis, setEditingAnalysis] = useState<MarketAnalysis | null>(null);
@@ -54,11 +53,6 @@ export default function AdminAnalyses() {
         a.date.includes(searchTerm)
       )
     : analyses;
-
-  // Sort by date descending
-  const sortedAnalyses = [...filteredAnalyses].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
 
   const stats = {
     total: analyses.length,
@@ -72,16 +66,14 @@ export default function AdminAnalyses() {
   };
 
   const handleSave = (analysis: MarketAnalysis) => {
-    setAnalyses(prev => {
-      const existingIndex = prev.findIndex(a => a.id === analysis.id);
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex] = analysis;
-        return updated;
-      }
-      return [analysis, ...prev];
-    });
+    const isEditing = !!editingAnalysis;
+    if (isEditing) {
+      updateAnalysis.mutate(analysis);
+    } else {
+      createAnalysis.mutate(analysis);
+    }
     setEditingAnalysis(null);
+    setShowModal(false);
   };
 
   const handleEdit = (analysis: MarketAnalysis) => {
@@ -91,8 +83,7 @@ export default function AdminAnalyses() {
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    setAnalyses(prev => prev.filter(a => a.id !== deleteTarget.id));
-    toast({ title: 'Análise excluída com sucesso' });
+    deleteAnalysis.mutate(deleteTarget.id);
     setDeleteTarget(null);
   };
 
@@ -136,111 +127,119 @@ export default function AdminAnalyses() {
         {/* Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Análises ({sortedAnalyses.length})</CardTitle>
+            <CardTitle className="text-base">Análises ({filteredAnalyses.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Recomendação</TableHead>
-                    <TableHead>USD/BRL</TableHead>
-                    <TableHead>EUR/BRL</TableHead>
-                    <TableHead>Resumo</TableHead>
-                    <TableHead>Mídias</TableHead>
-                    <TableHead className="w-[50px]">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedAnalyses.map(analysis => {
-                    const rec = recommendations[analysis.recommendation];
-                    const Icon = iconMap[rec?.icon as keyof typeof iconMap];
+            {isLoading ? (
+              <div className="space-y-3 animate-pulse">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-12 bg-muted rounded" />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Recomendação</TableHead>
+                      <TableHead>USD/BRL</TableHead>
+                      <TableHead>EUR/BRL</TableHead>
+                      <TableHead>Resumo</TableHead>
+                      <TableHead>Mídias</TableHead>
+                      <TableHead className="w-[50px]">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAnalyses.map(analysis => {
+                      const rec = recommendations[analysis.recommendation];
+                      const Icon = iconMap[rec?.icon as keyof typeof iconMap];
 
-                    return (
-                      <TableRow key={analysis.id}>
-                        <TableCell className="font-medium whitespace-nowrap">
-                          {format(new Date(analysis.date), "dd/MM/yyyy", { locale: ptBR })}
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`${badgeStyles[analysis.recommendation]} border text-xs`}>
-                            {Icon && <Icon className="h-3 w-3 mr-1" />}
-                            {rec?.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <span className="font-medium">R$ {analysis.dollarPrice.toFixed(2)}</span>
-                            <span className={`ml-1 text-xs ${analysis.dollarVariation >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {analysis.dollarVariation >= 0 ? '+' : ''}{analysis.dollarVariation}%
+                      return (
+                        <TableRow key={analysis.id}>
+                          <TableCell className="font-medium whitespace-nowrap">
+                            {format(new Date(analysis.date), "dd/MM/yyyy", { locale: ptBR })}
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={`${badgeStyles[analysis.recommendation]} border text-xs`}>
+                              {Icon && <Icon className="h-3 w-3 mr-1" />}
+                              {rec?.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <span className="font-medium">R$ {analysis.dollarPrice.toFixed(2)}</span>
+                              <span className={`ml-1 text-xs ${analysis.dollarVariation >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {analysis.dollarVariation >= 0 ? '+' : ''}{analysis.dollarVariation}%
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <span className="font-medium">R$ {analysis.euroPrice.toFixed(2)}</span>
+                              <span className={`ml-1 text-xs ${analysis.euroVariation >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {analysis.euroVariation >= 0 ? '+' : ''}{analysis.euroVariation}%
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground line-clamp-1 max-w-[200px]">
+                              {analysis.summary}
                             </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <span className="font-medium">R$ {analysis.euroPrice.toFixed(2)}</span>
-                            <span className={`ml-1 text-xs ${analysis.euroVariation >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {analysis.euroVariation >= 0 ? '+' : ''}{analysis.euroVariation}%
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-muted-foreground line-clamp-1 max-w-[200px]">
-                            {analysis.summary}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5">
-                            {analysis.videoUrl && (
-                              <Badge variant="outline" className="text-xs gap-1 px-1.5">
-                                <Video className="h-3 w-3" />
-                              </Badge>
-                            )}
-                            {analysis.imageUrl && (
-                              <Badge variant="outline" className="text-xs gap-1 px-1.5">
-                                <ImageIcon className="h-3 w-3" />
-                              </Badge>
-                            )}
-                            {!analysis.videoUrl && !analysis.imageUrl && (
-                              <span className="text-xs text-muted-foreground">—</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-popover">
-                              <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleEdit(analysis)}>
-                                <Edit className="mr-2 h-4 w-4" />Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => setDeleteTarget(analysis)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />Excluir
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1.5">
+                              {analysis.videoUrl && (
+                                <Badge variant="outline" className="text-xs gap-1 px-1.5">
+                                  <Video className="h-3 w-3" />
+                                </Badge>
+                              )}
+                              {analysis.imageUrl && (
+                                <Badge variant="outline" className="text-xs gap-1 px-1.5">
+                                  <ImageIcon className="h-3 w-3" />
+                                </Badge>
+                              )}
+                              {!analysis.videoUrl && !analysis.imageUrl && (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="bg-popover">
+                                <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleEdit(analysis)}>
+                                  <Edit className="mr-2 h-4 w-4" />Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => setDeleteTarget(analysis)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {filteredAnalyses.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          Nenhuma análise encontrada
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
-                  {sortedAnalyses.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        Nenhuma análise encontrada
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
 
