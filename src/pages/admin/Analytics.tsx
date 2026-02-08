@@ -7,13 +7,14 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, Legend
 } from 'recharts';
-import { TrendingUp, Users, DollarSign, Eye, MousePointer, BookOpen, QrCode, CreditCard, ArrowUpRight, ArrowDownRight, AlertCircle, RotateCcw } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, Eye, MousePointer, BookOpen, QrCode, CreditCard, ArrowUpRight, ArrowDownRight, AlertCircle, RotateCcw, Play, GraduationCap, Clock, Target } from 'lucide-react';
 import { StatCard } from '@/components/shared/StatCard';
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader';
+import { Progress } from '@/components/ui/progress';
 import {
-  monthlyRevenue, userActivity, contentPerformance, subscriptionTypes,
+  monthlyRevenue, userActivity, subscriptionTypes,
   monthlyRevenueByGateway, paymentMethodDistribution, paymentStats,
-  recentPayments, revenueByPlan
+  recentPayments, revenueByPlan, coursePerformance, lessonPerformance,
 } from '@/data/mock-admin';
 
 export default function Analytics() {
@@ -118,25 +119,137 @@ export default function Analytics() {
           </TabsContent>
 
           <TabsContent value="content" className="space-y-6">
-            <Card>
-              <CardHeader><CardTitle>Performance do Conteúdo</CardTitle></CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {contentPerformance.map((content, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <BookOpen className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <div className="font-medium">{content.name}</div>
-                          <div className="text-sm text-muted-foreground">{content.views} visualizações • {content.completions} conclusões</div>
-                        </div>
-                      </div>
-                      <Badge variant="outline">{content.engagement}% engajamento</Badge>
-                    </div>
-                  ))}
+            {/* Content KPIs */}
+            {(() => {
+              const publishedCourses = coursePerformance.filter(c => c.publishedLessons > 0);
+              const totalViews = coursePerformance.reduce((sum, c) => sum + c.totalViews, 0);
+              const totalCompletions = coursePerformance.reduce((sum, c) => sum + c.completions, 0);
+              const avgCPS = publishedCourses.length > 0
+                ? Math.round(publishedCourses.reduce((sum, c) => sum + c.cps, 0) / publishedCourses.length)
+                : 0;
+              return (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <StatCard label="Cursos Publicados" value={`${publishedCourses.length} / ${coursePerformance.length}`} icon={BookOpen} />
+                  <StatCard label="Visualizações Totais" value={totalViews.toLocaleString('pt-BR')} icon={Eye} variant="info" />
+                  <StatCard label="Conclusões" value={totalCompletions.toLocaleString('pt-BR')} icon={GraduationCap} variant="success" />
+                  <StatCard label="CPS Médio" value={`${avgCPS}/100`} icon={Target} variant={avgCPS >= 70 ? 'success' : avgCPS >= 50 ? 'warning' : 'info'} />
                 </div>
-              </CardContent>
-            </Card>
+              );
+            })()}
+
+            {/* Course Performance Cards */}
+            <div className="grid gap-6 md:grid-cols-2">
+              {coursePerformance.map((course) => (
+                <Card key={course.courseId}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">{course.courseName}</CardTitle>
+                      {course.publishedLessons > 0 ? (
+                        <Badge variant="default" className="bg-success/10 text-success border-success/20">Publicado</Badge>
+                      ) : (
+                        <Badge variant="secondary">Rascunho</Badge>
+                      )}
+                    </div>
+                    <CardDescription>{course.totalLessons} aulas • {course.publishedLessons} publicadas</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {course.publishedLessons > 0 ? (
+                      <>
+                        {/* CPS Score */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium flex items-center gap-1.5">
+                              <Target className="h-3.5 w-3.5 text-primary" />
+                              Content Performance Score
+                            </span>
+                            <span className="font-bold">{course.cps}/100</span>
+                          </div>
+                          <Progress value={course.cps} className="h-2" />
+                          <p className="text-[11px] text-muted-foreground">
+                            Engajamento ({(course.engagementRate).toFixed(0)}%) × 0.35 + Watchtime ({course.avgWatchTime}%) × 0.30 + Retenção ({course.retentionRate}%) × 0.20 + Conclusão × 0.15
+                          </p>
+                        </div>
+
+                        {/* Metrics grid */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="rounded-lg border p-3 text-center">
+                            <Eye className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+                            <p className="text-lg font-bold">{course.totalViews.toLocaleString('pt-BR')}</p>
+                            <p className="text-[11px] text-muted-foreground">{course.uniqueViewers} alunos únicos</p>
+                          </div>
+                          <div className="rounded-lg border p-3 text-center">
+                            <GraduationCap className="h-4 w-4 mx-auto text-success mb-1" />
+                            <p className="text-lg font-bold">{course.completions}</p>
+                            <p className="text-[11px] text-muted-foreground">{course.engagementRate.toFixed(1)}% engajamento</p>
+                          </div>
+                          <div className="rounded-lg border p-3 text-center">
+                            <Clock className="h-4 w-4 mx-auto text-info mb-1" />
+                            <p className="text-lg font-bold">{course.avgWatchTime}%</p>
+                            <p className="text-[11px] text-muted-foreground">Tempo médio assistido</p>
+                          </div>
+                          <div className="rounded-lg border p-3 text-center">
+                            <Play className="h-4 w-4 mx-auto text-warning mb-1" />
+                            <p className="text-lg font-bold">{course.retentionRate}%</p>
+                            <p className="text-[11px] text-muted-foreground">Retenção entre módulos</p>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center py-6 text-muted-foreground">
+                        <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                        <p className="text-sm">Curso não publicado — sem dados de performance</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Lesson-level breakdown */}
+            {lessonPerformance.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Performance por Aula</CardTitle>
+                  <CardDescription>Detalhamento individual vinculado aos cursos cadastrados</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Aula</TableHead>
+                          <TableHead>Módulo</TableHead>
+                          <TableHead className="text-right">Views</TableHead>
+                          <TableHead className="text-right">Conclusões</TableHead>
+                          <TableHead className="text-right">Watchtime</TableHead>
+                          <TableHead className="text-right">Drop-off</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {lessonPerformance.map((lesson) => (
+                          <TableRow key={lesson.lessonId}>
+                            <TableCell className="font-medium text-sm">{lesson.lessonTitle}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{lesson.moduleName}</TableCell>
+                            <TableCell className="text-right text-sm">{lesson.views.toLocaleString('pt-BR')}</TableCell>
+                            <TableCell className="text-right text-sm">{lesson.completions.toLocaleString('pt-BR')}</TableCell>
+                            <TableCell className="text-right text-sm">
+                              <span className={lesson.avgWatchTime >= 80 ? 'text-success' : lesson.avgWatchTime >= 60 ? 'text-warning' : 'text-destructive'}>
+                                {lesson.avgWatchTime}%
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right text-sm">
+                              <span className={lesson.dropOffRate <= 15 ? 'text-success' : lesson.dropOffRate <= 25 ? 'text-warning' : 'text-destructive'}>
+                                {lesson.dropOffRate}%
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="revenue" className="space-y-6">

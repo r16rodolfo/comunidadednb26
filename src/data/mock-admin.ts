@@ -90,12 +90,97 @@ export const userActivity = [
   { day: 'Dom', logins: 98, newUsers: 7 },
 ];
 
-export const contentPerformance = [
-  { name: 'Fundamentos do Câmbio', views: 1250, completions: 890, engagement: 71 },
-  { name: 'Estratégias Avançadas', views: 980, completions: 640, engagement: 65 },
-  { name: 'Cartões Internacionais', views: 2100, completions: 1680, engagement: 80 },
-  { name: 'Seguros de Viagem', views: 850, completions: 595, engagement: 70 },
+// Performance de conteúdo por curso (vinculado aos cursos de mock-academy.ts)
+export interface CoursePerformance {
+  courseId: string;
+  courseName: string;
+  totalLessons: number;
+  publishedLessons: number;
+  totalViews: number;
+  uniqueViewers: number;
+  completions: number;
+  avgWatchTime: number; // percentual médio de visualização do vídeo
+  engagementRate: number; // completions / uniqueViewers * 100
+  retentionRate: number; // % de alunos que avançam entre módulos
+  cps: number; // Content Performance Score (0-100)
+}
+
+// Performance por aula individual
+export interface LessonPerformance {
+  lessonId: string;
+  lessonTitle: string;
+  courseId: string;
+  moduleName: string;
+  views: number;
+  completions: number;
+  avgWatchTime: number;
+  dropOffRate: number; // % que abandona antes de terminar
+}
+
+// Dados vinculados ao curso "Fundamentos do Câmbio" (id: '1')
+// e "Estratégias Avançadas de Câmbio" (id: '2')
+export const coursePerformance: CoursePerformance[] = [
+  {
+    courseId: '1',
+    courseName: 'Fundamentos do Câmbio',
+    totalLessons: 6,
+    publishedLessons: 6,
+    totalViews: 3840,
+    uniqueViewers: 412,
+    completions: 287,
+    avgWatchTime: 78,
+    engagementRate: 69.7,
+    retentionRate: 72,
+    cps: 74,
+  },
+  {
+    courseId: '2',
+    courseName: 'Estratégias Avançadas de Câmbio',
+    totalLessons: 4,
+    publishedLessons: 0,
+    totalViews: 0,
+    uniqueViewers: 0,
+    completions: 0,
+    avgWatchTime: 0,
+    engagementRate: 0,
+    retentionRate: 0,
+    cps: 0,
+  },
 ];
+
+export const lessonPerformance: LessonPerformance[] = [
+  // Curso 1 - Módulo 1
+  { lessonId: 'lesson1', lessonTitle: 'O que é câmbio?', courseId: '1', moduleName: 'Introdução ao Câmbio', views: 980, completions: 890, avgWatchTime: 92, dropOffRate: 9 },
+  { lessonId: 'lesson2', lessonTitle: 'Como funciona o mercado', courseId: '1', moduleName: 'Introdução ao Câmbio', views: 820, completions: 695, avgWatchTime: 85, dropOffRate: 15 },
+  { lessonId: 'lesson3', lessonTitle: 'Tipos de moeda', courseId: '1', moduleName: 'Introdução ao Câmbio', views: 680, completions: 540, avgWatchTime: 79, dropOffRate: 21 },
+  { lessonId: 'lesson4', lessonTitle: 'Documentação necessária', courseId: '1', moduleName: 'Introdução ao Câmbio', views: 520, completions: 410, avgWatchTime: 76, dropOffRate: 21 },
+  // Curso 1 - Módulo 2
+  { lessonId: 'lesson5', lessonTitle: 'Quando comprar moeda', courseId: '1', moduleName: 'Estratégias de Compra', views: 460, completions: 340, avgWatchTime: 71, dropOffRate: 26 },
+  { lessonId: 'lesson6', lessonTitle: 'Planejamento de compras', courseId: '1', moduleName: 'Estratégias de Compra', views: 380, completions: 265, avgWatchTime: 68, dropOffRate: 30 },
+];
+
+// Fórmula CPS: (engagementRate * 0.35) + (avgWatchTime * 0.30) + (retentionRate * 0.20) + (completionRate * 0.15)
+// onde completionRate = (completions / totalLessons_started) normalizado
+export const calculateCPS = (course: CoursePerformance): number => {
+  if (course.uniqueViewers === 0) return 0;
+  const completionRate = (course.completions / course.uniqueViewers) * 100;
+  return Math.round(
+    course.engagementRate * 0.35 +
+    course.avgWatchTime * 0.30 +
+    course.retentionRate * 0.20 +
+    completionRate * 0.15
+  );
+};
+
+// Mantém export legado para compatibilidade (derivado dos cursos reais)
+export const contentPerformance = coursePerformance
+  .filter(c => c.totalViews > 0)
+  .map(c => ({
+    name: c.courseName,
+    views: c.totalViews,
+    completions: c.completions,
+    engagement: c.engagementRate,
+  }));
 
 export const subscriptionTypes = [
   { name: 'Gratuito', value: 65, color: 'hsl(var(--muted-foreground))' },
