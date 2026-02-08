@@ -8,9 +8,11 @@ import { defaultPlatformConfig } from '@/data/mock-admin';
 import { OverviewTab } from '@/components/admin/tabs/OverviewTab';
 import { PlatformTab } from '@/components/admin/tabs/PlatformTab';
 import { SecurityTab } from '@/components/admin/tabs/SecurityTab';
+import { HomeTab } from '@/components/admin/tabs/HomeTab';
 
 const TAB_LABELS: Record<string, string> = {
   overview: 'Visão Geral',
+  home: 'Página Inicial',
   platform: 'Plataforma',
   security: 'Segurança',
 };
@@ -24,7 +26,6 @@ export default function AdminDashboard() {
     setIsLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      // Persist Bunny.net Library ID to localStorage
       localStorage.setItem('bunny_library_id', platformConfig.integrations.bunnyLibraryId);
       toast({ title: 'Configurações salvas com sucesso!' });
     } catch {
@@ -50,6 +51,10 @@ export default function AdminDashboard() {
 
           <TabsContent value="overview" className="space-y-6 pt-4">
             <OverviewTab />
+          </TabsContent>
+
+          <TabsContent value="home" className="space-y-6 pt-4">
+            <HomeTab />
           </TabsContent>
 
           <TabsContent value="platform" className="space-y-6 pt-4">
