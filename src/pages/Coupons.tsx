@@ -8,7 +8,7 @@ import { useCoupons } from "@/hooks/useCoupons";
 import { Coupon, CouponFilters as Filters } from "@/types/coupons";
 
 export default function Coupons() {
-  const { coupons, categories, loading, getCoupons, incrementClickCount } = useCoupons();
+  const { coupons, categories, loading, getCoupons, fetchCategories, incrementClickCount } = useCoupons();
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>({
@@ -17,8 +17,12 @@ export default function Coupons() {
   });
 
   useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
+  useEffect(() => {
     getCoupons(filters);
-  }, [filters]);
+  }, [filters, getCoupons]);
 
   const handleGetCoupon = (coupon: Coupon) => {
     setSelectedCoupon(coupon);
@@ -48,8 +52,6 @@ export default function Coupons() {
     });
   };
 
-  const activeCoupons = coupons.filter(coupon => coupon.isActive);
-
   return (
     <Layout>
       <div className="space-y-8 animate-fade-in">
@@ -74,12 +76,12 @@ export default function Coupons() {
           categories={categories}
           onFiltersChange={handleFiltersChange}
           onClearFilters={handleClearFilters}
-          totalResults={filters.status === 'active' ? activeCoupons.length : coupons.length}
+          totalResults={coupons.length}
         />
 
         {/* Grid de Cupons */}
         <CouponGrid
-          coupons={filters.status === 'active' ? activeCoupons : coupons}
+          coupons={coupons}
           onGetCoupon={handleGetCoupon}
           loading={loading}
         />

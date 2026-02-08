@@ -14,6 +14,86 @@ export type Database = {
   }
   public: {
     Tables: {
+      coupon_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      coupons: {
+        Row: {
+          category_id: string | null
+          click_count: number
+          code: string
+          created_at: string
+          description: string
+          destination_url: string
+          expiration_date: string | null
+          id: string
+          is_active: boolean
+          offer_title: string
+          partner_logo: string
+          partner_name: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          click_count?: number
+          code: string
+          created_at?: string
+          description?: string
+          destination_url: string
+          expiration_date?: string | null
+          id?: string
+          is_active?: boolean
+          offer_title: string
+          partner_logo?: string
+          partner_name: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          click_count?: number
+          code?: string
+          created_at?: string
+          description?: string
+          destination_url?: string
+          expiration_date?: string | null
+          id?: string
+          is_active?: boolean
+          offer_title?: string
+          partner_logo?: string
+          partner_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupons_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "coupon_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           created_at: string
@@ -421,6 +501,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_coupon_click: {
+        Args: { coupon_id: string }
+        Returns: undefined
       }
     }
     Enums: {

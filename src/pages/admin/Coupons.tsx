@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, Search, MoreHorizontal, ToggleLeft, ToggleRight, Ticket, MousePointerClick, CheckCircle, XCircle, Clock, Tag } from "lucide-react";
+import { Plus, Edit, Trash2, Search, MoreHorizontal, ToggleLeft, ToggleRight, Ticket, MousePointerClick, CheckCircle, Clock, Tag } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CreateCouponModal } from "@/components/admin/CreateCouponModal";
 import { CategoryManagement } from "@/components/admin/CategoryManagement";
@@ -19,9 +19,15 @@ import { useToast } from "@/hooks/use-toast";
 import { StatCard } from "@/components/shared/StatCard";
 import { AdminPageHeader } from "@/components/shared/AdminPageHeader";
 
-// ─── Main Component ─────────────────────────────────────────
 export default function AdminCoupons() {
-  const { coupons, categories, loading, getCoupons, createCoupon, updateCoupon, deleteCoupon, addCategory, updateCategory, toggleCategory, deleteCategory, getCouponsCountByCategory } = useCoupons();
+  const {
+    coupons, categories, loading,
+    getCoupons, fetchCategories,
+    createCoupon, updateCoupon, deleteCoupon,
+    addCategory, updateCategory, toggleCategory, deleteCategory,
+    getCouponsCountByCategory,
+  } = useCoupons();
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
@@ -32,8 +38,12 @@ export default function AdminCoupons() {
   const { toast } = useToast();
 
   useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
+  useEffect(() => {
     getCoupons(filters);
-  }, [filters]);
+  }, [filters, getCoupons]);
 
   const handleCreateCoupon = async (data: CreateCouponData) => {
     await createCoupon(data);
@@ -50,18 +60,12 @@ export default function AdminCoupons() {
 
   const handleDeleteCoupon = async (id: string) => {
     await deleteCoupon(id);
-    toast({
-      title: "Cupom excluído",
-      description: "O cupom foi excluído com sucesso.",
-    });
+    toast({ title: "Cupom excluído", description: "O cupom foi excluído com sucesso." });
     getCoupons(filters);
   };
 
   const handleToggleStatus = async (coupon: Coupon) => {
-    await updateCoupon({
-      id: coupon.id,
-      isActive: !coupon.isActive
-    });
+    await updateCoupon({ id: coupon.id, isActive: !coupon.isActive });
     toast({
       title: `Cupom ${!coupon.isActive ? 'ativado' : 'desativado'}`,
       description: `O cupom foi ${!coupon.isActive ? 'ativado' : 'desativado'} com sucesso.`,
@@ -80,9 +84,7 @@ export default function AdminCoupons() {
   };
 
   const getStatusBadge = (coupon: Coupon) => {
-    if (!coupon.isActive) {
-      return <Badge variant="secondary">Inativo</Badge>;
-    }
+    if (!coupon.isActive) return <Badge variant="secondary">Inativo</Badge>;
     if (coupon.expirationDate && new Date(coupon.expirationDate) < new Date()) {
       return <Badge variant="destructive">Expirado</Badge>;
     }
@@ -112,7 +114,7 @@ export default function AdminCoupons() {
           </div>
         </AdminPageHeader>
 
-        {/* Stats Cards — using design tokens */}
+        {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="Total de Cupons" value={computedStats.total} icon={Ticket} />
           <StatCard label="Cupons Ativos" value={computedStats.active} icon={CheckCircle} variant="success" />
@@ -133,7 +135,6 @@ export default function AdminCoupons() {
                   className="pl-10"
                 />
               </div>
-
               <Select
                 value={filters.category || 'all'}
                 onValueChange={(value) => setFilters({ ...filters, category: value === 'all' ? undefined : value })}
@@ -150,7 +151,6 @@ export default function AdminCoupons() {
                   ))}
                 </SelectContent>
               </Select>
-
               <Select
                 value={filters.status || 'all'}
                 onValueChange={(value) => setFilters({ ...filters, status: value as any })}
@@ -216,11 +216,7 @@ export default function AdminCoupons() {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                              <img
-                                src={coupon.partnerLogo}
-                                alt={coupon.partnerName}
-                                className="w-full h-full object-cover"
-                              />
+                              <img src={coupon.partnerLogo} alt={coupon.partnerName} className="w-full h-full object-cover" />
                             </div>
                             <span className="font-medium text-sm">{coupon.partnerName}</span>
                           </div>
@@ -229,9 +225,7 @@ export default function AdminCoupons() {
                           <div className="max-w-[200px] truncate text-sm">{coupon.offerTitle}</div>
                         </TableCell>
                         <TableCell>
-                          <code className="bg-muted px-2 py-1 rounded text-xs font-mono">
-                            {coupon.code}
-                          </code>
+                          <code className="bg-muted px-2 py-1 rounded text-xs font-mono">{coupon.code}</code>
                         </TableCell>
                         <TableCell>
                           {coupon.category ? (
@@ -264,11 +258,7 @@ export default function AdminCoupons() {
                                 Editar
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleToggleStatus(coupon)}>
-                                {coupon.isActive ? (
-                                  <ToggleLeft className="w-4 h-4 mr-2" />
-                                ) : (
-                                  <ToggleRight className="w-4 h-4 mr-2" />
-                                )}
+                                {coupon.isActive ? <ToggleLeft className="w-4 h-4 mr-2" /> : <ToggleRight className="w-4 h-4 mr-2" />}
                                 {coupon.isActive ? 'Desativar' : 'Ativar'}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
@@ -306,7 +296,6 @@ export default function AdminCoupons() {
           </CardContent>
         </Card>
 
-        {/* Create/Edit Modal */}
         <CreateCouponModal
           isOpen={isCreateModalOpen}
           onClose={handleCloseModal}
@@ -315,7 +304,6 @@ export default function AdminCoupons() {
           editingCoupon={editingCoupon}
         />
 
-        {/* Category Management Sheet */}
         <CategoryManagement
           open={isCategorySheetOpen}
           onOpenChange={setIsCategorySheetOpen}
