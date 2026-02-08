@@ -17,7 +17,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { StatCard } from "@/components/shared/StatCard";
-import { AdminPageHeader } from "@/components/shared/AdminPageHeader";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 export default function AdminCoupons() {
   const {
@@ -101,7 +101,7 @@ export default function AdminCoupons() {
   return (
     <Layout>
       <div className="space-y-6">
-        <AdminPageHeader icon={Ticket} title="Gerenciar Cupons" description="Gerencie cupons de parceiros e acompanhe o desempenho">
+        <PageHeader icon={Ticket} title="Gerenciar Cupons" description="Gerencie cupons de parceiros e acompanhe o desempenho">
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setIsCategorySheetOpen(true)}>
               <Tag className="w-4 h-4 mr-2" />
@@ -112,7 +112,7 @@ export default function AdminCoupons() {
               Novo Cupom
             </Button>
           </div>
-        </AdminPageHeader>
+        </PageHeader>
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

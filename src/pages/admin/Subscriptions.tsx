@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CreditCard, Download, Users, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { StatCard } from '@/components/shared/StatCard';
-import { AdminPageHeader } from '@/components/shared/AdminPageHeader';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { PlanManagementCard } from '@/components/admin/PlanManagementCard';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,9 +44,9 @@ export default function AdminSubscriptions() {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto space-y-6">
-        <AdminPageHeader icon={CreditCard} title="Gestão de Assinaturas" description="Gerencie todas as assinaturas da plataforma">
+        <PageHeader icon={CreditCard} title="Gestão de Assinaturas" description="Gerencie todas as assinaturas da plataforma">
           <Button variant="outline"><Download className="h-4 w-4 mr-2" />Exportar Relatório</Button>
-        </AdminPageHeader>
+        </PageHeader>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

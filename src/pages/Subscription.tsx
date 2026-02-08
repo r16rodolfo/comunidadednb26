@@ -21,6 +21,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { usePlans, formatPrice, formatMonthlyEquivalent } from '@/hooks/usePlans';
 import { useSubscription } from '@/hooks/useSubscription';
+import { PageHeader } from '@/components/shared/PageHeader';
 
 export default function Subscription() {
   const { user } = useAuth();
@@ -61,21 +62,12 @@ export default function Subscription() {
     <Layout>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-primary rounded-lg flex items-center justify-center shrink-0">
-              <CreditCard className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold">Minha Assinatura</h1>
-              <p className="text-sm text-muted-foreground">Gerencie seu plano e faturamento</p>
-            </div>
-          </div>
+        <PageHeader icon={CreditCard} title="Minha Assinatura" description="Gerencie seu plano e faturamento">
           <Button onClick={checkSubscription} disabled={isLoading} variant="outline" size="sm" className="self-start sm:self-auto">
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Atualizar Status
           </Button>
-        </div>
+        </PageHeader>
 
         {/* Status Atual */}
         <Card>

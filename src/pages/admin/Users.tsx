@@ -9,7 +9,7 @@ import { Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Users as UsersIcon, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { StatCard } from '@/components/shared/StatCard';
-import { AdminPageHeader } from '@/components/shared/AdminPageHeader';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -86,7 +86,7 @@ export default function AdminUsers() {
   return (
     <Layout>
       <div className="space-y-6">
-        <AdminPageHeader icon={UsersIcon} title="Gestão de Usuários" description="Visualize todos os usuários da plataforma" />
+        <PageHeader icon={UsersIcon} title="Gestão de Usuários" description="Visualize todos os usuários da plataforma" />
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">

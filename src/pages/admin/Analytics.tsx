@@ -1,13 +1,13 @@
 import Layout from '@/components/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { TrendingUp, Construction } from 'lucide-react';
-import { AdminPageHeader } from '@/components/shared/AdminPageHeader';
+import { PageHeader } from '@/components/shared/PageHeader';
 
 export default function Analytics() {
   return (
     <Layout>
       <div className="space-y-6">
-        <AdminPageHeader icon={TrendingUp} title="Analytics e Relatórios" description="Acompanhe o desempenho da plataforma" />
+        <PageHeader icon={TrendingUp} title="Analytics e Relatórios" description="Acompanhe o desempenho da plataforma" />
 
         <Card>
           <CardContent className="py-16 text-center">

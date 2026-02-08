@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { CreateCourseModal } from '@/components/admin/CreateCourseModal';
 import { useState } from 'react';
 import { StatCard } from '@/components/shared/StatCard';
-import { AdminPageHeader } from '@/components/shared/AdminPageHeader';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { useAdminAcademy } from '@/hooks/useAdminAcademy';
 import { Course } from '@/types/academy';
 import { useToast } from '@/hooks/use-toast';
@@ -69,9 +69,9 @@ export default function Content() {
   return (
     <Layout>
       <div className="space-y-6">
-        <AdminPageHeader icon={BookOpen} title="Gestão de Conteúdo" description="Gerencie cursos e aulas da plataforma">
+        <PageHeader icon={BookOpen} title="Gestão de Conteúdo" description="Gerencie cursos e aulas da plataforma">
           <Button onClick={() => setShowCourseModal(true)}><Plus className="h-4 w-4 mr-2" />Novo Curso</Button>
-        </AdminPageHeader>
+        </PageHeader>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatCard label="Cursos" value={stats.totalCourses} icon={BookOpen} />
