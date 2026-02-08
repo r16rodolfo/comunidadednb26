@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.cancel-downgrade]
 verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
