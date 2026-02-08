@@ -24,12 +24,6 @@ export interface User {
 export interface UserProfile extends User {
   role: UserRole;
   permissions: Permission[];
-  subscription?: {
-    plan: 'free' | 'premium';
-    status: 'active' | 'inactive' | 'cancelled';
-    expiresAt?: Date;
-    startedAt: Date;
-  };
   preferences: {
     theme: 'light' | 'dark' | 'system';
     notifications: boolean;

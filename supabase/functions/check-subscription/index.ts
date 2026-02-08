@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import Stripe from "https://esm.sh/stripe@18.5.0";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { priceIdToPlan, determinePlanFromPrice } from "../_shared/plan-config.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,25 +12,6 @@ const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
-
-// Map Stripe price IDs to plan slugs and tiers
-const priceIdToplan: Record<string, { tier: string; slug: string }> = {
-  'price_1Sya3yEuyKN6OMe7YBMomGJK': { tier: 'Premium Mensal', slug: 'premium-monthly' },
-  'price_1Sya4zEuyKN6OMe7y5jcyG7V': { tier: 'Premium Trimestral', slug: 'premium-quarterly' },
-  'price_1Sya51EuyKN6OMe7cj3xHyCS': { tier: 'Premium Semestral', slug: 'premium-semiannual' },
-  'price_1Sya69EuyKN6OMe7XLGIXK07': { tier: 'Premium Anual', slug: 'premium-yearly' },
-};
-
-// Fallback: determine plan from price amount/interval
-function determinePlanFromPrice(amount: number, interval: string, intervalCount: number): { tier: string; slug: string } {
-  if (interval === 'year') return { tier: 'Premium Anual', slug: 'premium-yearly' };
-  if (interval === 'month') {
-    if (intervalCount === 6) return { tier: 'Premium Semestral', slug: 'premium-semiannual' };
-    if (intervalCount === 3) return { tier: 'Premium Trimestral', slug: 'premium-quarterly' };
-    return { tier: 'Premium Mensal', slug: 'premium-monthly' };
-  }
-  return { tier: 'Premium', slug: 'premium-monthly' };
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -59,7 +41,7 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
 
     if (customers.data.length === 0) {
@@ -113,7 +95,7 @@ serve(async (req) => {
 
       // Determine tier from price ID (preferred) or fallback to amount/interval
       const priceId = subscription.items.data[0].price.id;
-      const knownPlan = priceIdToplan[priceId];
+      const knownPlan = priceIdToPlan[priceId];
 
       if (knownPlan) {
         subscriptionTier = knownPlan.tier;

@@ -110,7 +110,7 @@ export default function Profile() {
               <Badge variant={getRoleBadgeVariant(user.role)}>
                 {getRoleFullLabel(user.role)}
               </Badge>
-              {user.subscription?.status === 'active' && (
+              {subscription?.subscribed && (
                 <Badge variant="secondary">Ativo</Badge>
               )}
             </div>
