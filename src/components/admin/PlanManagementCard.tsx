@@ -15,12 +15,11 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Pencil, RotateCcw, Crown, Check } from 'lucide-react';
-import { SubscriptionPlan, formatPrice, formatMonthlyEquivalent } from '@/data/mock-plans';
-import { usePlans } from '@/hooks/usePlans';
+import { Pencil, Crown, Check } from 'lucide-react';
+import { usePlans, SubscriptionPlan, formatPrice, formatMonthlyEquivalent } from '@/hooks/usePlans';
 
 export function PlanManagementCard() {
-  const { plans, updatePlan, togglePlanActive, resetToDefaults } = usePlans();
+  const { plans, updatePlan, togglePlanActive } = usePlans();
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
   const [editPrice, setEditPrice] = useState('');
   const [editFeatures, setEditFeatures] = useState('');
@@ -28,7 +27,7 @@ export function PlanManagementCard() {
 
   const openEditModal = (plan: SubscriptionPlan) => {
     setEditingPlan(plan);
-    setEditPrice((plan.priceCents / 100).toFixed(2).replace('.', ','));
+    setEditPrice((plan.price_cents / 100).toFixed(2).replace('.', ','));
     setEditFeatures(plan.features.join('\n'));
     setEditDescription(plan.description);
   };
@@ -45,7 +44,7 @@ export function PlanManagementCard() {
       .filter(f => f.length > 0);
 
     updatePlan(editingPlan.id, {
-      priceCents: Math.round(priceValue * 100),
+      price_cents: Math.round(priceValue * 100),
       features,
       description: editDescription,
     });
@@ -76,10 +75,6 @@ export function PlanManagementCard() {
               </CardTitle>
               <CardDescription>Configure preços, features e status dos planos de assinatura</CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={resetToDefaults}>
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Restaurar Padrão
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -88,7 +83,7 @@ export function PlanManagementCard() {
               <div
                 key={plan.id}
                 className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg border transition-colors gap-3 ${
-                  plan.isActive ? 'bg-card' : 'bg-muted/50 opacity-60'
+                  plan.is_active ? 'bg-card' : 'bg-muted/50 opacity-60'
                 }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-1">
@@ -107,7 +102,7 @@ export function PlanManagementCard() {
                   <Separator orientation="vertical" className="h-10 hidden sm:block" />
 
                   <div className="min-w-[120px]">
-                    <p className="text-lg font-bold">{formatPrice(plan.priceCents)}</p>
+                    <p className="text-lg font-bold">{formatPrice(plan.price_cents)}</p>
                     {plan.interval !== 'free' && plan.interval !== 'monthly' && (
                       <p className="text-xs text-muted-foreground">
                         ≈ {formatMonthlyEquivalent(plan)}/mês
@@ -121,7 +116,7 @@ export function PlanManagementCard() {
                     <p className="text-sm text-muted-foreground">{plan.description}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {plan.features.length} features
-                      {plan.savingsPercent ? ` • ${plan.savingsPercent}% de economia` : ''}
+                      {plan.savings_percent ? ` • ${plan.savings_percent}% de economia` : ''}
                     </p>
                   </div>
                 </div>
@@ -134,7 +129,7 @@ export function PlanManagementCard() {
                       </Label>
                       <Switch
                         id={`active-${plan.id}`}
-                        checked={plan.isActive}
+                        checked={plan.is_active}
                         onCheckedChange={() => togglePlanActive(plan.id)}
                       />
                     </div>
