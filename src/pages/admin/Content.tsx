@@ -4,14 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Plus, MoreHorizontal, Edit, Trash2, Eye, BookOpen, Video, Users } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, Edit, Trash2, Eye, BookOpen, Video, Users, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CreateCourseModal } from '@/components/admin/CreateCourseModal';
 import { useState } from 'react';
 import { StatCard } from '@/components/shared/StatCard';
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader';
-import { mockAdminCourses } from '@/data/mock-academy';
+import { useAdminAcademy } from '@/hooks/useAdminAcademy';
 import { Course } from '@/types/academy';
+import { useToast } from '@/hooks/use-toast';
 
 const formatTotalDuration = (course: Course) => {
   const totalSeconds = course.modules.reduce(
@@ -26,8 +27,8 @@ const formatTotalDuration = (course: Course) => {
 export default function Content() {
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-
-  const courses = mockAdminCourses;
+  const { courses, isLoading, deleteCourse, isDeleting, togglePublish } = useAdminAcademy();
+  const { toast } = useToast();
 
   const filteredCourses = searchTerm
     ? courses.filter(c =>
@@ -47,6 +48,24 @@ export default function Content() {
     ),
   };
 
+  const handleDelete = async (courseId: string, title: string) => {
+    try {
+      await deleteCourse(courseId);
+      toast({ title: 'Curso excluído', description: `"${title}" foi removido.` });
+    } catch {
+      toast({ title: 'Erro ao excluir', variant: 'destructive' });
+    }
+  };
+
+  const handleTogglePublish = async (courseId: string, currentlyPublished: boolean) => {
+    try {
+      await togglePublish({ id: courseId, publish: !currentlyPublished });
+      toast({ title: currentlyPublished ? 'Curso despublicado' : 'Curso publicado' });
+    } catch {
+      toast({ title: 'Erro ao alterar status', variant: 'destructive' });
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -54,7 +73,6 @@ export default function Content() {
           <Button onClick={() => setShowCourseModal(true)}><Plus className="h-4 w-4 mr-2" />Novo Curso</Button>
         </AdminPageHeader>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatCard label="Cursos" value={stats.totalCourses} icon={BookOpen} />
           <StatCard label="Aulas" value={stats.totalLessons} icon={Video} variant="info" />
@@ -62,7 +80,6 @@ export default function Content() {
           <StatCard label="Aulas Gratuitas" value={stats.freeLessons} icon={Video} variant="warning" />
         </div>
 
-        {/* Search */}
         <Card>
           <CardContent className="pt-6">
             <div className="relative">
@@ -77,78 +94,87 @@ export default function Content() {
           </CardContent>
         </Card>
 
-        {/* Courses Table */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Cursos ({filteredCourses.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Curso</TableHead>
-                    <TableHead>Módulos</TableHead>
-                    <TableHead>Aulas</TableHead>
-                    <TableHead>Duração</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Acesso</TableHead>
-                    <TableHead className="w-[50px]">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCourses.map((course) => {
-                    const freeCount = course.modules.reduce(
-                      (s, m) => s + m.lessons.filter(l => l.is_free).length, 0
-                    );
-                    const premiumCount = course.total_lessons - freeCount;
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Curso</TableHead>
+                      <TableHead>Módulos</TableHead>
+                      <TableHead>Aulas</TableHead>
+                      <TableHead>Duração</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Acesso</TableHead>
+                      <TableHead className="w-[50px]">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCourses.map((course) => {
+                      const freeCount = course.modules.reduce(
+                        (s, m) => s + m.lessons.filter(l => l.is_free).length, 0
+                      );
+                      const premiumCount = course.total_lessons - freeCount;
 
-                    return (
-                      <TableRow key={course.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{course.title}</div>
-                            <div className="text-sm text-muted-foreground line-clamp-1">{course.description}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{course.modules.length}</TableCell>
-                        <TableCell>{course.total_lessons}</TableCell>
-                        <TableCell>{formatTotalDuration(course)}</TableCell>
-                        <TableCell>
-                          <Badge variant={course.is_published ? 'default' : 'secondary'}>
-                            {course.is_published ? 'Publicado' : 'Rascunho'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            {freeCount > 0 && (
-                              <Badge variant="outline" className="text-xs">{freeCount} grátis</Badge>
-                            )}
-                            {premiumCount > 0 && (
-                              <Badge variant="secondary" className="text-xs">{premiumCount} premium</Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-popover">
-                              <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem><Eye className="mr-2 h-4 w-4" />Visualizar</DropdownMenuItem>
-                              <DropdownMenuItem><Edit className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />Excluir</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                      return (
+                        <TableRow key={course.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{course.title}</div>
+                              <div className="text-sm text-muted-foreground line-clamp-1">{course.description}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{course.modules.length}</TableCell>
+                          <TableCell>{course.total_lessons}</TableCell>
+                          <TableCell>{formatTotalDuration(course)}</TableCell>
+                          <TableCell>
+                            <Badge variant={course.is_published ? 'default' : 'secondary'}>
+                              {course.is_published ? 'Publicado' : 'Rascunho'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              {freeCount > 0 && (
+                                <Badge variant="outline" className="text-xs">{freeCount} grátis</Badge>
+                              )}
+                              {premiumCount > 0 && (
+                                <Badge variant="secondary" className="text-xs">{premiumCount} premium</Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="bg-popover">
+                                <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleTogglePublish(course.id, course.is_published)}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  {course.is_published ? 'Despublicar' : 'Publicar'}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(course.id, course.title)} disabled={isDeleting}>
+                                  <Trash2 className="mr-2 h-4 w-4" />Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
 

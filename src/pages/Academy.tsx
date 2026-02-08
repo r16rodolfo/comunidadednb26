@@ -5,12 +5,13 @@ import { CourseNavigation } from "@/components/academy/CourseNavigation";
 import { VideoPlayer } from "@/components/academy/VideoPlayer";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { List } from "lucide-react";
+import { List, Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function Academy() {
   const {
     course,
+    isLoading,
     currentLesson,
     setCurrentLesson,
     searchTerm,
@@ -32,22 +33,28 @@ export default function Academy() {
 
   const handleNext = () => {
     const nextLesson = getNextLesson();
-    if (nextLesson) {
-      setCurrentLesson(nextLesson);
-    }
+    if (nextLesson) setCurrentLesson(nextLesson);
   };
 
   const handlePrevious = () => {
     const previousLesson = getPreviousLesson();
-    if (previousLesson) {
-      setCurrentLesson(previousLesson);
-    }
+    if (previousLesson) setCurrentLesson(previousLesson);
   };
 
   const handleLessonSelect = (lesson: typeof currentLesson) => {
     setCurrentLesson(lesson);
     if (isMobile) setNavOpen(false);
   };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </Layout>
+    );
+  }
 
   const courseNav = (
     <CourseNavigation
@@ -63,7 +70,6 @@ export default function Academy() {
   return (
     <Layout>
       <div className="flex flex-col lg:flex-row h-[calc(100vh-3.5rem)] lg:h-[calc(100vh-4rem)] bg-background -m-3 sm:-m-4 lg:-m-6">
-        {/* Mobile: Sheet trigger + navigation */}
         {isMobile ? (
           <>
             <div className="flex items-center gap-2 p-3 border-b border-border bg-card/50">

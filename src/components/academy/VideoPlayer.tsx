@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, CheckCircle2, Clock, PlayCircle, Lock } from "lucide-react";
 import { Lesson } from "@/types/academy";
-import { getBunnyStreamConfig } from "@/data/mock-academy";
+// Bunny library ID is read from localStorage (set by admin in platform settings)
+const getBunnyLibraryId = () => localStorage.getItem('bunny_library_id') || '';
 
 interface VideoPlayerProps {
   lesson: Lesson | null;
@@ -33,7 +34,7 @@ export function VideoPlayer({
   const canWatch = (l: Lesson) => l.is_free || isPremiumUser;
 
   const getBunnyEmbedUrl = (videoId: string) => {
-    const { library_id: libraryId } = getBunnyStreamConfig();
+    const libraryId = getBunnyLibraryId();
     if (!libraryId || !videoId) return null;
     return `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}?autoplay=false&loop=false&muted=false&preload=true&responsive=true`;
   };
