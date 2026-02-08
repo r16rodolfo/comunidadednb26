@@ -24,6 +24,8 @@ export default function AdminDashboard() {
     setIsLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
+      // Persist Bunny.net Library ID to localStorage
+      localStorage.setItem('bunny_library_id', platformConfig.integrations.bunnyLibraryId);
       toast({ title: 'Configurações salvas com sucesso!' });
     } catch {
       toast({ title: 'Erro ao salvar configurações', description: 'Tente novamente mais tarde', variant: 'destructive' });

@@ -1,11 +1,14 @@
 import { Course, BunnyStreamConfig } from '@/types/academy';
 
 // Configuração global do Bunny.net Stream
-// O library_id será configurado via variável de ambiente quando integrado ao backend
-export const bunnyStreamConfig: BunnyStreamConfig = {
-  library_id: '', // Será preenchido com o Library ID real do Bunny.net
+// Lê o Library ID salvo pelo admin no painel (localStorage por enquanto)
+export const getBunnyStreamConfig = (): BunnyStreamConfig => ({
+  library_id: localStorage.getItem('bunny_library_id') || '',
   token_auth_enabled: false,
-};
+});
+
+// Alias estático para compatibilidade (lido no momento do import)
+export const bunnyStreamConfig: BunnyStreamConfig = getBunnyStreamConfig();
 
 export const mockCourse: Course = {
   id: '1',

@@ -32,6 +32,9 @@ export const defaultPlatformConfig = {
     premiumTransactions: -1,
     apiCalls: 1000,
   },
+  integrations: {
+    bunnyLibraryId: localStorage.getItem('bunny_library_id') || '',
+  },
 };
 
 // Admin Users page

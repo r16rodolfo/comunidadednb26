@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { Settings } from 'lucide-react';
+import { Settings, Video } from 'lucide-react';
 import type { PlatformConfig } from '@/types/admin';
 
 interface PlatformTabProps {
@@ -70,6 +70,28 @@ export function PlatformTab({ platformConfig, setPlatformConfig, onSave, isLoadi
               <Label>API Calls / Dia</Label>
               <Input type="number" value={platformConfig.limits.apiCalls} onChange={(e) => setPlatformConfig(prev => ({ ...prev, limits: { ...prev.limits, apiCalls: parseInt(e.target.value) } }))} />
             </div>
+          </div>
+        </div>
+        <Separator />
+        <div className="space-y-4">
+          <h3 className="text-base font-semibold flex items-center gap-2">
+            <Video className="h-4 w-4" />
+            Integrações
+          </h3>
+          <div className="space-y-2">
+            <Label htmlFor="bunnyLibraryId">Bunny.net Stream — Library ID</Label>
+            <Input
+              id="bunnyLibraryId"
+              placeholder="Ex: 123456"
+              value={platformConfig.integrations.bunnyLibraryId}
+              onChange={(e) => setPlatformConfig(prev => ({
+                ...prev,
+                integrations: { ...prev.integrations, bunnyLibraryId: e.target.value }
+              }))}
+            />
+            <p className="text-xs text-muted-foreground">
+              Encontre o Library ID no painel do Bunny.net em Stream &gt; Library &gt; API. Este ID é necessário para reproduzir os vídeos das aulas.
+            </p>
           </div>
         </div>
         <Button onClick={onSave} disabled={isLoading} className="w-full">
