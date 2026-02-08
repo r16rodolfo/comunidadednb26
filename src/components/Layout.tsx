@@ -86,6 +86,7 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
           { title: "Cupons", url: "/admin/coupons", icon: Ticket },
           { title: "Analytics", url: "/admin/analytics", icon: TrendingUp },
           { title: "Assinaturas", url: "/admin/subscriptions", icon: CreditCard },
+          { title: "Planner", url: "/admin/planner", icon: Calculator },
         ]
       }
     ];

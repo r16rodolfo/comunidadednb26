@@ -24,6 +24,7 @@ import AdminCoupons from "./pages/admin/Coupons";
 import AdminAnalytics from "./pages/admin/Analytics";
 import Subscription from "./pages/Subscription";
 import AdminSubscriptions from "./pages/admin/Subscriptions";
+import AdminPlanner from "./pages/admin/Planner";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -107,6 +108,11 @@ const App = () => (
             <Route path="/admin/subscriptions" element={
               <ProtectedRoute requiredRole={UserRole.ADMIN}>
                 <AdminSubscriptions />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/planner" element={
+              <ProtectedRoute requiredRole={UserRole.ADMIN}>
+                <AdminPlanner />
               </ProtectedRoute>
             } />
             
