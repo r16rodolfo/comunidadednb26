@@ -13,6 +13,9 @@ import {
   LogOut, 
   CreditCard,
   LineChart,
+  LayoutDashboard,
+  FileText,
+  Settings,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -75,22 +78,32 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
     ];
   }
 
-  // Admin navigation - all management in one place
+  // Admin navigation - organized by function
   if (userRole === UserRole.ADMIN) {
     return [
       {
-        title: "ADMINISTRAÇÃO",
+        title: "PAINEL",
         items: [
-          { title: "Painel Admin", url: "/admin/dashboard", icon: BarChart3 },
-          { title: "Usuários", url: "/admin/users", icon: Users },
-          { title: "Conteúdo", url: "/admin/content", icon: BookOpen },
-          { title: "Cupons", url: "/admin/coupons", icon: Ticket },
-          { title: "Análises", url: "/admin/analyses", icon: LineChart },
+          { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
           { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
+        ]
+      },
+      {
+        title: "CONTEÚDO",
+        items: [
+          { title: "Academy", url: "/admin/content", icon: BookOpen },
+          { title: "Análises", url: "/admin/analyses", icon: LineChart },
+          { title: "Cupons", url: "/admin/coupons", icon: Ticket },
+        ]
+      },
+      {
+        title: "GESTÃO",
+        items: [
+          { title: "Usuários", url: "/admin/users", icon: Users },
           { title: "Assinaturas", url: "/admin/subscriptions", icon: CreditCard },
           { title: "Planner", url: "/admin/planner", icon: Calculator },
         ]
-      }
+      },
     ];
   }
 
