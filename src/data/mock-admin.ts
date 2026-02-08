@@ -16,6 +16,7 @@ export const defaultPlatformConfig = {
   id: 'platform-1',
   siteName: 'Comunidade DNB',
   siteDescription: 'Viaje com inteligência',
+  logoUrl: localStorage.getItem('platform_logo') || undefined,
   primaryColor: '#0ea5e9',
   secondaryColor: '#8b5cf6',
   maintenanceMode: false,
