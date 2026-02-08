@@ -12,7 +12,15 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Map Stripe price amounts (in centavos) to plan slugs
+// Map Stripe price IDs to plan slugs and tiers
+const priceIdToplan: Record<string, { tier: string; slug: string }> = {
+  'price_1Sya3yEuyKN6OMe7YBMomGJK': { tier: 'Premium Mensal', slug: 'premium-monthly' },
+  'price_1Sya4zEuyKN6OMe7y5jcyG7V': { tier: 'Premium Trimestral', slug: 'premium-quarterly' },
+  'price_1Sya51EuyKN6OMe7cj3xHyCS': { tier: 'Premium Semestral', slug: 'premium-semiannual' },
+  'price_1Sya69EuyKN6OMe7XLGIXK07': { tier: 'Premium Anual', slug: 'premium-yearly' },
+};
+
+// Fallback: determine plan from price amount/interval
 function determinePlanFromPrice(amount: number, interval: string, intervalCount: number): { tier: string; slug: string } {
   if (interval === 'year') return { tier: 'Premium Anual', slug: 'premium-yearly' };
   if (interval === 'month') {
@@ -103,17 +111,24 @@ serve(async (req) => {
       cancelAtPeriodEnd = subscription.cancel_at_period_end;
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd, cancelAtPeriodEnd });
 
-      // Determine tier from price
+      // Determine tier from price ID (preferred) or fallback to amount/interval
       const priceId = subscription.items.data[0].price.id;
-      const price = await stripe.prices.retrieve(priceId);
-      const amount = price.unit_amount || 0;
-      const interval = price.recurring?.interval || 'month';
-      const intervalCount = price.recurring?.interval_count || 1;
+      const knownPlan = priceIdToplan[priceId];
 
-      const planInfo = determinePlanFromPrice(amount, interval, intervalCount);
-      subscriptionTier = planInfo.tier;
-      currentPlanSlug = planInfo.slug;
-      logStep("Determined plan", { priceId, amount, interval, intervalCount, ...planInfo });
+      if (knownPlan) {
+        subscriptionTier = knownPlan.tier;
+        currentPlanSlug = knownPlan.slug;
+        logStep("Determined plan from price ID", { priceId, ...knownPlan });
+      } else {
+        const price = await stripe.prices.retrieve(priceId);
+        const amount = price.unit_amount || 0;
+        const interval = price.recurring?.interval || 'month';
+        const intervalCount = price.recurring?.interval_count || 1;
+        const planInfo = determinePlanFromPrice(amount, interval, intervalCount);
+        subscriptionTier = planInfo.tier;
+        currentPlanSlug = planInfo.slug;
+        logStep("Determined plan from amount/interval (fallback)", { priceId, amount, interval, intervalCount, ...planInfo });
+      }
 
       // Check for pending schedule (downgrade)
       if (subscription.schedule) {

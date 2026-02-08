@@ -12,32 +12,12 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
-// Plan definitions matching mock-plans.ts
-const planPricing: Record<string, { name: string; amount: number; interval: "month" | "year"; intervalCount: number }> = {
-  'premium-monthly': {
-    name: 'Comunidade DNB Premium - Mensal',
-    amount: 3000,
-    interval: 'month',
-    intervalCount: 1,
-  },
-  'premium-quarterly': {
-    name: 'Comunidade DNB Premium - Trimestral',
-    amount: 6000,
-    interval: 'month',
-    intervalCount: 3,
-  },
-  'premium-semiannual': {
-    name: 'Comunidade DNB Premium - Semestral',
-    amount: 10500,
-    interval: 'month',
-    intervalCount: 6,
-  },
-  'premium-yearly': {
-    name: 'Comunidade DNB Premium - Anual',
-    amount: 18500,
-    interval: 'year',
-    intervalCount: 1,
-  },
+// Map plan slugs to real Stripe price IDs
+const planPriceIds: Record<string, string> = {
+  'premium-monthly': 'price_1Sya3yEuyKN6OMe7YBMomGJK',
+  'premium-quarterly': 'price_1Sya4zEuyKN6OMe7y5jcyG7V',
+  'premium-semiannual': 'price_1Sya51EuyKN6OMe7cj3xHyCS',
+  'premium-yearly': 'price_1Sya69EuyKN6OMe7XLGIXK07',
 };
 
 serve(async (req) => {
@@ -63,8 +43,9 @@ serve(async (req) => {
     const { planId } = await req.json();
     logStep("Plan requested", { planId });
 
-    const plan = planPricing[planId];
-    if (!plan) throw new Error(`Invalid plan: ${planId}`);
+    const priceId = planPriceIds[planId];
+    if (!priceId) throw new Error(`Invalid plan: ${planId}`);
+    logStep("Using Stripe price", { priceId });
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16"
@@ -85,15 +66,7 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price_data: {
-            currency: "brl",
-            product_data: { name: plan.name },
-            unit_amount: plan.amount,
-            recurring: {
-              interval: plan.interval,
-              interval_count: plan.intervalCount,
-            },
-          },
+          price: priceId,
           quantity: 1,
         },
       ],
