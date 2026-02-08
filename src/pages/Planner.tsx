@@ -67,11 +67,11 @@ export default function Planner() {
       <Layout>
         <div className="space-y-8 animate-fade-in">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-foreground mb-4">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-3 sm:mb-4">
               Planner de Compras de Câmbio
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Planeje suas compras de moeda estrangeira com inteligência e acompanhe seu progresso visualmente
+            <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+              Planeje suas compras de moeda estrangeira com inteligência
             </p>
           </div>
 
@@ -113,22 +113,22 @@ export default function Planner() {
   return (
     <Layout>
       <div className="space-y-8 animate-fade-in">
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-4">
-              Planner de Compras de Câmbio
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 sm:mb-4">
+              Planner de Compras
             </h1>
-            <p className="text-lg text-muted-foreground">
-              Acompanhe seu progresso e planeje suas próximas compras
+            <p className="text-sm sm:text-lg text-muted-foreground">
+              Acompanhe seu progresso e planeje suas compras
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowEditGoal(true)}>
-              <TrendingUp className="mr-2 h-4 w-4" />
+            <Button variant="outline" size="sm" onClick={() => setShowEditGoal(true)} className="text-xs sm:text-sm">
+              <TrendingUp className="mr-1.5 h-4 w-4" />
               Editar Meta
             </Button>
-            <Button onClick={() => setShowAddTransaction(true)}>
-              <Plus className="mr-2 h-4 w-4" />
+            <Button size="sm" onClick={() => setShowAddTransaction(true)} className="text-xs sm:text-sm">
+              <Plus className="mr-1.5 h-4 w-4" />
               Nova Compra
             </Button>
           </div>

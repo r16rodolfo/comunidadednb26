@@ -48,7 +48,7 @@ export default function PromoBanner({ banners }: PromoBannerProps) {
     <Card className="relative overflow-hidden border-0 shadow-glow rounded-2xl group">
       {/* Banner Image */}
       <div
-        className={`relative w-full aspect-[21/7] md:aspect-[21/6] ${current.redirectUrl ? 'cursor-pointer' : ''}`}
+        className={`relative w-full aspect-[16/9] sm:aspect-[21/7] md:aspect-[21/6] ${current.redirectUrl ? 'cursor-pointer' : ''}`}
         onClick={handleBannerClick}
       >
         <img

@@ -55,16 +55,16 @@ export default function Coupons() {
       <div className="space-y-8 animate-fade-in">
         {/* Header */}
         <div className="text-center">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 bg-primary/10 rounded-xl">
-              <Ticket className="h-8 w-8 text-primary" />
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <div className="p-2 sm:p-3 bg-primary/10 rounded-xl">
+              <Ticket className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground">Cupons de Parceiros</h1>
-            <Sparkles className="h-6 w-6 text-yellow-500" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Cupons de Parceiros</h1>
+            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-accent" />
           </div>
           
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Descubra ofertas exclusivas dos nossos parceiros e economize em suas compras favoritas.
+          <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+            Descubra ofertas exclusivas dos nossos parceiros.
           </p>
         </div>
 

@@ -17,9 +17,9 @@ const Index = () => {
 
         {/* Step Cards */}
         {config.stepCards.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mt-8 sm:mt-12">
             {config.stepCards.map((step, idx) => (
-              <div key={step.id} className="text-center p-6 bg-card rounded-xl border border-border/50">
+              <div key={step.id} className="text-center p-4 sm:p-6 bg-card rounded-xl border border-border/50">
                 <div className={`w-12 h-12 ${idx % 2 === 0 ? 'bg-primary/10' : 'bg-accent/10'} rounded-xl flex items-center justify-center mx-auto mb-4`}>
                   <span className={`${idx % 2 === 0 ? 'text-primary' : 'text-accent'} font-bold text-lg`}>{step.number}</span>
                 </div>
