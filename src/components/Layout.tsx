@@ -11,7 +11,8 @@ import {
   Users, 
   BarChart3, 
   LogOut, 
-  CreditCard, 
+  CreditCard,
+  LineChart,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -84,7 +85,8 @@ const getNavigationItems = (userRole: UserRole, viewAsUser: boolean = false) => 
           { title: "Usuários", url: "/admin/users", icon: Users },
           { title: "Conteúdo", url: "/admin/content", icon: BookOpen },
           { title: "Cupons", url: "/admin/coupons", icon: Ticket },
-          { title: "Analytics", url: "/admin/analytics", icon: TrendingUp },
+          { title: "Análises", url: "/admin/analyses", icon: LineChart },
+          { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
           { title: "Assinaturas", url: "/admin/subscriptions", icon: CreditCard },
           { title: "Planner", url: "/admin/planner", icon: Calculator },
         ]
