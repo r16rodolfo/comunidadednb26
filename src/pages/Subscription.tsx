@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/Layout';
@@ -12,6 +12,7 @@ import {
   Check,
   RefreshCw,
   Settings as SettingsIcon,
+  QrCode,
   Star,
   TrendingDown,
   AlertTriangle,
@@ -19,8 +20,9 @@ import {
   Undo2,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { usePlans, formatPrice, formatMonthlyEquivalent } from '@/hooks/usePlans';
+import { usePlans, formatPrice, formatMonthlyEquivalent, SubscriptionPlan } from '@/hooks/usePlans';
 import { useSubscription } from '@/hooks/useSubscription';
+import { PixCheckoutModal } from '@/components/subscription/PixCheckoutModal';
 import { PageHeader } from '@/components/shared/PageHeader';
 
 export default function Subscription() {
@@ -40,6 +42,7 @@ export default function Subscription() {
   } = useSubscription();
 
   const [searchParams] = useSearchParams();
+  const [pixPlan, setPixPlan] = useState<SubscriptionPlan | null>(null);
 
   // Handle checkout success/cancel
   useEffect(() => {
@@ -252,7 +255,7 @@ export default function Subscription() {
                         </li>
                       ))}
                     </ul>
-                    <div>
+                    <div className="space-y-2">
                       <Separator className="mb-4" />
                       <Button
                         className="w-full"
@@ -260,8 +263,20 @@ export default function Subscription() {
                         disabled={isCheckoutLoading || isCurrentPlan}
                         onClick={() => createCheckout(plan.slug)}
                       >
-                        {isCurrentPlan ? 'Plano Atual' : isCheckoutLoading ? 'Aguarde...' : 'Assinar Agora'}
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        {isCurrentPlan ? 'Plano Atual' : isCheckoutLoading ? 'Aguarde...' : 'Cartão de Crédito'}
                       </Button>
+                      {!isCurrentPlan && (
+                        <Button
+                          className="w-full"
+                          variant="outline"
+                          disabled={isCheckoutLoading}
+                          onClick={() => setPixPlan(plan)}
+                        >
+                          <QrCode className="h-4 w-4 mr-2" />
+                          Pagar com PIX
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -305,6 +320,18 @@ export default function Subscription() {
           </CardContent>
         </Card>
       </div>
+
+      {/* PIX Checkout Modal */}
+      {pixPlan && (
+        <PixCheckoutModal
+          open={!!pixPlan}
+          onOpenChange={(open) => !open && setPixPlan(null)}
+          planSlug={pixPlan.slug}
+          planName={pixPlan.name}
+          amountCents={pixPlan.price_cents}
+          onSuccess={checkSubscription}
+        />
+      )}
     </Layout>
   );
 }
