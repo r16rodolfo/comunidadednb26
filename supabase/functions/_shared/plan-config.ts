@@ -10,16 +10,16 @@ export interface PlanInfo {
 
 /** slug → Stripe price ID */
 export const planPriceIds: Record<string, string> = {
-  'premium-monthly': 'price_1Sya3yEuyKN6OMe7YBMomGJK',
-  'premium-quarterly': 'price_1Sya4zEuyKN6OMe7y5jcyG7V',
+  'premium-monthly': 'price_1SyZy1EuyKN6OMe7udEOfpGV',
+  'premium-quarterly': 'price_1SyZz6EuyKN6OMe7wMh2Y7ck',
   'premium-semiannual': 'price_1Sya51EuyKN6OMe7cj3xHyCS',
   'premium-yearly': 'price_1Sya69EuyKN6OMe7XLGIXK07',
 };
 
 /** Stripe price ID → plan info (reverse map) */
 export const priceIdToPlan: Record<string, PlanInfo> = {
-  'price_1Sya3yEuyKN6OMe7YBMomGJK': { tier: 'Premium Mensal', slug: 'premium-monthly' },
-  'price_1Sya4zEuyKN6OMe7y5jcyG7V': { tier: 'Premium Trimestral', slug: 'premium-quarterly' },
+  'price_1SyZy1EuyKN6OMe7udEOfpGV': { tier: 'Premium Mensal', slug: 'premium-monthly' },
+  'price_1SyZz6EuyKN6OMe7wMh2Y7ck': { tier: 'Premium Trimestral', slug: 'premium-quarterly' },
   'price_1Sya51EuyKN6OMe7cj3xHyCS': { tier: 'Premium Semestral', slug: 'premium-semiannual' },
   'price_1Sya69EuyKN6OMe7XLGIXK07': { tier: 'Premium Anual', slug: 'premium-yearly' },
 };
