@@ -352,6 +352,63 @@ export type Database = {
         }
         Relationships: []
       }
+      nox_payments: {
+        Row: {
+          amount: number
+          code: string
+          created_at: string
+          id: string
+          noxpay_id: number | null
+          paid_at: string | null
+          pix_end2end_id: string | null
+          plan_slug: string
+          qr_code: string | null
+          qr_code_text: string | null
+          receipt_cpf_cnpj: string | null
+          receipt_name: string | null
+          status: string
+          txid: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          code: string
+          created_at?: string
+          id?: string
+          noxpay_id?: number | null
+          paid_at?: string | null
+          pix_end2end_id?: string | null
+          plan_slug: string
+          qr_code?: string | null
+          qr_code_text?: string | null
+          receipt_cpf_cnpj?: string | null
+          receipt_name?: string | null
+          status?: string
+          txid?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          code?: string
+          created_at?: string
+          id?: string
+          noxpay_id?: number | null
+          paid_at?: string | null
+          pix_end2end_id?: string | null
+          plan_slug?: string
+          qr_code?: string | null
+          qr_code_text?: string | null
+          receipt_cpf_cnpj?: string | null
+          receipt_name?: string | null
+          status?: string
+          txid?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       planner_transactions: {
         Row: {
           amount: number
