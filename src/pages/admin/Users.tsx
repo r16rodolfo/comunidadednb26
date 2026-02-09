@@ -4,14 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Users as UsersIcon, Activity, Crown, Loader2 } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, Eye, Users as UsersIcon, Activity, Crown, Loader2, UserPlus } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatCard } from '@/components/shared/StatCard';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 interface RealUser {
@@ -44,7 +47,11 @@ const getRoleLabel = (role: string) => {
 export default function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewingUser, setViewingUser] = useState<RealUser | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'free' });
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-users-list'],
@@ -83,6 +90,36 @@ export default function AdminUsers() {
     admin: users.filter((u) => u.role === 'admin' || u.role === 'gestor').length,
   };
 
+  const handleCreateUser = async () => {
+    if (!newUser.name || !newUser.email || !newUser.password) {
+      toast({ title: 'Preencha todos os campos obrigatórios', variant: 'destructive' });
+      return;
+    }
+    if (newUser.password.length < 6) {
+      toast({ title: 'A senha deve ter pelo menos 6 caracteres', variant: 'destructive' });
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: newUser,
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({ title: 'Usuário criado com sucesso!' });
+      setShowCreateModal(false);
+      setNewUser({ name: '', email: '', password: '', role: 'free' });
+      queryClient.invalidateQueries({ queryKey: ['admin-users-list'] });
+    } catch (err: any) {
+      toast({ title: 'Erro ao criar usuário', description: err.message, variant: 'destructive' });
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -109,6 +146,9 @@ export default function AdminUsers() {
                 />
               </div>
               <Button variant="outline"><Filter className="h-4 w-4 mr-2" />Filtros</Button>
+              <Button onClick={() => setShowCreateModal(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />Adicionar
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -196,6 +236,68 @@ export default function AdminUsers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create User Dialog */}
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adicionar Usuário</DialogTitle>
+            <DialogDescription>Crie uma nova conta de usuário na plataforma.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="create-name">Nome *</Label>
+              <Input
+                id="create-name"
+                placeholder="Nome completo"
+                value={newUser.name}
+                onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-email">E-mail *</Label>
+              <Input
+                id="create-email"
+                type="email"
+                placeholder="email@exemplo.com"
+                value={newUser.email}
+                onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-password">Senha *</Label>
+              <Input
+                id="create-password"
+                type="password"
+                placeholder="Mínimo 6 caracteres"
+                value={newUser.password}
+                onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-role">Tipo de Acesso</Label>
+              <Select value={newUser.role} onValueChange={(v) => setNewUser(prev => ({ ...prev, role: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free">Gratuito</SelectItem>
+                  <SelectItem value="premium">Premium</SelectItem>
+                  <SelectItem value="gestor">Gestor</SelectItem>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateModal(false)}>Cancelar</Button>
+            <Button onClick={handleCreateUser} disabled={creating}>
+              {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Criar Usuário
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
