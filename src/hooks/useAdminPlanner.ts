@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export type PlannerPeriod = '30d' | '90d' | '12m' | 'all';
+
 export interface AdminPlannerStats {
   totalUsers: number;
   totalTransactions: number;
@@ -13,13 +15,29 @@ export interface AdminPlannerStats {
   volumeOverTime: { month: string; volume: number; count: number }[];
 }
 
-export function useAdminPlanner() {
+function getDateFrom(period: PlannerPeriod): string | null {
+  if (period === 'all') return null;
+  const now = new Date();
+  if (period === '30d') now.setDate(now.getDate() - 30);
+  else if (period === '90d') now.setDate(now.getDate() - 90);
+  else if (period === '12m') now.setFullYear(now.getFullYear() - 1);
+  return now.toISOString().split('T')[0];
+}
+
+export function useAdminPlanner(period: PlannerPeriod = 'all') {
+  const dateFrom = getDateFrom(period);
+
   const { data: stats, isLoading } = useQuery<AdminPlannerStats>({
-    queryKey: ['admin-planner-stats'],
+    queryKey: ['admin-planner-stats', period],
     queryFn: async () => {
-      // Fetch all transactions and goals in parallel (admin has RLS access to all)
+      // Build transaction query with optional date filter
+      let txQuery = supabase.from('planner_transactions').select('*');
+      if (dateFrom) {
+        txQuery = txQuery.gte('date', dateFrom);
+      }
+
       const [txRes, goalsRes] = await Promise.all([
-        supabase.from('planner_transactions').select('*'),
+        txQuery,
         supabase.from('trip_goals').select('*'),
       ]);
 

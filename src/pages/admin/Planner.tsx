@@ -1,12 +1,21 @@
+import { useState } from "react";
 import Layout from "@/components/Layout";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Calculator, Users, Receipt, DollarSign, Target, TrendingUp } from "lucide-react";
-import { useAdminPlanner } from "@/hooks/useAdminPlanner";
+import { useAdminPlanner, PlannerPeriod } from "@/hooks/useAdminPlanner";
 import { PlannerVolumeChart } from "@/components/admin/planner/PlannerVolumeChart";
 import { PlannerCurrencyChart } from "@/components/admin/planner/PlannerCurrencyChart";
 import { PlannerTopLocations } from "@/components/admin/planner/PlannerTopLocations";
+
+const PERIOD_OPTIONS: { value: PlannerPeriod; label: string }[] = [
+  { value: '30d', label: '30 dias' },
+  { value: '90d', label: '90 dias' },
+  { value: '12m', label: '12 meses' },
+  { value: 'all', label: 'Tudo' },
+];
 
 const formatBRL = (v: number) =>
   v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 });
@@ -15,7 +24,8 @@ const formatRate = (v: number) =>
   v.toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
 
 export default function AdminPlanner() {
-  const { stats, isLoading } = useAdminPlanner();
+  const [period, setPeriod] = useState<PlannerPeriod>('all');
+  const { stats, isLoading } = useAdminPlanner(period);
 
   return (
     <Layout>
@@ -24,7 +34,24 @@ export default function AdminPlanner() {
           icon={Calculator}
           title="Planner de Compras"
           description="Dados agregados das compras de câmbio dos usuários"
-        />
+        >
+          <ToggleGroup
+            type="single"
+            value={period}
+            onValueChange={(v) => v && setPeriod(v as PlannerPeriod)}
+            className="bg-muted/50 rounded-lg p-0.5"
+          >
+            {PERIOD_OPTIONS.map((opt) => (
+              <ToggleGroupItem
+                key={opt.value}
+                value={opt.value}
+                className="text-xs sm:text-sm px-3 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md"
+              >
+                {opt.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </PageHeader>
 
         {/* Metrics Grid */}
         {isLoading ? (
