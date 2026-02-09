@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,16 +11,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { BookOpen, Video, Plus, Trash2, GripVertical, Loader2 } from 'lucide-react';
+import { BookOpen, Video, Plus, Trash2, GripVertical, Loader2, Pencil } from 'lucide-react';
 import { useAdminAcademy } from '@/hooks/useAdminAcademy';
+import type { Course } from '@/types/academy';
 
-interface CreateCourseModalProps {
+interface CourseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  editingCourse?: Course | null;
 }
 
 interface ModuleForm {
   id: string;
+  dbId?: string; // real DB id for existing modules
   title: string;
   description: string;
   lessons: LessonForm[];
@@ -28,6 +31,7 @@ interface ModuleForm {
 
 interface LessonForm {
   id: string;
+  dbId?: string; // real DB id for existing lessons
   title: string;
   description: string;
   bunny_video_id: string;
@@ -35,7 +39,32 @@ interface LessonForm {
   is_free: boolean;
 }
 
-export function CreateCourseModal({ open, onOpenChange }: CreateCourseModalProps) {
+/** Parse duration string like "15min", "1h30", "480" into seconds */
+function parseDuration(input: string): number {
+  if (!input) return 0;
+  const trimmed = input.trim().toLowerCase();
+  if (/^\d+$/.test(trimmed)) return parseInt(trimmed, 10);
+  const minMatch = trimmed.match(/^(\d+)\s*m(?:in)?$/);
+  if (minMatch) return parseInt(minMatch[1], 10) * 60;
+  const hMinMatch = trimmed.match(/^(\d+)\s*h\s*(\d+)?\s*m?(?:in)?$/);
+  if (hMinMatch) return parseInt(hMinMatch[1], 10) * 3600 + (parseInt(hMinMatch[2] || '0', 10) * 60);
+  return 0;
+}
+
+/** Format seconds back into a human-readable duration */
+function formatDuration(seconds: number): string {
+  if (seconds <= 0) return '';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return m > 0 ? `${h}h${m}min` : `${h}h`;
+  if (m > 0) return `${m}min`;
+  return `${s}`;
+}
+
+export function CourseModal({ open, onOpenChange, editingCourse }: CourseModalProps) {
+  const isEditMode = !!editingCourse;
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -44,7 +73,37 @@ export function CreateCourseModal({ open, onOpenChange }: CreateCourseModalProps
   const [modules, setModules] = useState<ModuleForm[]>([]);
   const [newModuleTitle, setNewModuleTitle] = useState('');
   const { toast } = useToast();
-  const { createCourse, isCreating } = useAdminAcademy();
+  const { createCourse, isCreating, updateCourse, isUpdating } = useAdminAcademy();
+
+  // Populate form when editing
+  useEffect(() => {
+    if (editingCourse) {
+      setFormData({
+        title: editingCourse.title,
+        description: editingCourse.description,
+        is_published: editingCourse.is_published,
+      });
+      setModules(
+        editingCourse.modules.map((m) => ({
+          id: m.id,
+          dbId: m.id,
+          title: m.title,
+          description: m.description || '',
+          lessons: m.lessons.map((l) => ({
+            id: l.id,
+            dbId: l.id,
+            title: l.title,
+            description: l.description || '',
+            bunny_video_id: l.bunny_video_id,
+            duration: formatDuration(l.duration),
+            is_free: l.is_free,
+          })),
+        }))
+      );
+    } else {
+      resetForm();
+    }
+  }, [editingCourse, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,31 +114,56 @@ export function CreateCourseModal({ open, onOpenChange }: CreateCourseModalProps
     }
 
     try {
-      await createCourse({
-        title: formData.title,
-        description: formData.description,
-        is_published: formData.is_published,
-        modules: modules.map((m) => ({
-          title: m.title,
-          description: m.description,
-          lessons: m.lessons.map((l) => ({
-            title: l.title,
-            description: l.description,
-            bunny_video_id: l.bunny_video_id,
-            duration: parseDuration(l.duration),
-            is_free: l.is_free,
+      if (isEditMode && editingCourse) {
+        await updateCourse({
+          id: editingCourse.id,
+          title: formData.title,
+          description: formData.description,
+          is_published: formData.is_published,
+          modules: modules.map((m) => ({
+            id: m.dbId,
+            title: m.title,
+            description: m.description,
+            lessons: m.lessons.map((l) => ({
+              id: l.dbId,
+              title: l.title,
+              description: l.description,
+              bunny_video_id: l.bunny_video_id,
+              duration: parseDuration(l.duration),
+              is_free: l.is_free,
+            })),
           })),
-        })),
-      });
-
-      toast({
-        title: 'Curso criado com sucesso!',
-        description: `O curso "${formData.title}" foi ${formData.is_published ? 'publicado' : 'salvo como rascunho'}.`,
-      });
+        });
+        toast({
+          title: 'Curso atualizado!',
+          description: `"${formData.title}" foi salvo com sucesso.`,
+        });
+      } else {
+        await createCourse({
+          title: formData.title,
+          description: formData.description,
+          is_published: formData.is_published,
+          modules: modules.map((m) => ({
+            title: m.title,
+            description: m.description,
+            lessons: m.lessons.map((l) => ({
+              title: l.title,
+              description: l.description,
+              bunny_video_id: l.bunny_video_id,
+              duration: parseDuration(l.duration),
+              is_free: l.is_free,
+            })),
+          })),
+        });
+        toast({
+          title: 'Curso criado com sucesso!',
+          description: `"${formData.title}" foi ${formData.is_published ? 'publicado' : 'salvo como rascunho'}.`,
+        });
+      }
       onOpenChange(false);
       resetForm();
     } catch {
-      toast({ title: 'Erro ao criar curso', variant: 'destructive' });
+      toast({ title: isEditMode ? 'Erro ao atualizar curso' : 'Erro ao criar curso', variant: 'destructive' });
     }
   };
 
@@ -136,14 +220,15 @@ export function CreateCourseModal({ open, onOpenChange }: CreateCourseModalProps
   };
 
   const totalLessons = modules.reduce((sum, m) => sum + m.lessons.length, 0);
+  const isBusy = isCreating || isUpdating;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
-            Criar Novo Curso
+            {isEditMode ? <Pencil className="h-5 w-5" /> : <BookOpen className="h-5 w-5" />}
+            {isEditMode ? 'Editar Curso' : 'Criar Novo Curso'}
           </DialogTitle>
         </DialogHeader>
 
@@ -248,27 +333,20 @@ export function CreateCourseModal({ open, onOpenChange }: CreateCourseModalProps
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" disabled={isCreating}>
-              {isCreating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Criando...</> : formData.is_published ? 'Criar e Publicar' : 'Salvar Rascunho'}
+            <Button type="submit" disabled={isBusy}>
+              {isBusy ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{isEditMode ? 'Salvando...' : 'Criando...'}</>
+              ) : isEditMode ? (
+                'Salvar Alterações'
+              ) : formData.is_published ? (
+                'Criar e Publicar'
+              ) : (
+                'Salvar Rascunho'
+              )}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
-}
-
-/** Parse duration string like "15min", "1h30", "480" into seconds */
-function parseDuration(input: string): number {
-  if (!input) return 0;
-  const trimmed = input.trim().toLowerCase();
-  // Pure number → treat as seconds
-  if (/^\d+$/.test(trimmed)) return parseInt(trimmed, 10);
-  // "15min" or "15m"
-  const minMatch = trimmed.match(/^(\d+)\s*m(?:in)?$/);
-  if (minMatch) return parseInt(minMatch[1], 10) * 60;
-  // "1h30" or "1h30min"
-  const hMinMatch = trimmed.match(/^(\d+)\s*h\s*(\d+)?\s*m?(?:in)?$/);
-  if (hMinMatch) return parseInt(hMinMatch[1], 10) * 3600 + (parseInt(hMinMatch[2] || '0', 10) * 60);
-  return 0;
 }
