@@ -6,8 +6,8 @@
 const BRAND = {
   name: 'Dólar na Bagagem',
   from: 'Dólar na Bagagem <comunidade@dolarnabagagem.com.br>',
-  color: '#6366f1',
-  colorLight: '#e0e7ff',
+  color: '#1a9d4a',
+  colorLight: '#e6f7ed',
   logo: '', // Will be updated with a real URL later
 };
 
