@@ -16,7 +16,7 @@ export default function AdminSubscriptions() {
     queryKey: ['admin-subscribers'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('subscribers')
+        .from('subscribers_safe')
         .select('*')
         .order('created_at', { ascending: false });
 

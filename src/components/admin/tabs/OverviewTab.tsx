@@ -35,7 +35,7 @@ export function OverviewTab() {
     queryFn: async () => {
       const [profilesRes, subscribersRes, rolesRes] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact', head: true }),
-        supabase.from('subscribers').select('id', { count: 'exact', head: true }).eq('subscribed', true),
+        supabase.from('subscribers_safe').select('id', { count: 'exact', head: true }).eq('subscribed', true),
         supabase.from('user_roles').select('id', { count: 'exact', head: true }).eq('role', 'premium'),
       ]);
 
