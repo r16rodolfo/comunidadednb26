@@ -4,8 +4,8 @@
  */
 
 const BRAND = {
-  name: 'DnB Academy',
-  from: 'DnB Academy <onboarding@resend.dev>',
+  name: 'Dólar na Bagagem',
+  from: 'Dólar na Bagagem <comunidade@dolarnabagagem.com.br>',
   color: '#6366f1',
   colorLight: '#e0e7ff',
   logo: '', // Will be updated with a real URL later
