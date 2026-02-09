@@ -53,19 +53,17 @@ serve(async (req) => {
 
     let noxResponse: Response;
     try {
-      noxResponse = await fetch("https://checkout.noxpay.io/payment", {
+      noxResponse = await fetch("https://api.noxpay.io/link", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "api-key": noxpayApiKey,
         },
         body: JSON.stringify({
-          method: "PIX",
-          code,
-          amount,
-          webhook_url: webhookUrl,
-          client_name: user.user_metadata?.name || user.email,
-          client_document: user.user_metadata?.cpf || undefined,
+          amount_fiat: amount.toFixed(2),
+          template: "default",
+          webhook: webhookUrl,
+          process: "onramp_instant",
         }),
         signal: controller.signal,
       });
