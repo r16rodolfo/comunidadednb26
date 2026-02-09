@@ -28,18 +28,15 @@ export default function Coupons() {
   const handleGetCoupon = (coupon: Coupon) => {
     setSelectedCoupon(coupon);
     setIsModalOpen(true);
+    incrementClickCount(coupon.id);
   };
 
-  const handleCopyCode = (code: string) => {
-    if (selectedCoupon) {
-      incrementClickCount(selectedCoupon.id);
-    }
+  const handleCopyCode = (_code: string) => {
+    // Click already counted when modal opened
   };
 
-  const handleVisitSite = (url: string) => {
-    if (selectedCoupon) {
-      incrementClickCount(selectedCoupon.id);
-    }
+  const handleVisitSite = (_url: string) => {
+    // Click already counted when modal opened
   };
 
   const handleFiltersChange = (newFilters: Filters) => {
