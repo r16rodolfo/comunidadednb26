@@ -55,13 +55,13 @@ export default function Analytics() {
 
         {/* Key Metrics */}
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {Array.from({ length: 7 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-lg" />
+              <Skeleton key={i} className="h-28 rounded-lg" />
             ))}
           </div>
         ) : analytics ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             <StatCard label="Total Usuários" value={analytics.totalUsers} icon={Users} variant="info" />
             <StatCard
               label={period === 'all' ? 'Novos (total)' : 'Novos no período'}
