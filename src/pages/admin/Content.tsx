@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Search, Plus, MoreHorizontal, Edit, Trash2, Eye, BookOpen, Video, Users, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { CreateCourseModal } from '@/components/admin/CreateCourseModal';
+import { CourseModal } from '@/components/admin/CourseModal';
 import { useState } from 'react';
 import { StatCard } from '@/components/shared/StatCard';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -26,6 +26,7 @@ const formatTotalDuration = (course: Course) => {
 
 export default function Content() {
   const [showCourseModal, setShowCourseModal] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { courses, isLoading, deleteCourse, isDeleting, togglePublish } = useAdminAcademy();
   const { toast } = useToast();
@@ -66,11 +67,21 @@ export default function Content() {
     }
   };
 
+  const handleEdit = (course: Course) => {
+    setEditingCourse(course);
+    setShowCourseModal(true);
+  };
+
+  const handleModalClose = (open: boolean) => {
+    setShowCourseModal(open);
+    if (!open) setEditingCourse(null);
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
         <PageHeader icon={BookOpen} title="Gestão de Conteúdo" description="Gerencie cursos e aulas da plataforma">
-          <Button onClick={() => setShowCourseModal(true)}><Plus className="h-4 w-4 mr-2" />Novo Curso</Button>
+          <Button onClick={() => { setEditingCourse(null); setShowCourseModal(true); }}><Plus className="h-4 w-4 mr-2" />Novo Curso</Button>
         </PageHeader>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -158,10 +169,14 @@ export default function Content() {
                               <DropdownMenuContent align="end" className="bg-popover">
                                 <DropdownMenuLabel>Ações</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleEdit(course)}>
+                                  <Edit className="mr-2 h-4 w-4" />Editar
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleTogglePublish(course.id, course.is_published)}>
                                   <Eye className="mr-2 h-4 w-4" />
                                   {course.is_published ? 'Despublicar' : 'Publicar'}
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(course.id, course.title)} disabled={isDeleting}>
                                   <Trash2 className="mr-2 h-4 w-4" />Excluir
                                 </DropdownMenuItem>
@@ -178,7 +193,7 @@ export default function Content() {
           </CardContent>
         </Card>
 
-        <CreateCourseModal open={showCourseModal} onOpenChange={setShowCourseModal} />
+        <CourseModal open={showCourseModal} onOpenChange={handleModalClose} editingCourse={editingCourse} />
       </div>
     </Layout>
   );

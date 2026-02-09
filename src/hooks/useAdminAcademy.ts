@@ -145,6 +145,131 @@ async function createCourse(input: CreateCourseInput) {
   return course;
 }
 
+interface UpdateCourseInput {
+  id: string;
+  title: string;
+  description: string;
+  is_published: boolean;
+  modules: {
+    id?: string; // existing module id (undefined = new)
+    title: string;
+    description: string;
+    lessons: {
+      id?: string; // existing lesson id (undefined = new)
+      title: string;
+      description: string;
+      bunny_video_id: string;
+      duration: number;
+      is_free: boolean;
+    }[];
+  }[];
+}
+
+async function updateCourse(input: UpdateCourseInput) {
+  // 1. Update course metadata
+  const { error: cErr } = await supabase
+    .from('courses')
+    .update({
+      title: input.title,
+      description: input.description,
+      is_published: input.is_published,
+    })
+    .eq('id', input.id);
+  if (cErr) throw cErr;
+
+  // 2. Get existing modules & lessons to diff
+  const { data: existingModules } = await supabase
+    .from('modules')
+    .select('id')
+    .eq('course_id', input.id);
+  const existingModuleIds = new Set((existingModules || []).map((m) => m.id));
+
+  const { data: existingLessons } = await supabase
+    .from('lessons')
+    .select('id, module_id')
+    .in('module_id', Array.from(existingModuleIds));
+  const existingLessonIds = new Set((existingLessons || []).map((l) => l.id));
+
+  const newModuleIds = new Set<string>();
+  const newLessonIds = new Set<string>();
+
+  // 3. Upsert modules and lessons
+  for (let mi = 0; mi < input.modules.length; mi++) {
+    const mod = input.modules[mi];
+
+    let moduleId: string;
+    if (mod.id) {
+      // Update existing module
+      const { error: mErr } = await supabase
+        .from('modules')
+        .update({ title: mod.title, description: mod.description, sort_order: mi + 1 })
+        .eq('id', mod.id);
+      if (mErr) throw mErr;
+      moduleId = mod.id;
+    } else {
+      // Insert new module
+      const { data: newMod, error: mErr } = await supabase
+        .from('modules')
+        .insert({ course_id: input.id, title: mod.title, description: mod.description, sort_order: mi + 1 })
+        .select()
+        .single();
+      if (mErr) throw mErr;
+      moduleId = newMod.id;
+    }
+    newModuleIds.add(moduleId);
+
+    for (let li = 0; li < mod.lessons.length; li++) {
+      const lesson = mod.lessons[li];
+      if (lesson.id) {
+        const { error: lErr } = await supabase
+          .from('lessons')
+          .update({
+            title: lesson.title,
+            description: lesson.description,
+            bunny_video_id: lesson.bunny_video_id,
+            duration: lesson.duration,
+            is_free: lesson.is_free,
+            sort_order: li + 1,
+            module_id: moduleId,
+          })
+          .eq('id', lesson.id);
+        if (lErr) throw lErr;
+        newLessonIds.add(lesson.id);
+      } else {
+        const { data: newLesson, error: lErr } = await supabase
+          .from('lessons')
+          .insert({
+            module_id: moduleId,
+            title: lesson.title,
+            description: lesson.description,
+            bunny_video_id: lesson.bunny_video_id,
+            duration: lesson.duration,
+            is_free: lesson.is_free,
+            sort_order: li + 1,
+          })
+          .select()
+          .single();
+        if (lErr) throw lErr;
+        newLessonIds.add(newLesson.id);
+      }
+    }
+  }
+
+  // 4. Delete removed lessons
+  const lessonsToDelete = Array.from(existingLessonIds).filter((id) => !newLessonIds.has(id));
+  if (lessonsToDelete.length > 0) {
+    const { error } = await supabase.from('lessons').delete().in('id', lessonsToDelete);
+    if (error) throw error;
+  }
+
+  // 5. Delete removed modules
+  const modulesToDelete = Array.from(existingModuleIds).filter((id) => !newModuleIds.has(id));
+  if (modulesToDelete.length > 0) {
+    const { error } = await supabase.from('modules').delete().in('id', modulesToDelete);
+    if (error) throw error;
+  }
+}
+
 async function deleteCourse(courseId: string) {
   const { error } = await supabase.from('courses').delete().eq('id', courseId);
   if (error) throw error;
@@ -172,6 +297,11 @@ export function useAdminAcademy() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-academy-courses'] }),
   });
 
+  const updateMutation = useMutation({
+    mutationFn: updateCourse,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-academy-courses'] }),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: deleteCourse,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-academy-courses'] }),
@@ -187,6 +317,8 @@ export function useAdminAcademy() {
     isLoading,
     createCourse: createMutation.mutateAsync,
     isCreating: createMutation.isPending,
+    updateCourse: updateMutation.mutateAsync,
+    isUpdating: updateMutation.isPending,
     deleteCourse: deleteMutation.mutateAsync,
     isDeleting: deleteMutation.isPending,
     togglePublish: togglePublishMutation.mutateAsync,
