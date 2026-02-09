@@ -581,7 +581,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      subscribers_safe: {
+        Row: {
+          cancel_at_period_end: boolean | null
+          created_at: string | null
+          current_plan_slug: string | null
+          email: string | null
+          id: string | null
+          pending_downgrade_date: string | null
+          pending_downgrade_to: string | null
+          previous_plan_slug: string | null
+          subscribed: boolean | null
+          subscription_end: string | null
+          subscription_tier: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_plan_slug?: string | null
+          email?: string | null
+          id?: string | null
+          pending_downgrade_date?: string | null
+          pending_downgrade_to?: string | null
+          previous_plan_slug?: string | null
+          subscribed?: boolean | null
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_plan_slug?: string | null
+          email?: string | null
+          id?: string | null
+          pending_downgrade_date?: string | null
+          pending_downgrade_to?: string | null
+          previous_plan_slug?: string | null
+          subscribed?: boolean | null
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_user_role: {
