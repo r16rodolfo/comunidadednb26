@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { resolvePlan } from "../_shared/plan-config.ts";
+import { sendEmail } from "../_shared/email-sender.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -155,6 +156,34 @@ async function handleInvoicePaid(
     logStep("Error upserting subscriber", { error: error.message });
   } else {
     logStep("Subscriber updated successfully after invoice.paid");
+
+    // Determine if first subscription or renewal
+    const { data: existingSub } = await supabase
+      .from("subscribers")
+      .select("previous_plan_slug")
+      .eq("email", email)
+      .maybeSingle();
+
+    const isFirstSubscription = !existingSub?.previous_plan_slug;
+    const amount = invoice.amount_paid ? (invoice.amount_paid / 100).toFixed(2) : undefined;
+    const nextDate = subscriptionEnd ? new Date(subscriptionEnd).toLocaleDateString('pt-BR') : undefined;
+
+    // Get user name from profiles
+    const userName = await getUserNameByEmail(supabase, email);
+
+    if (isFirstSubscription) {
+      await sendEmail({
+        to: email,
+        type: 'subscription_confirmed',
+        data: { name: userName, plan: planInfo.tier, amount, nextBillingDate: nextDate },
+      });
+    } else {
+      await sendEmail({
+        to: email,
+        type: 'renewal_receipt',
+        data: { name: userName, plan: planInfo.tier, amount, nextBillingDate: nextDate },
+      });
+    }
   }
 }
 
@@ -242,6 +271,35 @@ async function handleSubscriptionUpdated(
     logStep("Error upserting subscriber", { error: error.message });
   } else {
     logStep("Subscriber updated successfully after subscription.updated");
+
+    // Send upgrade/downgrade email if plan changed
+    if (pendingDowngradeTo) {
+      const userName = await getUserNameByEmail(supabase, email);
+      await sendEmail({
+        to: email,
+        type: 'downgrade',
+        data: {
+          name: userName,
+          previousPlan: planInfo.tier,
+          newPlan: pendingDowngradeTo,
+          expirationDate: pendingDowngradeDate ? new Date(pendingDowngradeDate).toLocaleDateString('pt-BR') : undefined,
+        },
+      });
+    }
+
+    // Send cancellation email if cancel_at_period_end just set
+    if (subscription.cancel_at_period_end) {
+      const userName = await getUserNameByEmail(supabase, email);
+      await sendEmail({
+        to: email,
+        type: 'subscription_cancelled',
+        data: {
+          name: userName,
+          previousPlan: planInfo.tier,
+          expirationDate: subscriptionEnd ? new Date(subscriptionEnd).toLocaleDateString('pt-BR') : undefined,
+        },
+      });
+    }
   }
 }
 
@@ -287,6 +345,16 @@ async function handleSubscriptionDeleted(
     logStep("Error deactivating subscriber", { error: error.message });
   } else {
     logStep("Subscriber deactivated successfully after subscription.deleted");
+
+    // Send cancellation email
+    if (subscriber.email) {
+      const userName = await getUserNameByEmail(supabase, subscriber.email);
+      await sendEmail({
+        to: subscriber.email,
+        type: 'subscription_cancelled',
+        data: { name: userName, previousPlan: subscriber.current_plan_slug || 'Premium' },
+      });
+    }
   }
 }
 
@@ -304,4 +372,23 @@ async function getUserIdByEmail(
     .maybeSingle();
 
   return data?.user_id || '';
+}
+
+/**
+ * Helper: Get user name from profiles table
+ */
+async function getUserNameByEmail(
+  supabase: ReturnType<typeof createClient>,
+  email: string
+): Promise<string | undefined> {
+  const userId = await getUserIdByEmail(supabase, email);
+  if (!userId) return undefined;
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("name")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  return data?.name || undefined;
 }

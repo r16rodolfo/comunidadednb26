@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { sendEmail } from "../_shared/email-sender.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -135,6 +136,13 @@ serve(async (req) => {
             action_label: "Renovar agora",
             action_href: "/assinatura",
           });
+          // Send downgrade email
+          const userName = await getUserName(supabase, sub.user_id);
+          await sendEmail({
+            to: sub.email,
+            type: 'downgrade',
+            data: { name: userName, previousPlan: sub.current_plan_slug || 'Premium', newPlan: 'Gratuito' },
+          });
         }
 
         downgraded++;
@@ -143,6 +151,29 @@ serve(async (req) => {
         const msg = subError instanceof Error ? subError.message : String(subError);
         logStep("Error processing subscriber", { email: sub.email, error: msg });
         errors++;
+      }
+    }
+
+    // ─── 2.5 Send expiration warning emails (3 days before expiry) ───
+    const warningDate = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const { data: soonExpiring } = await supabase
+      .from("subscribers")
+      .select("id, email, user_id, current_plan_slug, subscription_end")
+      .eq("subscribed", true)
+      .not("subscription_end", "is", null)
+      .gt("subscription_end", now.toISOString())
+      .lte("subscription_end", warningDate.toISOString());
+
+    if (soonExpiring && soonExpiring.length > 0) {
+      logStep("Sending expiration warnings", { count: soonExpiring.length });
+      for (const sub of soonExpiring) {
+        const userName = await getUserName(supabase, sub.user_id);
+        const expDate = new Date(sub.subscription_end).toLocaleDateString('pt-BR');
+        await sendEmail({
+          to: sub.email,
+          type: 'expiration_warning',
+          data: { name: userName, plan: sub.current_plan_slug || 'Premium', expirationDate: expDate },
+        });
       }
     }
 
@@ -219,3 +250,19 @@ serve(async (req) => {
     });
   }
 });
+
+/**
+ * Helper: Get user name from profiles
+ */
+async function getUserName(
+  supabase: ReturnType<typeof createClient>,
+  userId: string | null,
+): Promise<string | undefined> {
+  if (!userId) return undefined;
+  const { data } = await supabase
+    .from("profiles")
+    .select("name")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data?.name || undefined;
+}
