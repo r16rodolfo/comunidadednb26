@@ -47,22 +47,38 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const webhookUrl = `${supabaseUrl}/functions/v1/noxpay-webhook`;
 
-    // Create PIX payment via NoxPay API
-    const noxResponse = await fetch("https://api2.noxpay.io/payment", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": noxpayApiKey,
-      },
-      body: JSON.stringify({
-        method: "PIX",
-        code,
-        amount,
-        webhook_url: webhookUrl,
-        client_name: user.user_metadata?.name || user.email,
-        client_document: user.user_metadata?.cpf || undefined,
-      }),
-    });
+    // Create PIX payment via NoxPay API with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout
+
+    let noxResponse: Response;
+    try {
+      noxResponse = await fetch("https://api2.noxpay.io/payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": noxpayApiKey,
+        },
+        body: JSON.stringify({
+          method: "PIX",
+          code,
+          amount,
+          webhook_url: webhookUrl,
+          client_name: user.user_metadata?.name || user.email,
+          client_document: user.user_metadata?.cpf || undefined,
+        }),
+        signal: controller.signal,
+      });
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      const msg = fetchError instanceof Error ? fetchError.message : String(fetchError);
+      logStep("NoxPay fetch failed", { error: msg });
+      if (msg.includes("abort") || msg.includes("timed out") || msg.includes("timeout")) {
+        throw new Error("NoxPay API não respondeu a tempo. Tente novamente em alguns minutos.");
+      }
+      throw new Error(`Erro de conexão com NoxPay: ${msg}`);
+    }
+    clearTimeout(timeoutId);
 
     if (!noxResponse.ok) {
       const errorText = await noxResponse.text();
@@ -70,7 +86,16 @@ serve(async (req) => {
       throw new Error(`NoxPay API error: ${noxResponse.status}`);
     }
 
-    const noxData = await noxResponse.json();
+    // Defensive parsing - check content type before JSON parse
+    const contentType = noxResponse.headers.get("content-type") || "";
+    let noxData: any;
+    if (contentType.includes("application/json")) {
+      noxData = await noxResponse.json();
+    } else {
+      const rawText = await noxResponse.text();
+      logStep("NoxPay returned non-JSON response", { contentType, body: rawText.substring(0, 500) });
+      throw new Error("NoxPay retornou uma resposta inesperada. Tente novamente.");
+    }
     logStep("NoxPay payment created", { txid: noxData.txid, status: noxData.Status });
 
     // Save payment record using service role to bypass RLS for insert
