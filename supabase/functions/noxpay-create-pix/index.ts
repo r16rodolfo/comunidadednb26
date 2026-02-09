@@ -53,7 +53,7 @@ serve(async (req) => {
 
     let noxResponse: Response;
     try {
-      noxResponse = await fetch("https://api2.noxpay.io/payment", {
+      noxResponse = await fetch("https://checkout.noxpay.io/payment", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
