@@ -89,7 +89,10 @@ serve(async (req) => {
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
       stripeSubscriptionId = subscription.id;
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+      const endTimestamp = Number(subscription.current_period_end);
+      if (endTimestamp && !isNaN(endTimestamp)) {
+        subscriptionEnd = new Date(endTimestamp * 1000).toISOString();
+      }
       cancelAtPeriodEnd = subscription.cancel_at_period_end;
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd, cancelAtPeriodEnd });
 
@@ -124,7 +127,8 @@ serve(async (req) => {
             const nextIntervalCount = nextPrice.recurring?.interval_count || 1;
             const nextPlanInfo = determinePlanFromPrice(nextPrice.unit_amount || 0, nextInterval, nextIntervalCount);
             pendingDowngradeTo = nextPlanInfo.slug;
-            pendingDowngradeDate = new Date(nextPhase.start_date * 1000).toISOString();
+            const startTs = Number(nextPhase.start_date);
+            pendingDowngradeDate = (startTs && !isNaN(startTs)) ? new Date(startTs * 1000).toISOString() : null;
             logStep("Pending downgrade found", { pendingDowngradeTo, pendingDowngradeDate });
           }
         } catch (e) {
