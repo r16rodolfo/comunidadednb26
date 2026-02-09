@@ -10,12 +10,14 @@ import { PlatformTab } from '@/components/admin/tabs/PlatformTab';
 import { SecurityTab } from '@/components/admin/tabs/SecurityTab';
 import { HomeTab } from '@/components/admin/tabs/HomeTab';
 import { BillingTab } from '@/components/admin/tabs/BillingTab';
+import { EmailTemplatesTab } from '@/components/admin/tabs/EmailTemplatesTab';
 
 const TAB_LABELS: Record<string, string> = {
   overview: 'Visão Geral',
   billing: 'Faturamento',
   home: 'Página Inicial',
   platform: 'Plataforma',
+  emails: 'E-mails',
   security: 'Segurança',
 };
 
@@ -70,6 +72,10 @@ export default function AdminDashboard() {
               onSave={handleSavePlatformConfig}
               isLoading={isLoading}
             />
+          </TabsContent>
+
+          <TabsContent value="emails" className="space-y-6 pt-4">
+            <EmailTemplatesTab />
           </TabsContent>
 
           <TabsContent value="security" className="space-y-6 pt-4">
