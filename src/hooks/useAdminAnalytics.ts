@@ -46,7 +46,7 @@ export function useAdminAnalytics(period: AnalyticsPeriod = 'all') {
       const [profilesRes, rolesRes, subscribersRes, plansRes, txRes, progressRes, couponsRes, analysesRes] = await Promise.all([
         supabase.from('profiles').select('id, created_at'),
         supabase.from('user_roles').select('role, user_id'),
-        supabase.from('subscribers').select('*'),
+        supabase.from('subscribers_safe').select('*'),
         supabase.from('plans').select('slug, price_cents, interval').eq('is_active', true),
         supabase.from('planner_transactions').select('id, created_at'),
         supabase.from('lesson_progress').select('id, completed_at').eq('is_completed', true),
