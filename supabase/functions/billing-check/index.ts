@@ -155,6 +155,7 @@ serve(async (req) => {
     }
 
     // ─── 2.5 Send expiration warning emails (3 days before expiry) ───
+    // Only send ONE warning per subscription period (check notifications table)
     const warningDate = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
     const { data: soonExpiring } = await supabase
       .from("subscribers")
@@ -165,15 +166,44 @@ serve(async (req) => {
       .lte("subscription_end", warningDate.toISOString());
 
     if (soonExpiring && soonExpiring.length > 0) {
-      logStep("Sending expiration warnings", { count: soonExpiring.length });
+      logStep("Checking expiration warnings", { candidates: soonExpiring.length });
       for (const sub of soonExpiring) {
+        if (!sub.user_id) continue;
+
+        // Check if we already sent a warning for this subscription period
+        const { data: existingWarning } = await supabase
+          .from("notifications")
+          .select("id")
+          .eq("user_id", sub.user_id)
+          .eq("type", "expiration_warning")
+          .gte("created_at", new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString())
+          .limit(1);
+
+        if (existingWarning && existingWarning.length > 0) {
+          logStep("Skipping duplicate warning", { email: sub.email });
+          continue;
+        }
+
         const userName = await getUserName(supabase, sub.user_id);
         const expDate = new Date(sub.subscription_end).toLocaleDateString('pt-BR');
+
+        // Insert notification to track that warning was sent
+        await supabase.from("notifications").insert({
+          user_id: sub.user_id,
+          title: "Assinatura expirando em breve",
+          message: `Sua assinatura ${sub.current_plan_slug || 'Premium'} expira em ${expDate}. Renove para manter o acesso.`,
+          type: "expiration_warning",
+          icon: "clock",
+          action_label: "Renovar agora",
+          action_href: "/assinatura",
+        });
+
         await sendEmail({
           to: sub.email,
           type: 'expiration_warning',
           data: { name: userName, plan: sub.current_plan_slug || 'Premium', expirationDate: expDate },
         });
+        logStep("Expiration warning sent", { email: sub.email });
       }
     }
 
