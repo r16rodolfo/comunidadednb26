@@ -65,7 +65,7 @@ function getPlanLabel(slug: string | null) {
 }
 
 function getGateway(sub: SubscriberRow) {
-  return sub.stripe_subscription_id ? 'Cartão' : 'PIX';
+  return sub.stripe_subscription_id ? 'Stripe' : '—';
 }
 
 export function BillingTab() {
