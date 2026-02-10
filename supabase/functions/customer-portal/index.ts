@@ -47,13 +47,13 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
 
-    const origin = req.headers.get("origin") || "http://localhost:3000";
-
-    // Support action parameter for specific portal flows
+    // Support action parameter and returnUrl for specific portal flows
     let body: Record<string, any> = {};
     try {
       body = await req.json();
     } catch { /* no body */ }
+
+    const origin = body.returnUrl || req.headers.get("origin") || "http://localhost:3000";
 
     const portalConfig: any = {
       customer: customerId,
