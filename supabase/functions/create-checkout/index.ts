@@ -33,8 +33,8 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { planId } = await req.json();
-    logStep("Plan requested", { planId });
+    const { planId, couponCode } = await req.json();
+    logStep("Plan requested", { planId, couponCode });
 
     const priceId = planPriceIds[planId];
     if (!priceId) throw new Error(`Invalid plan: ${planId}`);
@@ -54,7 +54,21 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
 
-    const session = await stripe.checkout.sessions.create({
+    // If coupon code provided, look up matching promotion code
+    let discounts: { promotion_code: string }[] | undefined;
+    if (couponCode && typeof couponCode === 'string' && couponCode.trim()) {
+      const trimmed = couponCode.trim();
+      logStep("Looking up promotion code", { code: trimmed });
+      const promoCodes = await stripe.promotionCodes.list({ code: trimmed, active: true, limit: 1 });
+      if (promoCodes.data.length > 0) {
+        discounts = [{ promotion_code: promoCodes.data[0].id }];
+        logStep("Promotion code found", { promoId: promoCodes.data[0].id });
+      } else {
+        logStep("Promotion code not found, proceeding without discount");
+      }
+    }
+
+    const sessionParams: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
@@ -70,7 +84,15 @@ serve(async (req) => {
         user_id: user.id,
         plan_id: planId,
       },
-    });
+    };
+
+    if (discounts) {
+      sessionParams.discounts = discounts;
+    } else {
+      sessionParams.allow_promotion_codes = true;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
