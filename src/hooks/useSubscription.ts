@@ -57,7 +57,7 @@ export function useSubscription() {
     }
   }, [isAuthenticated]);
 
-  const createCheckout = useCallback(async (planSlug: string) => {
+  const createCheckout = useCallback(async (planSlug: string, couponCode?: string) => {
     if (!isAuthenticated) {
       toast({ title: 'Faça login para assinar', variant: 'destructive' });
       return;
@@ -65,7 +65,7 @@ export function useSubscription() {
     setIsCheckoutLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { planId: planSlug },
+        body: { planId: planSlug, couponCode: couponCode || undefined },
       });
       if (error) throw error;
       if (data?.url) {
