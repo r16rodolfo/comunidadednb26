@@ -5,8 +5,11 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { Settings, Video, Upload, X, ImageIcon } from 'lucide-react';
-import { useRef } from 'react';
+import { Settings, Video, Upload, X, ImageIcon, Loader2 } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useLoginBg } from '@/hooks/useLoginBg';
 import type { PlatformConfig } from '@/types/admin';
 
 const FEATURE_LABELS: Record<string, { name: string; description: string }> = {
@@ -26,6 +29,9 @@ interface PlatformTabProps {
 export function PlatformTab({ platformConfig, setPlatformConfig, onSave, isLoading }: PlatformTabProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bgInputRef = useRef<HTMLInputElement>(null);
+  const [bgUploading, setBgUploading] = useState(false);
+  const { toast } = useToast();
+  const { loginBgUrl, refetch: refetchBg } = useLoginBg();
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,26 +64,74 @@ export function PlatformTab({ platformConfig, setPlatformConfig, onSave, isLoadi
     localStorage.removeItem('platform_logo');
   };
 
-  const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      localStorage.setItem('login_bg', dataUrl);
-      // Force re-render by updating a transient state
-      setPlatformConfig(prev => ({ ...prev }));
-    };
-    reader.readAsDataURL(file);
-    if (bgInputRef.current) bgInputRef.current.value = '';
+    setBgUploading(true);
+    try {
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `login-bg.${ext}`;
+
+      // Remove old file if exists
+      await supabase.storage.from('platform-assets').remove([path]);
+
+      const { error: uploadError } = await supabase.storage
+        .from('platform-assets')
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('platform-assets')
+        .getPublicUrl(path);
+
+      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+      // Save URL to home_config
+      const { data: existing } = await supabase
+        .from('home_config')
+        .select('id')
+        .limit(1)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from('home_config').update({ login_bg_url: publicUrl } as any).eq('id', existing.id);
+      } else {
+        await supabase.from('home_config').insert({ login_bg_url: publicUrl } as any);
+      }
+
+      refetchBg();
+      toast({ title: 'Imagem de fundo atualizada!' });
+    } catch (err) {
+      toast({ title: 'Erro ao enviar imagem', description: String(err), variant: 'destructive' });
+    } finally {
+      setBgUploading(false);
+      if (bgInputRef.current) bgInputRef.current.value = '';
+    }
   };
 
-  const handleRemoveBg = () => {
-    localStorage.removeItem('login_bg');
-    setPlatformConfig(prev => ({ ...prev }));
-  };
+  const handleRemoveBg = async () => {
+    setBgUploading(true);
+    try {
+      await supabase.storage.from('platform-assets').remove(['login-bg.jpg', 'login-bg.png', 'login-bg.jpeg']);
 
-  const loginBg = localStorage.getItem('login_bg');
+      const { data: existing } = await supabase
+        .from('home_config')
+        .select('id')
+        .limit(1)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from('home_config').update({ login_bg_url: null } as any).eq('id', existing.id);
+      }
+
+      refetchBg();
+      toast({ title: 'Imagem de fundo removida' });
+    } catch (err) {
+      toast({ title: 'Erro ao remover imagem', variant: 'destructive' });
+    } finally {
+      setBgUploading(false);
+    }
+  };
 
   return (
     <Card>
@@ -121,12 +175,13 @@ export function PlatformTab({ platformConfig, setPlatformConfig, onSave, isLoadi
         <div className="space-y-2">
           <Label className="flex items-center gap-2"><ImageIcon className="h-4 w-4" />Imagem de Fundo — Tela de Login</Label>
           <div className="flex items-center gap-4">
-            {loginBg ? (
+            {loginBgUrl ? (
               <div className="relative group">
-                <img src={loginBg} alt="Login BG" className="h-20 w-36 rounded-lg object-cover border border-border" />
+                <img src={loginBgUrl} alt="Login BG" className="h-20 w-36 rounded-lg object-cover border border-border" />
                 <button
                   type="button"
                   onClick={handleRemoveBg}
+                  disabled={bgUploading}
                   className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <X className="h-3 w-3" />
@@ -138,8 +193,8 @@ export function PlatformTab({ platformConfig, setPlatformConfig, onSave, isLoadi
               </div>
             )}
             <div>
-              <Button type="button" variant="outline" size="sm" onClick={() => bgInputRef.current?.click()}>
-                {loginBg ? 'Trocar Imagem' : 'Enviar Imagem'}
+              <Button type="button" variant="outline" size="sm" onClick={() => bgInputRef.current?.click()} disabled={bgUploading}>
+                {bgUploading ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Enviando...</> : loginBgUrl ? 'Trocar Imagem' : 'Enviar Imagem'}
               </Button>
               <p className="text-xs text-muted-foreground mt-1">JPG ou PNG. Recomendado: 1920×1080px.</p>
             </div>
