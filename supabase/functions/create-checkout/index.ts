@@ -33,8 +33,8 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { planId, couponCode } = await req.json();
-    logStep("Plan requested", { planId, couponCode });
+    const { planId, couponCode, returnUrl } = await req.json();
+    logStep("Plan requested", { planId, couponCode, returnUrl });
 
     const priceId = planPriceIds[planId];
     if (!priceId) throw new Error(`Invalid plan: ${planId}`);
@@ -52,7 +52,7 @@ serve(async (req) => {
       logStep("Found existing customer", { customerId });
     }
 
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const origin = returnUrl || req.headers.get("origin") || "http://localhost:3000";
 
     // If coupon code provided, look up matching promotion code
     let discounts: { promotion_code: string }[] | undefined;

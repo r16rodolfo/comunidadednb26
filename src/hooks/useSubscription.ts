@@ -65,7 +65,7 @@ export function useSubscription() {
     setIsCheckoutLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { planId: planSlug, couponCode: couponCode || undefined },
+        body: { planId: planSlug, couponCode: couponCode || undefined, returnUrl: window.location.origin },
       });
       if (error) throw error;
       if (data?.url) {
@@ -83,7 +83,9 @@ export function useSubscription() {
     if (!isAuthenticated) return;
     setIsPortalLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('customer-portal');
+      const { data, error } = await supabase.functions.invoke('customer-portal', {
+        body: { returnUrl: window.location.origin },
+      });
       if (error) throw error;
       if (data?.url) {
         window.open(data.url, '_blank');
