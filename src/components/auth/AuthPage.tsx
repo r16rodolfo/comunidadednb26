@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Loader2 } from 'lucide-react';
 import { z } from 'zod';
-import authBg from '@/assets/auth-bg.jpg';
+import defaultAuthBg from '@/assets/auth-bg.jpg';
 
 type AuthMode = 'login' | 'signup' | 'recovery';
 
@@ -139,6 +139,8 @@ export function AuthPage() {
     setRecoverySuccess(false);
     setSignupSuccess(false);
   };
+
+  const authBg = localStorage.getItem('login_bg') || defaultAuthBg;
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4">

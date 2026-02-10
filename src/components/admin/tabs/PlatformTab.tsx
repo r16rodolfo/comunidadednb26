@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { Settings, Video, Upload, X } from 'lucide-react';
+import { Settings, Video, Upload, X, ImageIcon } from 'lucide-react';
 import { useRef } from 'react';
 import type { PlatformConfig } from '@/types/admin';
 
@@ -25,6 +25,7 @@ interface PlatformTabProps {
 
 export function PlatformTab({ platformConfig, setPlatformConfig, onSave, isLoading }: PlatformTabProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bgInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -56,6 +57,27 @@ export function PlatformTab({ platformConfig, setPlatformConfig, onSave, isLoadi
     setPlatformConfig(prev => ({ ...prev, logoUrl: undefined }));
     localStorage.removeItem('platform_logo');
   };
+
+  const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      localStorage.setItem('login_bg', dataUrl);
+      // Force re-render by updating a transient state
+      setPlatformConfig(prev => ({ ...prev }));
+    };
+    reader.readAsDataURL(file);
+    if (bgInputRef.current) bgInputRef.current.value = '';
+  };
+
+  const handleRemoveBg = () => {
+    localStorage.removeItem('login_bg');
+    setPlatformConfig(prev => ({ ...prev }));
+  };
+
+  const loginBg = localStorage.getItem('login_bg');
 
   return (
     <Card>
@@ -90,6 +112,38 @@ export function PlatformTab({ platformConfig, setPlatformConfig, onSave, isLoadi
               <p className="text-xs text-muted-foreground mt-1">PNG, JPG ou SVG. Máx. 256×256px.</p>
             </div>
             <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml" className="hidden" onChange={handleLogoUpload} />
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Login Background */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2"><ImageIcon className="h-4 w-4" />Imagem de Fundo — Tela de Login</Label>
+          <div className="flex items-center gap-4">
+            {loginBg ? (
+              <div className="relative group">
+                <img src={loginBg} alt="Login BG" className="h-20 w-36 rounded-lg object-cover border border-border" />
+                <button
+                  type="button"
+                  onClick={handleRemoveBg}
+                  className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <div className="h-20 w-36 rounded-lg border-2 border-dashed border-muted-foreground/30 flex items-center justify-center bg-muted/50">
+                <ImageIcon className="h-5 w-5 text-muted-foreground/50" />
+              </div>
+            )}
+            <div>
+              <Button type="button" variant="outline" size="sm" onClick={() => bgInputRef.current?.click()}>
+                {loginBg ? 'Trocar Imagem' : 'Enviar Imagem'}
+              </Button>
+              <p className="text-xs text-muted-foreground mt-1">JPG ou PNG. Recomendado: 1920×1080px.</p>
+            </div>
+            <input ref={bgInputRef} type="file" accept="image/png,image/jpeg" className="hidden" onChange={handleBgUpload} />
           </div>
         </div>
 
