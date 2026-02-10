@@ -1,5 +1,6 @@
 
 import { ReactNode, useState } from "react";
+import { useSubscription } from "@/hooks/useSubscription";
 import { 
   Home, 
   Calculator, 
@@ -181,10 +182,19 @@ function SidebarNavContent({ navigationItems, currentPath, onNavClick }: Sidebar
 
 export default function Layout({ children }: LayoutProps) {
   const { user, viewAsUser, setViewAsUser, logout } = useAuth();
+  const { subscription } = useSubscription();
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Determine display role: if user is free but has active subscription, show Premium
+  const displayRole = user?.role === UserRole.FREE && subscription.subscribed
+    ? UserRole.PREMIUM
+    : user?.role;
+
+  const displayRoleLabel = displayRole ? getRoleLabel(displayRole) : '';
+  const displayRoleBadgeVariant = displayRole ? getRoleBadgeVariant(displayRole) : 'outline' as const;
 
   const navigationItems = user ? getNavigationItems(user.role, viewAsUser) : [];
 
@@ -256,8 +266,8 @@ export default function Layout({ children }: LayoutProps) {
                     <p className="text-sm font-medium">{user.name}</p>
                     <p className="text-xs text-muted-foreground">{user.email}</p>
                   </div>
-                  <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs">
-                    {getRoleLabel(user.role)}
+                  <Badge variant={displayRoleBadgeVariant} className="text-xs">
+                    {displayRoleLabel}
                   </Badge>
                 </div>
                 
