@@ -69,7 +69,7 @@ export function useSubscription() {
       });
       if (error) throw error;
       if (data?.url) {
-        window.location.href = data.url;
+        window.open(data.url, '_blank');
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erro desconhecido';
