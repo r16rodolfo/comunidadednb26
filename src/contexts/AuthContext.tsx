@@ -83,8 +83,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const profile = await fetchUserProfile(session.user);
               setAuthState({ user: profile, isAuthenticated: true, isLoading: false });
             } catch (error) {
-              console.error('Error fetching profile:', error);
-              setAuthState({ user: null, isAuthenticated: false, isLoading: false });
+              console.error('Error fetching profile, using fallback:', error);
+              // Fallback: keep user authenticated with minimal profile
+              const fallbackProfile: UserProfile = {
+                id: session.user.id,
+                email: session.user.email || '',
+                name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || '',
+                avatar: session.user.user_metadata?.avatar_url,
+                role: UserRole.FREE,
+                permissions: [],
+                preferences: { theme: 'light', notifications: true, language: 'pt-BR' },
+                createdAt: new Date(session.user.created_at),
+                updatedAt: new Date(),
+              };
+              setAuthState({ user: fallbackProfile, isAuthenticated: true, isLoading: false });
             }
           }, 0);
         } else {
@@ -99,8 +111,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         fetchUserProfile(session.user).then(profile => {
           setAuthState({ user: profile, isAuthenticated: true, isLoading: false });
-        }).catch(() => {
-          setAuthState({ user: null, isAuthenticated: false, isLoading: false });
+        }).catch((error) => {
+          console.error('Error fetching profile on init, using fallback:', error);
+          const fallbackProfile: UserProfile = {
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || '',
+            avatar: session.user.user_metadata?.avatar_url,
+            role: UserRole.FREE,
+            permissions: [],
+            preferences: { theme: 'light', notifications: true, language: 'pt-BR' },
+            createdAt: new Date(session.user.created_at),
+            updatedAt: new Date(),
+          };
+          setAuthState({ user: fallbackProfile, isAuthenticated: true, isLoading: false });
         });
       } else {
         setAuthState(prev => ({ ...prev, isLoading: false }));
