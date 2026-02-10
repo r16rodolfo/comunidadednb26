@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/Layout';
@@ -6,17 +6,20 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
-  CreditCard,
   Crown,
   Check,
   RefreshCw,
   Settings as SettingsIcon,
   Star,
   TrendingDown,
+  TrendingUp as TrendingUpIcon,
   AlertTriangle,
   XCircle,
   Undo2,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePlans, formatPrice, formatMonthlyEquivalent, SubscriptionPlan } from '@/hooks/usePlans';
@@ -58,11 +61,35 @@ export default function Subscription() {
   const freePlan = activePlans.find(p => p.interval === 'free');
   const paidPlans = activePlans.filter(p => p.interval !== 'free');
 
+  // Build a sort-order map for plan comparison (lower = cheaper)
+  const planSortMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    activePlans.forEach(p => { map[p.slug] = p.sort_order; });
+    return map;
+  }, [activePlans]);
+
+  const currentPlanSort = subscription.current_plan_slug ? (planSortMap[subscription.current_plan_slug] ?? -1) : -1;
+
+  const getButtonProps = (plan: typeof paidPlans[0]) => {
+    const isCurrentPlan = subscription.current_plan_slug === plan.slug;
+    if (isCurrentPlan) return { label: 'Plano Atual', icon: Check, disabled: true, variant: 'outline' as const };
+
+    if (!subscription.subscribed) {
+      return { label: 'Assinar', icon: Crown, disabled: false, variant: plan.popular ? 'default' as const : 'outline' as const };
+    }
+
+    const thisPlanSort = planSortMap[plan.slug] ?? 0;
+    if (thisPlanSort > currentPlanSort) {
+      return { label: 'Upgrade', icon: ArrowUp, disabled: false, variant: 'default' as const };
+    }
+    return { label: 'Downgrade', icon: ArrowDown, disabled: false, variant: 'outline' as const };
+  };
+
   return (
     <Layout>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <PageHeader icon={CreditCard} title="Minha Assinatura" description="Gerencie seu plano e faturamento">
+        <PageHeader icon={Crown} title="Minha Assinatura" description="Gerencie seu plano e faturamento">
           <Button onClick={checkSubscription} disabled={isLoading} variant="outline" size="sm" className="self-start sm:self-auto">
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Atualizar Status
@@ -70,6 +97,15 @@ export default function Subscription() {
         </PageHeader>
 
         {/* Status Atual */}
+        {isLoading ? (
+          <Card>
+            <CardHeader><Skeleton className="h-6 w-48" /></CardHeader>
+            <CardContent className="space-y-3">
+              <Skeleton className="h-5 w-64" />
+              <Skeleton className="h-4 w-40" />
+            </CardContent>
+          </Card>
+        ) : (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -166,6 +202,7 @@ export default function Subscription() {
             )}
           </CardContent>
         </Card>
+        )}
 
         {/* Planos */}
         <div className="space-y-4">
@@ -254,15 +291,21 @@ export default function Subscription() {
                     </ul>
                     <div className="space-y-2">
                       <Separator className="mb-4" />
-                      <Button
-                        className="w-full"
-                        variant={isCurrentPlan ? 'outline' : plan.popular ? 'default' : 'outline'}
-                        disabled={isCheckoutLoading || isCurrentPlan}
-                        onClick={() => createCheckout(plan.slug)}
-                      >
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        {isCurrentPlan ? 'Plano Atual' : isCheckoutLoading ? 'Aguarde...' : 'Cartão de Crédito'}
-                      </Button>
+                      {(() => {
+                        const bp = getButtonProps(plan);
+                        const Icon = bp.icon;
+                        return (
+                          <Button
+                            className="w-full"
+                            variant={bp.variant}
+                            disabled={isCheckoutLoading || bp.disabled}
+                            onClick={() => createCheckout(plan.slug)}
+                          >
+                            <Icon className="h-4 w-4 mr-2" />
+                            {isCheckoutLoading && !bp.disabled ? 'Aguarde...' : bp.label}
+                          </Button>
+                        );
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
