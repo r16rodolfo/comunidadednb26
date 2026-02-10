@@ -128,6 +128,7 @@ export type Database = {
         Row: {
           banners: Json
           id: string
+          login_bg_url: string | null
           step_cards: Json
           updated_at: string
           welcome_card: Json
@@ -135,6 +136,7 @@ export type Database = {
         Insert: {
           banners?: Json
           id?: string
+          login_bg_url?: string | null
           step_cards?: Json
           updated_at?: string
           welcome_card?: Json
@@ -142,6 +144,7 @@ export type Database = {
         Update: {
           banners?: Json
           id?: string
+          login_bg_url?: string | null
           step_cards?: Json
           updated_at?: string
           welcome_card?: Json
