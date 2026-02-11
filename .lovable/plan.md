@@ -1,165 +1,123 @@
 
+## Correcao do Fluxo de Upgrade/Downgrade
 
-## Upgrade e Downgrade com Proration via Stripe
+### Problemas Identificados
 
-### Contexto
+**1. Race condition no upgrade via Stripe**
+Quando o upgrade via Stripe e executado, a funcao `change-plan` atualiza o banco de dados imediatamente. Porem, o `check-subscription` (que roda a cada 10 segundos) ou o webhook do Stripe tambem atualizam o banco. Se o usuario tenta outra mudanca logo depois, o `current_plan_slug` ja esta atualizado, causando comparacoes incorretas (ex: mesmo plano vs. mesmo plano = classificado como downgrade).
 
-Todos os planos sao "Premium" com intervalos diferentes (mensal, trimestral, semestral, anual). O Stripe oferece proration nativo via `stripe.subscriptions.update()`, eliminando a necessidade de calculos manuais.
+**2. Upgrade silencioso sem confirmacao do Stripe**
+Para upgrades via Stripe, a funcao `change-plan` executa `subscriptions.update()` diretamente no servidor. Isso cobra o cartao do usuario sem nenhuma tela de confirmacao do Stripe, o que e uma preocupacao de seguranca e UX.
 
-### Estrategia de negocios
+**3. Sem opcao de troca de metodo de pagamento**
+Um usuario que assinou via cartao nao tem opcao de trocar para PIX (e vice-versa) ao mudar de plano.
+
+### Solucao Proposta
+
+**Estrategia: Usar Stripe Checkout Session para upgrades em vez de `subscriptions.update()`**
+
+Em vez de alterar a assinatura diretamente no backend, vamos criar uma nova Checkout Session do Stripe com a nova price. O Stripe cuida da proration, confirmacao de pagamento e seguranca automaticamente. Isso resolve os 3 problemas de uma vez.
+
+### Alteracoes
+
+**1. Refatorar `change-plan/index.ts`**
+
+Para o caminho **Stripe upgrade**:
+- Em vez de chamar `stripe.subscriptions.update()`, criar uma nova `stripe.checkout.sessions.create()` com `mode: 'subscription'` e o novo `price`
+- Passar `subscription` existente para que o Stripe faca a proration automaticamente
+- Retornar o `clientSecret` para embedded checkout OU a `url` do checkout
+- O webhook `invoice.paid` e `subscription.updated` ja cuidam de atualizar o banco
+
+Para o caminho **Stripe downgrade**:
+- Manter a logica de `subscriptionSchedules` (agendamento para fim do periodo) -- nao precisa de pagamento
+
+Para o caminho **PIX**:
+- Manter a logica atual (QR code para upgrade, agendamento para downgrade)
+
+**2. Atualizar `PlanChangeConfirmModal.tsx`**
+
+Para upgrades Stripe:
+- Apos clicar "Confirmar Upgrade", receber um `clientSecret` de volta
+- Renderizar o `StripeEmbeddedCheckout` dentro do modal (mesmo padrao do `PaymentMethodModal`)
+- O usuario ve a tela segura do Stripe, confirma os dados do cartao, e o pagamento e processado
+
+Para downgrades (Stripe e PIX):
+- Manter o fluxo atual (confirmacao simples + agendamento)
+
+Para upgrades PIX:
+- Manter o fluxo atual (preview + QR code)
+
+**3. Adicionar opcao de metodo de pagamento para upgrades**
+
+No modal de confirmacao de upgrade, adicionar um passo intermediario onde o usuario pode escolher:
+- Cartao de Credito (Stripe Embedded Checkout)
+- PIX (QR Code com valor proporcional)
+
+Isso funciona independente de como o usuario assinou originalmente.
+
+**4. Ajustar `preview-plan-change/index.ts`**
+
+- Para Stripe, o preview continua mostrando os valores de proration
+- Adicionar campo `paymentMethod` retornando `'stripe'` ou `'pix'` baseado no estado atual
+- O frontend usa isso para saber qual fluxo apresentar, mas o usuario pode escolher outro metodo
+
+**5. Garantir que `check-subscription` e o webhook nao conflitem**
+
+- A funcao `change-plan` NAO atualiza mais o banco diretamente para upgrades Stripe
+- O webhook `invoice.paid` faz toda a atualizacao apos o pagamento ser confirmado
+- Para downgrades, a funcao continua atualizando `pending_downgrade_to` diretamente
+
+### Fluxo Final
 
 ```text
-UPGRADE (plano mais barato -> mais caro):
-  - Mudanca imediata
-  - Stripe calcula credito pelo tempo nao usado do plano atual
-  - Cobra a diferenca proporcional do novo plano
-  - Usuario recebe acesso imediato ao novo ciclo
+UPGRADE (qualquer metodo de pagamento original):
+  1. Usuario clica "Upgrade"
+  2. Modal mostra preview de proration (valores, credito)
+  3. Usuario escolhe: Cartao ou PIX
+  4. Cartao: Stripe Embedded Checkout dentro do modal
+     PIX: QR Code com valor proporcional
+  5. Apos pagamento confirmado:
+     - Webhook atualiza o banco automaticamente (Stripe)
+     - Polling confirma pagamento (PIX)
 
-DOWNGRADE (plano mais caro -> mais barato):
-  - Mudanca agendada para o fim do periodo atual
-  - Usuario mantem acesso ate o fim do que ja pagou
-  - Na renovacao, o novo plano (mais barato) entra em vigor
-  - Credito do valor restante e aplicado automaticamente
-
-CANCELAMENTO:
-  - Acesso mantido ate o fim do periodo pago
-  - Sem reembolso parcial
+DOWNGRADE (qualquer metodo):
+  1. Usuario clica "Downgrade"
+  2. Modal mostra informacao de agendamento
+  3. Usuario confirma
+  4. Stripe: subscriptionSchedule agendado
+     PIX: flag no banco (pending_downgrade_to)
+  5. Mudanca efetiva ao fim do periodo
 ```
 
-### Exemplo pratico
+### Arquivos Modificados
 
-Um usuario assina o **Trimestral** (R$60/3 meses = R$20/mes). Apos 1 mes, quer fazer **upgrade para Anual** (R$185/ano = ~R$15,42/mes):
+- `supabase/functions/change-plan/index.ts` -- Stripe upgrade agora retorna `clientSecret` em vez de alterar assinatura diretamente
+- `supabase/functions/preview-plan-change/index.ts` -- Ajustes menores para suportar escolha de metodo
+- `src/components/subscription/PlanChangeConfirmModal.tsx` -- Adicionar passo de escolha de metodo + Stripe Embedded Checkout + PIX QR Code
+- `src/pages/Subscription.tsx` -- Ajustes para callbacks do novo fluxo
 
-1. Stripe calcula credito: 2 meses restantes = ~R$40 de credito
-2. Stripe calcula custo proporcional do Anual para o periodo restante
-3. Cobra a diferenca (novo custo - credito)
-4. Novo ciclo anual comeca imediatamente
+### Secao Tecnica
 
-### Alteracoes necessarias
-
-**1. Criar edge function `change-plan` (nova)**
-
-Arquivo: `supabase/functions/change-plan/index.ts`
-
-Logica central:
-- Recebe `newPlanSlug` do frontend
-- Autentica o usuario e busca seu `stripe_subscription_id` na tabela `subscribers`
-- Recupera a assinatura atual do Stripe
-- Compara `sort_order` dos planos para determinar se e upgrade ou downgrade
-- **Upgrade**: chama `stripe.subscriptions.update()` com `proration_behavior: 'always_invoice'` para cobrar imediatamente
-- **Downgrade**: cria um `subscriptionSchedule` para agendar a mudanca no fim do periodo, usando `stripe.subscriptionSchedules.create()` a partir da assinatura existente
-- Atualiza a tabela `subscribers` com o novo estado (ou `pending_downgrade_to` para downgrades)
-- Retorna `{ success, type: 'upgrade' | 'downgrade', prorationAmount?, effectiveDate? }`
-
-**2. Criar edge function `preview-plan-change` (nova)**
-
-Arquivo: `supabase/functions/preview-plan-change/index.ts`
-
-Antes de confirmar a mudanca, mostrar ao usuario quanto sera cobrado/creditado:
-- Recebe `newPlanSlug` do frontend
-- Chama `stripe.invoices.createPreview()` com os itens da assinatura atual e os novos, usando `subscription_proration_behavior`
-- Retorna `{ amountDue, credit, effectiveDate, newPlanName }` para exibicao no frontend
-
-**3. Atualizar o frontend: adicionar modal de confirmacao**
-
-Criar componente `PlanChangeConfirmModal` em `src/components/subscription/PlanChangeConfirmModal.tsx`:
-- Ao clicar em "Upgrade" ou "Downgrade", abre um modal com:
-  - Nome do plano atual e do novo plano
-  - Para upgrades: valor a ser cobrado agora (proration preview)
-  - Para downgrades: data em que a mudanca entrara em vigor
-  - Botao "Confirmar mudanca" e "Cancelar"
-
-**4. Atualizar `Subscription.tsx`**
-
-- Alterar o `handlePlanClick` para diferenciar entre:
-  - Nova assinatura (sem plano ativo): abre `PaymentMethodModal` como hoje
-  - Mudanca de plano (ja assinante): abre `PlanChangeConfirmModal` com preview
-- Integrar chamadas a `preview-plan-change` e `change-plan`
-
-**5. Atualizar `useSubscription.ts`**
-
-Adicionar funcoes:
-- `previewPlanChange(newPlanSlug)`: chama `preview-plan-change` e retorna dados do preview
-- `changePlan(newPlanSlug)`: chama `change-plan` e atualiza o estado
-
-**6. Atualizar webhook `stripe-webhook/index.ts`**
-
-O webhook ja trata `customer.subscription.updated` e detecta schedules pendentes. Verificar que o fluxo de upgrade (mudanca imediata de price) atualiza corretamente o `current_plan_slug` e `subscription_tier` na tabela `subscribers`.
-
-**7. Registrar novas edge functions em `config.toml`**
-
-Adicionar:
-```toml
-[functions.change-plan]
-verify_jwt = false
-
-[functions.preview-plan-change]
-verify_jwt = false
-```
-
-### Secao tecnica
-
-**Edge function `change-plan` (logica principal):**
+**change-plan upgrade Stripe (novo fluxo):**
 ```typescript
-// Determinar tipo de mudanca
-const currentSortOrder = planSortOrders[currentPlanSlug];
-const newSortOrder = planSortOrders[newPlanSlug];
-const isUpgrade = newSortOrder > currentSortOrder;
-
-if (isUpgrade) {
-  // Upgrade: mudanca imediata com cobranca proporcional
-  await stripe.subscriptions.update(subscriptionId, {
-    items: [{ id: subscriptionItemId, price: newPriceId }],
-    proration_behavior: 'always_invoice',
-  });
-} else {
-  // Downgrade: agendar para o fim do periodo
-  const schedule = await stripe.subscriptionSchedules.create({
-    from_subscription: subscriptionId,
-  });
-  await stripe.subscriptionSchedules.update(schedule.id, {
-    phases: [
-      { // Fase atual
-        items: [{ price: currentPriceId, quantity: 1 }],
-        start_date: schedule.phases[0].start_date,
-        end_date: schedule.phases[0].end_date,
-      },
-      { // Proxima fase (downgrade)
-        items: [{ price: newPriceId, quantity: 1 }],
-        iterations: 1,
-      },
-    ],
-  });
-}
-```
-
-**Edge function `preview-plan-change` (logica principal):**
-```typescript
-const preview = await stripe.invoices.createPreview({
-  customer: customerId,
-  subscription: subscriptionId,
-  subscription_items: [{ id: subscriptionItemId, price: newPriceId }],
-  subscription_proration_behavior: 'always_invoice',
+// Em vez de stripe.subscriptions.update():
+const session = await stripe.checkout.sessions.create({
+  customer: subscriber.stripe_customer_id,
+  line_items: [{ price: newPriceId, quantity: 1 }],
+  mode: 'subscription',
+  ui_mode: 'embedded',
+  return_url: `${origin}/subscription?session_id={CHECKOUT_SESSION_ID}`,
+  allow_promotion_codes: true,
+  metadata: { user_id: user.id, plan_id: newPlanSlug, type: 'upgrade' },
 });
 
-return {
-  amountDue: preview.amount_due, // em centavos
-  credit: preview.lines.data
-    .filter(l => l.amount < 0)
-    .reduce((sum, l) => sum + l.amount, 0),
-  total: preview.total,
-  currency: preview.currency,
-};
+return { success: true, type: 'upgrade', clientSecret: session.client_secret };
 ```
 
-**Arquivos criados:**
-- `supabase/functions/change-plan/index.ts`
-- `supabase/functions/preview-plan-change/index.ts`
-- `src/components/subscription/PlanChangeConfirmModal.tsx`
-
-**Arquivos alterados:**
-- `supabase/config.toml` -- registrar novas edge functions
-- `src/hooks/useSubscription.ts` -- novas funcoes `previewPlanChange` e `changePlan`
-- `src/pages/Subscription.tsx` -- integrar fluxo de mudanca de plano
-- `supabase/functions/_shared/plan-config.ts` -- adicionar mapa de sort_order para uso no backend
-
+**PlanChangeConfirmModal (novo fluxo upgrade):**
+```text
+Etapa 1: Preview de proration (valores, credito)
+Etapa 2: Escolha do metodo (Cartao ou PIX)
+Etapa 3a: StripeEmbeddedCheckout (se cartao)
+Etapa 3b: PixQrCodeCheckout (se PIX)
+```
