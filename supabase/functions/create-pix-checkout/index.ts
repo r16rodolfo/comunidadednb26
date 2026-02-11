@@ -61,16 +61,7 @@ serve(async (req) => {
 
     const origin = returnUrl || req.headers.get("origin") || "http://localhost:3000";
 
-    // Get user name from profiles
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("name")
-      .eq("user_id", user.id)
-      .single();
-
-    const customerName = profile?.name || user.email.split("@")[0];
-
-    // Create AbacatePay billing
+    // Create AbacatePay billing (customer object omitted — requires valid CPF/phone)
     const abacateResponse = await fetch("https://api.abacatepay.com/v1/billing/create", {
       method: "POST",
       headers: {
@@ -91,11 +82,10 @@ serve(async (req) => {
         ],
         returnUrl: `${origin}/subscription?cancelled=true`,
         completionUrl: `${origin}/subscription?success=true&method=pix`,
-        customer: {
-          name: customerName,
+        metadata: {
+          userId: user.id,
           email: user.email,
-          cellphone: "00000000000",
-          taxId: "00000000000",
+          planSlug: plan.slug,
         },
       }),
     });
