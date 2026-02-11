@@ -1,76 +1,96 @@
 
 
-## Corrigir precos do PIX para usar valores do banco de dados
+## Adicionar CPF e Telefone ao cadastro para pagamento PIX
 
-### Problema identificado
+### Contexto
 
-Os precos usados no pagamento PIX estao **hardcoded** no arquivo `plan-config.ts` e nao correspondem aos valores configurados pelo admin em `/admin/subscriptions`.
+A API do AbacatePay exige 4 campos obrigatorios no objeto `customer` para criar cobranças:
+- `name` (ja temos)
+- `email` (ja temos via auth)
+- `cellphone` (NAO temos)
+- `taxId` / CPF (NAO temos)
 
-Valores no banco (configurados pelo admin):
-- Mensal: R$ 30,00 (3000 centavos)
-- Trimestral: R$ 60,00 (6000 centavos)
-- Semestral: R$ 105,00 (10500 centavos)
-- Anual: R$ 185,00 (18500 centavos)
+Sem esses dados, o pagamento PIX nao funciona. O plano e coletar essas informacoes no cadastro do usuario, salva-las no banco e usa-las na edge function de checkout.
 
-Valores hardcoded no `plan-config.ts`:
-- Mensal: R$ 29,90 (2990 centavos)
-- Trimestral: R$ 74,90 (7490 centavos)
-- Semestral: R$ 139,90 (13990 centavos)
-- Anual: R$ 249,90 (24990 centavos)
+### Alteracoes
 
-Alem disso, a API do AbacatePay esta funcionando corretamente segundo a documentacao oficial. A estrutura da resposta e `{ data: { url: "..." } }`, que ja esta coberta pelo codigo atual. Se a URL ainda esta vindo vazia, pode ser um problema com a chave de API (modo dev vs producao).
+**1. Adicionar colunas na tabela `profiles`**
 
-### Plano de correcao
+Migration SQL para adicionar:
+- `cellphone` (text, nullable) — telefone do usuario
+- `cpf` (text, nullable) — CPF ou CNPJ do usuario
 
-**Alterar `supabase/functions/create-pix-checkout/index.ts`**
+Nullable porque usuarios existentes nao tem esses dados.
 
-Em vez de usar o mapeamento hardcoded `planPricesBRL`, a edge function deve buscar o preco diretamente da tabela `plans` no banco de dados, usando o `slug` do plano. Isso garante que qualquer alteracao feita pelo admin em `/admin/subscriptions` seja refletida automaticamente no pagamento PIX.
+**2. Atualizar o formulario de cadastro (`AuthPage.tsx`)**
 
-Mudancas:
-1. Remover o import de `planPricesBRL`
-2. Criar um cliente Supabase com a service role key para acessar a tabela `plans`
-3. Buscar o plano pelo slug na tabela `plans` (campos: `name`, `price_cents`, `slug`)
-4. Usar `price_cents` do banco como valor do produto enviado ao AbacatePay
-5. Usar `name` do banco como nome do produto
+Adicionar dois campos ao formulario de signup:
+- **CPF**: campo com mascara (xxx.xxx.xxx-xx), validacao de 11 digitos
+- **Telefone**: campo com mascara ((xx) xxxxx-xxxx), validacao de 10-11 digitos
 
-**Manter `plan-config.ts` inalterado** — o mapeamento `planPricesBRL` pode ser removido futuramente, mas por ora basta nao usa-lo na edge function de PIX.
+Atualizar o schema Zod de signup para incluir validacao desses campos.
+
+**3. Salvar os novos campos no registro**
+
+Atualizar `AuthContext.tsx` para enviar `cpf` e `cellphone` como `user_metadata` no `signUp`. Atualizar o trigger `handle_new_user` no banco para copiar esses dados para a tabela `profiles`.
+
+**4. Atualizar a edge function `create-pix-checkout`**
+
+Buscar `cellphone` e `cpf` da tabela `profiles` e incluir o objeto `customer` na requisicao ao AbacatePay:
+
+```typescript
+customer: {
+  name: profile.name,
+  email: user.email,
+  cellphone: profile.cellphone,
+  taxId: profile.cpf,
+},
+```
+
+**5. Permitir edicao no perfil (`Profile.tsx`)**
+
+Adicionar campos de CPF e Telefone na aba "Perfil" para que usuarios existentes possam preencher esses dados antes de assinar.
+
+**6. Atualizar `updateProfile` no `AuthContext.tsx`**
+
+Incluir `cellphone` e `cpf` nos campos salvos ao atualizar o perfil.
 
 ### Secao tecnica
 
-Trecho principal da alteracao na edge function:
-
-```typescript
-// Antes: usa hardcoded
-const planInfo = planPricesBRL[planId];
-
-// Depois: busca do banco
-const supabaseAdmin = createClient(
-  Deno.env.get("SUPABASE_URL") ?? "",
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-);
-
-const { data: plan, error: planError } = await supabaseAdmin
-  .from("plans")
-  .select("name, price_cents, slug")
-  .eq("slug", planId)
-  .eq("is_active", true)
-  .single();
-
-if (planError || !plan) throw new Error(`Plan not found: ${planId}`);
+**Migration SQL:**
+```sql
+ALTER TABLE public.profiles
+  ADD COLUMN cellphone text,
+  ADD COLUMN cpf text;
 ```
 
-E no body da requisicao ao AbacatePay:
-
-```typescript
-products: [{
-  externalId: plan.slug,
-  name: plan.name,
-  description: `Assinatura ${plan.name}`,
-  quantity: 1,
-  price: plan.price_cents,
-}],
+**Trigger atualizado (`handle_new_user`):**
+```sql
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+BEGIN
+  INSERT INTO public.profiles (user_id, name, cellphone, cpf)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'name', NEW.raw_user_meta_data->>'full_name', ''),
+    NEW.raw_user_meta_data->>'cellphone',
+    NEW.raw_user_meta_data->>'cpf'
+  );
+  INSERT INTO public.user_roles (user_id, role)
+  VALUES (NEW.id, 'free');
+  RETURN NEW;
+END;
+$function$;
 ```
 
-### Arquivos alterados
+**Arquivos alterados:**
+- `supabase/functions/create-pix-checkout/index.ts` — adicionar customer com dados do perfil
+- `src/components/auth/AuthPage.tsx` — campos CPF e telefone no signup
+- `src/contexts/AuthContext.tsx` — enviar metadata no signUp, salvar no updateProfile
+- `src/pages/Profile.tsx` — campos de edicao CPF e telefone
+- `src/types/auth.ts` — adicionar cpf e cellphone ao RegisterData
 
-- `supabase/functions/create-pix-checkout/index.ts` — buscar preco do banco em vez de usar hardcoded
