@@ -178,6 +178,7 @@ export function PaymentMethodModal({
                 expiresAt={pixQrData.expiresAt}
                 onPaid={onPixPaid}
                 planName={planName}
+                pixId={pixQrData.id}
               />
             ) : null}
           </div>
