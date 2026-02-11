@@ -1,126 +1,123 @@
 
-## Correcao Completa do Modulo de Analises de Mercado
+
+## Correcao de Datas, Dados Ausentes e UI/UX do Modulo de Analises
 
 ### Problemas Identificados
 
-**1. Modal de edicao nao carrega dados existentes**
-O `CreateAnalysisModal` usa `useState` (linha 53) em vez de `useEffect` para resetar o formulario quando `editingAnalysis` muda. O `useState` com callback so executa na montagem inicial, entao ao clicar em "Editar" o formulario aparece vazio como se fosse uma nova analise.
+**1. Datas incompativeis (timezone bug)**
+O campo `date` no banco e `"2026-02-11"` (string sem timezone). Ao usar `new Date("2026-02-11")`, o JavaScript interpreta como UTC meia-noite. No Brasil (UTC-3), isso vira 10/02 as 21h. Por isso o admin mostra "10/02/2026" quando deveria ser "11/02/2026". Esse bug afeta todos os componentes: admin table, Hero, FeedCard, DetailModal e filtros de periodo.
 
-**2. Video abre em nova aba em vez de modal**
-Em `DnbAnalysis.tsx` (linha 119), o clique em "Assistir Video" executa `window.open(url, '_blank')`. No `AnalysisDetailModal`, os botoes de video/imagem nem possuem `onClick`. Deveria abrir um modal com o player Bunny.net embutido.
+**2. Informacoes cadastradas nao aparecem no /analise**
+- O Hero nao tem botao para abrir a analise completa. O usuario ve apenas o resumo, cotacoes e botao de video -- sem acesso a analise completa, suportes e resistencias.
+- O historico mostra "Nenhuma analise encontrada" porque o codigo filtra a analise mais recente para o Hero (`historyAnalyses = analyses.filter(a => a.id !== latestAnalysis?.id)`), e quando so existe 1 analise, o historico fica vazio.
 
-**3. Informacoes nao aparecem no /analise e historico**
-O tipo `MarketAnalysis` nao inclui `created_at` nem `updated_at`, entao os timestamps nao sao exibidos. Alem disso, a data mostrada e apenas o campo `date` (data da analise), sem horario de publicacao.
+**3. UI pesada (amarelao)**
+O gradiente `alert` usa `from-warning/20 to-warning/5` com `--warning: 38 92% 50%` (laranja saturado). Em area grande como o Hero, o resultado e um fundo amarelo/laranja intenso que dificulta a leitura. Os textos `text-foreground/80` e `text-muted-foreground` perdem contraste sobre esse fundo.
 
-**4. Sem indicacao de edicao**
-Nao ha tracking de quem editou ou quando. O campo `updated_at` existe no banco mas nao e mapeado no frontend. Falta um campo `edited_by_name` para registrar o nome do editor.
+**4. Legibilidade e acessibilidade**
+- Textos pequenos (10px, 11px) sobre fundos coloridos nao atendem WCAG AA.
+- O resumo usa `text-foreground/80` que perde contraste sobre gradientes saturados.
+- Nao ha hierarquia visual clara entre resumo e dados tecnicos.
 
 ### Solucao
 
-**1. Corrigir reset do formulario no modal**
-Substituir o `useState` incorreto (linha 53) por um `useEffect` que observa `open` e `editingAnalysis`, resetando todos os campos corretamente.
+**1. Corrigir parsing de datas**
+Criar uma funcao utilitaria `parseLocalDate(dateStr)` que evita o bug de timezone:
 
-**2. Player de video em modal (Bunny.net)**
-Criar um componente `VideoPlayerModal` que renderiza um iframe do Bunny Stream. Quando a URL do video for um GUID do Bunny, montar a URL do iframe automaticamente. Para URLs externas (YouTube, etc.), embutir como iframe generico. Usar esse modal no Hero, no FeedCard e no DetailModal.
-
-**3. Mapear timestamps no tipo e exibir na UI**
-- Adicionar `created_at` e `updated_at` ao tipo `MarketAnalysis`
-- Mapear esses campos nos hooks `useDnb` e `useAdminDnb`
-- Exibir horario de publicacao no Hero e nos FeedCards (ex: "Publicado em 11/02/2026 as 14:30")
-
-**4. Tracking de edicao**
-- Adicionar coluna `edited_by_name` (text, nullable) na tabela `market_analyses` via migracao SQL
-- No hook `useAdminDnb`, ao atualizar uma analise, preencher `edited_by_name` com o nome do usuario logado
-- Na UI, exibir discretamente "Editado por [nome] em [data/hora]" quando `updated_at` diferir de `created_at`
-
-### Migracao SQL
-
-Adicionar coluna para tracking de edicao:
-
-```sql
-ALTER TABLE public.market_analyses
-ADD COLUMN edited_by_name text;
+```typescript
+// Interpreta "2026-02-11" como data LOCAL (nao UTC)
+export function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
 ```
+
+Usar essa funcao em todos os pontos que fazem `new Date(analysis.date)`:
+- `AnalysisHero.tsx` (linha 71)
+- `AnalysisFeedCard.tsx` (linha 52)
+- `AnalysisDetailModal.tsx` (linha 58)
+- `DnbAnalysis.tsx` (linha 50 -- filtro de periodo)
+- `Analyses.tsx` (admin table, linhas 62, 161, 260)
+
+**2. Adicionar acesso a analise completa no Hero**
+Adicionar um botao "Ver analise completa" no Hero que abre o DetailModal. Isso requer:
+- Nova prop `onViewDetail` no `AnalysisHero`
+- Em `DnbAnalysis.tsx`, ao clicar, setar `setSelectedAnalysis(latestAnalysis)`
+
+**3. Corrigir historico vazio**
+Quando so ha 1 analise, nao filtrar ela do historico. Em vez disso, mostrar o historico incluindo todas as analises (a mais recente ja aparece no Hero como destaque, mas tambem deve aparecer na lista para consistencia). Alternativamente, exibir uma mensagem mais informativa quando nao ha historico alem da analise atual.
+
+**4. Redesign dos gradientes e estilos (UX/Acessibilidade)**
+Reduzir a intensidade dos gradientes do Hero para melhorar legibilidade:
+
+```typescript
+// ANTES (pesado)
+alert: 'from-warning/20 to-warning/5 border-warning/30',
+
+// DEPOIS (leve e elegante)
+alert: 'from-warning/8 to-warning/3 border-warning/20',
+ideal: 'from-success/8 to-success/3 border-success/20',
+'not-ideal': 'from-destructive/8 to-destructive/3 border-destructive/20',
+wait: 'from-info/8 to-info/3 border-info/20',
+```
+
+Melhorar contraste dos textos no Hero:
+- Resumo: `text-foreground` em vez de `text-foreground/80`
+- Timestamps: `text-muted-foreground` em vez de `/70` e `/50`
+- Texto editado: minimo `text-muted-foreground/70` em vez de `/50`
 
 ### Arquivos Modificados
 
-- **`src/types/dnb.ts`** -- Adicionar `createdAt`, `updatedAt`, `editedByName` ao tipo
-- **`src/hooks/useDnb.ts`** -- Mapear novos campos no `mapRow`
-- **`src/hooks/useAdminDnb.ts`** -- Mapear novos campos; enviar `edited_by_name` no update
-- **`src/components/admin/CreateAnalysisModal.tsx`** -- Corrigir reset com `useEffect`; proteger modal contra fechamento acidental
-- **`src/components/dnb/AnalysisHero.tsx`** -- Exibir horario de publicacao e indicador de edicao; abrir video em modal
-- **`src/components/dnb/AnalysisFeedCard.tsx`** -- Exibir timestamp e indicador de edicao
-- **`src/components/dnb/AnalysisDetailModal.tsx`** -- Adicionar onClick nos botoes de video/imagem; exibir timestamps; player embutido
-- **`src/pages/DnbAnalysis.tsx`** -- Substituir `window.open` por estado de modal de video
-- **`src/components/dnb/VideoPlayerModal.tsx`** (novo) -- Modal com iframe do Bunny player
+- **`src/lib/utils.ts`** -- Adicionar funcao `parseLocalDate`
+- **`src/lib/recommendation-styles.ts`** -- Reduzir opacidade dos gradientes
+- **`src/components/dnb/AnalysisHero.tsx`** -- Usar `parseLocalDate`; adicionar botao "Ver analise completa"; melhorar contraste dos textos
+- **`src/components/dnb/AnalysisFeedCard.tsx`** -- Usar `parseLocalDate`
+- **`src/components/dnb/AnalysisDetailModal.tsx`** -- Usar `parseLocalDate`
+- **`src/pages/DnbAnalysis.tsx`** -- Usar `parseLocalDate` nos filtros; passar `onViewDetail` ao Hero; ajustar logica do historico
+- **`src/pages/admin/Analyses.tsx`** -- Usar `parseLocalDate` na tabela e nos stats
 
 ### Detalhes Tecnicos
 
-**Correcao do reset do formulario:**
+**parseLocalDate (evita timezone shift):**
 ```typescript
-// ANTES (incorreto - useState nao re-executa)
-useState(() => { if (open && editingAnalysis) { ... } });
-
-// DEPOIS (correto - useEffect observa mudancas)
-useEffect(() => {
-  if (open && editingAnalysis) {
-    setForm({ ...editingAnalysis fields... });
-    setSupports(editingAnalysis.supports.map(String));
-    setResistances(editingAnalysis.resistances.map(String));
-  } else if (open && !editingAnalysis) {
-    // Reset para valores padrao (nova analise)
-    setForm({ date: today, recommendation: '', ... });
-    setSupports(['']);
-    setResistances(['']);
-  }
-}, [open, editingAnalysis]);
+export function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
 ```
 
-**VideoPlayerModal (Bunny embed):**
-```typescript
-// Detectar se e GUID do Bunny ou URL externa
-const isBunnyGuid = /^[a-f0-9-]{36}$/.test(videoUrl);
-const embedUrl = isBunnyGuid
-  ? `https://iframe.mediadelivery.net/embed/${libraryId}/${videoUrl}`
-  : videoUrl; // URL externa como YouTube embed
+**Hero com botao de detalhe:**
+```tsx
+interface AnalysisHeroProps {
+  analysis: MarketAnalysis;
+  recommendation: MarketRecommendation;
+  onViewVideo?: () => void;
+  onViewImage?: () => void;
+  onViewDetail?: () => void;  // NOVO
+}
 
-// Renderizar iframe responsivo dentro de um Dialog
-<iframe
-  src={embedUrl}
-  className="w-full aspect-video rounded-lg"
-  allow="autoplay; fullscreen"
-  allowFullScreen
-/>
+// No final do Hero, apos os botoes de midia:
+<Button variant="link" size="sm" onClick={onViewDetail} className="gap-1 text-xs">
+  Ver analise completa
+</Button>
 ```
 
-**Timestamp e indicador de edicao:**
+**Historico inclusivo:**
 ```typescript
-// No Hero e FeedCard
-const wasEdited = analysis.updatedAt && analysis.createdAt
-  && new Date(analysis.updatedAt).getTime() - new Date(analysis.createdAt).getTime() > 60000;
-
-// Exibir
-<span className="text-xs text-muted-foreground">
-  Publicado em {format(new Date(analysis.createdAt), "dd/MM 'as' HH:mm")}
-</span>
-{wasEdited && (
-  <span className="text-[10px] text-muted-foreground/60 italic">
-    Editado {analysis.editedByName ? `por ${analysis.editedByName}` : ''} em {format(...)}
-  </span>
-)}
+// Em DnbAnalysis.tsx, nao excluir a ultima do historico
+// Apenas deixar o Hero como destaque e o historico como lista completa
+const historyAnalyses = analyses.length > 1
+  ? analyses.filter((a) => a.id !== latestAnalysis?.id)
+  : []; // Se so tem 1, nao duplicar -- hero ja mostra
 ```
 
-**Update mutation com nome do editor:**
+**Gradientes suaves:**
 ```typescript
-// useAdminDnb - updateAnalysis
-const { data: profile } = await supabase
-  .from('profiles')
-  .select('name')
-  .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-  .single();
-
-await supabase.from('market_analyses').update({
-  ...fields,
-  edited_by_name: profile?.name || 'Admin',
-}).eq('id', analysis.id);
+export const recommendationGradientStyles: Record<string, string> = {
+  ideal: 'from-success/8 to-success/3 border-success/20',
+  alert: 'from-warning/8 to-warning/3 border-warning/20',
+  'not-ideal': 'from-destructive/8 to-destructive/3 border-destructive/20',
+  wait: 'from-info/8 to-info/3 border-info/20',
+};
 ```
+
