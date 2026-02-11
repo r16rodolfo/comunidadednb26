@@ -1,137 +1,55 @@
 
+## Corrigir o fluxo de pagamento PIX que nao abre a pagina de pagamento
 
-## Pagamento via PIX com AbacatePay
+### Problema identificado
 
-### Contexto
+A edge function `create-pix-checkout` retorna status 200 mas com `{ url: undefined }`. Nos logs aparece `AbacatePay billing created - {}`, indicando que os campos `data.id` e `data.url` nao existem na resposta real da API. O frontend recebe `{ url: undefined }` e como o hook so abre nova aba quando `data?.url` e verdadeiro, nada acontece.
 
-Atualmente, todo o fluxo de pagamento usa Stripe Checkout (cartao). A proposta e adicionar PIX como opcao de pagamento via AbacatePay, apresentando ao usuario um modal para escolher entre Cartao (Stripe) ou PIX (AbacatePay) antes de ser redirecionado.
+### Causa raiz
 
-### API do AbacatePay - Resumo
+A resposta do AbacatePay provavelmente tem uma estrutura diferente da esperada (`data.url`). Como nao conseguimos acessar a documentacao oficial do endpoint de billing, precisamos logar a resposta completa da API para descobrir a estrutura correta.
 
-- **Endpoint**: `POST https://api.abacatepay.com/v1/billing/create`
-- **Autenticacao**: `Bearer <ABACATEPAY_API_KEY>`
-- **Metodo de pagamento**: `methods: ["PIX"]`
-- **Preco**: em centavos (ex: 2990 = R$29,90)
-- **Resposta**: retorna `{ data: { url: "https://pay.abacatepay.com/..." } }` - URL de pagamento hospedada pelo AbacatePay
-- **Campos obrigatorios**: frequency, methods, products, returnUrl, completionUrl
-- **Dados do cliente**: pode enviar inline (name, email, cellphone, taxId) ou customerId existente
+### Plano de correcao (2 passos)
 
-### Fluxo proposto
+**Passo 1: Logar a resposta completa da API**
 
-```text
-Usuario clica "Assinar"
-        |
-        v
-  +---------------------+
-  | Modal: Como pagar?  |
-  |                     |
-  | [Cartao de Credito] |  --> Stripe Checkout (fluxo atual)
-  | [PIX]               |  --> AbacatePay billing URL
-  +---------------------+
-        |
-        v
-  Redirecionado para pagina de pagamento externa
-        |
-        v
-  Retorna para /subscription?success=true (ou cancelled)
+No arquivo `supabase/functions/create-pix-checkout/index.ts`, linha 99, alterar o log para incluir toda a resposta:
+
+```typescript
+// Antes (so loga id e url, que sao undefined):
+logStep("AbacatePay billing created", { id: abacateData.data?.id, url: abacateData.data?.url });
+
+// Depois (loga resposta completa):
+logStep("AbacatePay billing created", abacateData);
 ```
 
-### Alteracoes necessarias
+**Passo 2: Extrair a URL correta da resposta**
 
-**1. Secret: ABACATEPAY_API_KEY**
-- Solicitar ao usuario a chave de API do AbacatePay via ferramenta de secrets
-- A chave sera acessivel nas Edge Functions via `Deno.env.get("ABACATEPAY_API_KEY")`
+Alterar a linha 102 para tentar caminhos alternativos para a URL:
 
-**2. Nova Edge Function: `create-pix-checkout`**
-- Arquivo: `supabase/functions/create-pix-checkout/index.ts`
-- Autentica o usuario via token JWT
-- Busca o plano solicitado em `plan-config.ts` (reutiliza o mapeamento de precos)
-- Chama `POST https://api.abacatepay.com/v1/billing/create` com:
-  - `frequency: "ONE_TIME"` (pagamento unico por periodo)
-  - `methods: ["PIX"]`
-  - `products`: nome e preco do plano selecionado
-  - `returnUrl`: URL de cancelamento
-  - `completionUrl`: URL de sucesso (`/subscription?success=true&method=pix`)
-  - `customer`: dados do usuario (name, email)
-  - `metadata`: user_id e plan_id para reconciliacao
-- Retorna a URL de pagamento do AbacatePay
+```typescript
+const paymentUrl = abacateData?.data?.url || abacateData?.url || abacateData?.data?.payment_url;
 
-**3. Nova Edge Function: `abacatepay-webhook`** (fase futura)
-- Para confirmar pagamentos automaticamente, sera necessario um webhook do AbacatePay
-- Por ora, o fluxo pode usar polling ou confirmacao manual pelo admin
-- Documentacao de webhooks do AbacatePay precisa ser verificada para implementacao completa
+if (!paymentUrl) {
+  logStep("ERROR: No payment URL found in response", abacateData);
+  throw new Error("AbacatePay did not return a payment URL");
+}
 
-**4. Atualizar `_shared/plan-config.ts`**
-- Adicionar mapeamento de precos em centavos (BRL) para cada plano, para uso com AbacatePay
-- Exemplo: `planPricesBRL: { 'premium-monthly': 2990, 'premium-quarterly': 7490, ... }`
+return new Response(
+  JSON.stringify({ url: paymentUrl }),
+  { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+);
+```
 
-**5. Novo componente: `PaymentMethodModal`**
-- Arquivo: `src/components/subscription/PaymentMethodModal.tsx`
-- Modal usando Dialog do Shadcn/UI
-- Duas opcoes de pagamento apresentadas como cards clicaveis:
-  - **Cartao de Credito**: icone de cartao, descricao "Visa, Mastercard, etc.", chama `createCheckout()` (Stripe)
-  - **PIX**: icone PIX, descricao "Pagamento instantaneo", chama nova funcao `createPixCheckout()`
-- Props: `open`, `onOpenChange`, `planSlug`, `onSelectStripe`, `onSelectPix`
-- Loading state individual para cada botao
+Isso garante que:
+1. Se a URL nao for encontrada, retornamos erro 500 (em vez de 200 com url vazia)
+2. O log completo nos permite ver a estrutura real e ajustar o caminho correto
+3. O frontend mostrara a mensagem de erro do toast em vez de falhar silenciosamente
 
-**6. Atualizar `src/hooks/useSubscription.ts`**
-- Adicionar funcao `createPixCheckout(planSlug: string)` similar a `createCheckout`
-- Chama a edge function `create-pix-checkout`
-- Abre a URL retornada em nova aba
-- Adicionar state `isPixCheckoutLoading`
+### Arquivo alterado
 
-**7. Atualizar `src/pages/Subscription.tsx`**
-- Em vez de chamar `createCheckout(plan.slug)` diretamente no botao, abrir o `PaymentMethodModal`
-- Guardar o `selectedPlanSlug` no state ao clicar
-- Passar callbacks para o modal que delegam para Stripe ou PIX
-- Tratar parametro `method=pix` na URL de retorno para feedback especifico
+- `supabase/functions/create-pix-checkout/index.ts` (linhas 99-103)
 
 ### Secao tecnica
 
-**Estrutura da requisicao para AbacatePay:**
-```json
-{
-  "frequency": "ONE_TIME",
-  "methods": ["PIX"],
-  "products": [{
-    "externalId": "premium-monthly",
-    "name": "Premium Mensal",
-    "description": "Assinatura Premium Mensal",
-    "quantity": 1,
-    "price": 2990
-  }],
-  "returnUrl": "https://app.example.com/subscription?cancelled=true",
-  "completionUrl": "https://app.example.com/subscription?success=true&method=pix",
-  "customer": {
-    "name": "Nome do Usuario",
-    "email": "user@example.com"
-  },
-  "metadata": {
-    "user_id": "uuid-do-usuario",
-    "plan_id": "premium-monthly"
-  }
-}
-```
-
-**Resposta esperada:**
-```json
-{
-  "data": {
-    "id": "bill_123456",
-    "url": "https://pay.abacatepay.com/bill-5678",
-    "status": "PENDING"
-  }
-}
-```
-
-### Limitacao importante
-
-O AbacatePay nao tem assinaturas recorrentes nativas como o Stripe. O PIX funcionara como pagamento unico por periodo. A confirmacao do pagamento e ativacao da assinatura no banco precisara de um webhook do AbacatePay ou verificacao manual. Na primeira versao, o admin podera confirmar manualmente, e o webhook sera implementado em uma fase posterior apos verificar a documentacao completa de webhooks.
-
-### Configuracao no `supabase/config.toml`
-
-```toml
-[functions.create-pix-checkout]
-verify_jwt = false
-```
-
+A correcao e simples: logar tudo e tentar multiplos caminhos. Apos deploy, basta testar o PIX novamente e verificar nos logs a estrutura real da resposta para confirmar qual campo contem a URL de pagamento.
