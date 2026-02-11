@@ -1,130 +1,93 @@
 
-## Gestao Completa de Usuarios (/admin/users)
+## Correcao do Fluxo Academy: Publicacao Imediata e Acesso Premium
 
 ### Problemas Identificados
 
-1. **Sem e-mail na listagem** -- A tabela `profiles` nao tem e-mail. O e-mail so existe em `auth.users` (inacessivel pelo client) e parcialmente em `subscribers_safe` (so para assinantes).
-2. **Sem dados de assinatura** -- A tabela nao mostra se o usuario e assinante, qual plano, ou status.
-3. **Cargo efetivo incorreto** -- Usuarios com role "free" mas assinatura ativa aparecem como "Gratuito" em vez de "Premium".
-4. **Visualizacao limitada** -- O modal de detalhes so mostra nome, cargo e data de cadastro. Faltam: e-mail, telefone, CPF, avatar, dados de assinatura.
-5. **Sem edicao** -- Nao e possivel editar o cargo de um usuario.
-6. **Sem exclusao** -- Nao e possivel excluir usuarios.
-7. **Filtros nao funcionam** -- O botao "Filtros" nao faz nada.
+**1. Aulas nao aparecem para usuarios apos publicacao**
+Quando o admin publica um curso em `/admin/content`, as mutations invalidam apenas a query key `admin-academy-courses`. As queries do usuario (`academy-published-courses` e `academy-course`) tem `staleTime` de 5 minutos, entao o usuario so ve as mudancas apos esse tempo ou ao recarregar a pagina. Alem disso, nao ha invalidacao cruzada entre admin e usuario.
+
+**2. Usuarios premium nao conseguem assistir aulas premium**
+A pagina `Academy.tsx` nunca passa `isPremiumUser` para os componentes `VideoPlayer` e `CourseNavigation`. O valor padrao e `false`, entao todas as aulas nao-gratuitas mostram o cadeado "Aula Premium" mesmo para assinantes.
+
+**3. Bunny Library ID depende de localStorage**
+Se o admin nao configurou o Library ID na aba Plataforma, ou se o usuario esta em outro navegador/dispositivo, `localStorage` nao tera o valor e os videos nao serao reproduzidos. Esse dado deveria vir do banco de dados ou de uma configuracao global.
 
 ### Solucao
 
-**1. Armazenar e-mail no perfil durante criacao**
+**1. Invalidar cache do usuario apos mudancas no admin**
 
-O trigger `handle_new_user` ja cria o perfil, mas nao salva o e-mail. Vamos:
-- Adicionar coluna `email` na tabela `profiles`
-- Atualizar o trigger para salvar `NEW.email` no perfil
-- Atualizar a edge function `admin-create-user` para tambem salvar o e-mail no perfil
-- Preencher e-mails dos usuarios existentes com dados de `auth.users` via migracao
+No hook `useAdminAcademy`, apos cada mutation bem-sucedida (create, update, delete, togglePublish), invalidar tambem as queries do lado do usuario:
+- `academy-published-courses`
+- `academy-course`
 
-**2. Criar Edge Function `admin-manage-user`**
+Isso garante que, se o admin estiver logado e navegar para a pagina Academy, vera os dados atualizados imediatamente. Para outros usuarios logados simultaneamente, reduzir o `staleTime` das queries do usuario de 5 minutos para 30 segundos.
 
-Uma edge function para operacoes administrativas:
-- **Editar cargo**: Atualiza `user_roles.role`
-- **Excluir usuario**: Remove via `auth.admin.deleteUser()` (cascata para profiles e user_roles)
-- Validacao de admin no servidor
+**2. Passar `isPremiumUser` baseado na assinatura**
 
-**3. Enriquecer a listagem com dados de assinatura**
+Em `Academy.tsx`:
+- Importar `useSubscription` para verificar se o usuario e assinante
+- Derivar `isPremiumUser` a partir de `subscription.subscribed` ou do role do usuario (admin/gestor tambem tem acesso)
+- Passar essa prop para `VideoPlayer` e `CourseNavigation`
 
-A query vai juntar `profiles` + `user_roles` + `subscribers_safe` para mostrar:
-- Nome, e-mail, cargo efetivo, plano atual, status da assinatura, data de cadastro
+**3. Buscar Bunny Library ID do banco de dados**
 
-**4. Cargo efetivo**
+Em vez de depender exclusivamente de `localStorage`, buscar o `bunny_library_id` de uma fonte persistente. A abordagem mais simples: o admin ja salva configuracoes em `localStorage` na aba Plataforma, mas vamos tambem salvar na tabela `home_config` e ler de la no `VideoPlayer` como fallback. Alternativamente, podemos criar uma query dedicada que le do `localStorage` com fallback para o banco.
 
-Priorizar o status de assinatura ativa sobre o cargo estatico:
-- Se `subscribers_safe.subscribed = true` -> cargo efetivo = "premium"
-- Senao -> usar `user_roles.role`
-
-**5. Modal de detalhes completo**
-
-Exibir todos os dados disponiveis:
-- Nome, e-mail, telefone, CPF (mascarado), avatar
-- Cargo, plano atual, status da assinatura, data de validade
-- Data de cadastro
-
-**6. Edicao de cargo inline**
-
-No dropdown de acoes, adicionar opcao "Editar Cargo" que abre um modal com Select para escolher o novo cargo.
-
-**7. Exclusao com confirmacao**
-
-No dropdown, adicionar "Excluir" que abre AlertDialog de confirmacao antes de chamar a edge function.
-
-**8. Filtros funcionais**
-
-Substituir o botao decorativo por selects funcionais:
-- Filtro por cargo (Todos, Free, Premium, Gestor, Admin)
-- Filtro por status de assinatura (Todos, Ativo, Inativo)
+Para manter a simplicidade e compatibilidade com o fluxo atual (que ja usa `localStorage`), vamos:
+- Garantir que a aba Plataforma salve o `bunny_library_id` no banco (`home_config`)
+- O `VideoPlayer` le primeiro do `localStorage`, e se nao encontrar, busca do `home_config`
 
 ### Arquivos Modificados
 
-- **Migracao SQL**: Adicionar coluna `email` em `profiles`, atualizar trigger `handle_new_user`
-- **`supabase/functions/admin-manage-user/index.ts`** (novo): Edge function para editar cargo e excluir usuario
-- **`supabase/functions/admin-create-user/index.ts`**: Salvar e-mail no perfil apos criacao
-- **`src/pages/admin/Users.tsx`**: Refatorar completamente com dados enriquecidos, filtros funcionais, modal de detalhes completo, edicao de cargo e exclusao
+- **`src/hooks/useAdminAcademy.ts`** -- Invalidar queries do usuario apos mutations admin
+- **`src/hooks/useAcademy.ts`** -- Reduzir `staleTime` para 30 segundos
+- **`src/pages/Academy.tsx`** -- Passar `isPremiumUser` para VideoPlayer e CourseNavigation
+- **`src/components/academy/VideoPlayer.tsx`** -- Buscar Bunny Library ID do banco como fallback
+- **`src/components/admin/tabs/PlatformTab.tsx`** -- Persistir `bunny_library_id` no banco ao salvar
 
 ### Secao Tecnica
 
-**Migracao SQL:**
-```sql
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email text;
-
--- Preencher emails existentes
-UPDATE public.profiles p
-SET email = u.email
-FROM auth.users u
-WHERE p.user_id = u.id AND p.email IS NULL;
-
--- Atualizar trigger
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
-SET search_path TO 'public' AS $$
-BEGIN
-  INSERT INTO public.profiles (user_id, name, email, cellphone, cpf)
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'name', ''),
-    NEW.email,
-    NEW.raw_user_meta_data->>'cellphone',
-    NEW.raw_user_meta_data->>'cpf'
-  );
-  INSERT INTO public.user_roles (user_id, role)
-  VALUES (NEW.id, 'free');
-  RETURN NEW;
-END;
-$$;
-```
-
-**Edge Function `admin-manage-user`:**
+**Invalidacao cruzada (useAdminAcademy):**
 ```typescript
-// Endpoints:
-// POST { action: 'update_role', user_id, role }
-// POST { action: 'delete_user', user_id }
+onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ['admin-academy-courses'] });
+  // Invalidar cache do usuario tambem
+  queryClient.invalidateQueries({ queryKey: ['academy-published-courses'] });
+  queryClient.invalidateQueries({ queryKey: ['academy-course'] });
+},
 ```
 
-**Query enriquecida no frontend:**
+**isPremiumUser (Academy.tsx):**
 ```typescript
-const { data: profiles } = await supabase
-  .from('profiles')
-  .select('user_id, name, email, cellphone, cpf, avatar_url, created_at');
+import { useSubscription } from '@/hooks/useSubscription';
+import { useAuth } from '@/contexts/AuthContext';
 
-const { data: roles } = await supabase
-  .from('user_roles')
-  .select('user_id, role');
+const { subscription } = useSubscription();
+const { roles } = useAuth();
+const isPremiumUser = subscription?.subscribed || roles.includes('admin') || roles.includes('gestor');
 
-const { data: subs } = await supabase
-  .from('subscribers_safe')
-  .select('user_id, subscribed, current_plan_slug, subscription_end, cancel_at_period_end');
+// Passar para ambos os componentes:
+<VideoPlayer isPremiumUser={isPremiumUser} ... />
+<CourseNavigation isPremiumUser={isPremiumUser} ... />
 ```
 
-**Cargo efetivo:**
+**Bunny Library ID fallback (VideoPlayer):**
 ```typescript
-function getEffectiveRole(role: string, sub?: SubscriberInfo): string {
-  if (sub?.subscribed) return 'premium';
-  return role;
-}
+// Usar hook ou query para buscar do home_config como fallback
+const getBunnyLibraryId = () => {
+  const local = localStorage.getItem('bunny_library_id');
+  if (local) return local;
+  // fallback sera injetado via prop ou context
+  return '';
+};
 ```
+
+**Persistir no banco (PlatformTab onSave):**
+```typescript
+// Ao salvar configuracoes, persistir bunny_library_id no home_config
+await supabase.from('home_config').update({
+  bunny_library_id: platformConfig.integrations.bunnyLibraryId
+}).eq('id', configId);
+```
+
+Nota: Para persistir `bunny_library_id` no banco, sera necessario adicionar a coluna na tabela `home_config` via migracao SQL.
