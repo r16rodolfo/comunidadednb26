@@ -18,6 +18,9 @@ function mapRow(row: any): MarketAnalysis {
     imageUrl: row.image_url || undefined,
     supports: (row.supports || []).map(Number),
     resistances: (row.resistances || []).map(Number),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    editedByName: row.edited_by_name || undefined,
   };
 }
 
@@ -67,6 +70,18 @@ export function useAdminDnb() {
 
   const updateAnalysis = useMutation({
     mutationFn: async (analysis: MarketAnalysis) => {
+      // Fetch current user's name for edit tracking
+      const { data: userData } = await supabase.auth.getUser();
+      let editorName = 'Admin';
+      if (userData?.user?.id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('user_id', userData.user.id)
+          .single();
+        if (profile?.name) editorName = profile.name;
+      }
+
       const { error } = await supabase
         .from('market_analyses')
         .update({
@@ -82,7 +97,8 @@ export function useAdminDnb() {
           image_url: analysis.imageUrl || null,
           supports: analysis.supports,
           resistances: analysis.resistances,
-        })
+          edited_by_name: editorName,
+        } as any)
         .eq('id', analysis.id);
       if (error) throw error;
     },

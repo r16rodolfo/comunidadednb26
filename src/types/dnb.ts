@@ -13,6 +13,9 @@ export interface MarketAnalysis {
   chartData?: ChartDataPoint[];
   supports: number[];
   resistances: number[];
+  createdAt?: string;
+  updatedAt?: string;
+  editedByName?: string;
 }
 
 export interface ChartDataPoint {
