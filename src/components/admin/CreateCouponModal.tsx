@@ -27,7 +27,8 @@ const createCouponSchema = z.object({
   code: z.string().min(1, "Código do cupom é obrigatório"),
   destinationUrl: z.string().url("URL inválida"),
   expirationDate: z.string().optional(),
-  isActive: z.boolean()
+  isActive: z.boolean(),
+  isPremiumOnly: z.boolean().optional(),
 });
 
 interface CreateCouponModalProps {
@@ -58,7 +59,8 @@ export const CreateCouponModal = ({
     code: "",
     destinationUrl: "",
     expirationDate: undefined,
-    isActive: true
+    isActive: true,
+    isPremiumOnly: false,
   };
 
   const {
@@ -86,6 +88,7 @@ export const CreateCouponModal = ({
         destinationUrl: editingCoupon.destinationUrl,
         expirationDate: editingCoupon.expirationDate,
         isActive: editingCoupon.isActive,
+        isPremiumOnly: editingCoupon.isPremiumOnly ?? false,
       });
       setLogoPreview(editingCoupon.partnerLogo);
     } else {
@@ -311,13 +314,23 @@ export const CreateCouponModal = ({
           </div>
 
           {/* Active Status */}
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="isActive"
-              checked={watchedFields.isActive}
-              onCheckedChange={(checked) => setValue("isActive", checked)}
-            />
-            <Label htmlFor="isActive">Cupom ativo</Label>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="isActive"
+                checked={watchedFields.isActive}
+                onCheckedChange={(checked) => setValue("isActive", checked)}
+              />
+              <Label htmlFor="isActive">Cupom ativo</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="isPremiumOnly"
+                checked={watchedFields.isPremiumOnly ?? false}
+                onCheckedChange={(checked) => setValue("isPremiumOnly", checked)}
+              />
+              <Label htmlFor="isPremiumOnly">Exclusivo Premium</Label>
+            </div>
           </div>
 
           {/* Form Actions */}

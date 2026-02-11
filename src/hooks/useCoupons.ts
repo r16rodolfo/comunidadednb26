@@ -15,6 +15,7 @@ const mapCouponRow = (row: any): Coupon => ({
   destinationUrl: row.destination_url,
   expirationDate: row.expiration_date ?? undefined,
   isActive: row.is_active,
+  isPremiumOnly: row.is_premium_only ?? false,
   clickCount: row.click_count,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
@@ -191,6 +192,7 @@ export const useCoupons = () => {
         destination_url: data.destinationUrl,
         expiration_date: data.expirationDate || null,
         is_active: data.isActive,
+        is_premium_only: data.isPremiumOnly ?? false,
       })
       .select('*, coupon_categories(name)')
       .single();
@@ -210,6 +212,7 @@ export const useCoupons = () => {
     if (data.destinationUrl !== undefined) updatePayload.destination_url = data.destinationUrl;
     if (data.expirationDate !== undefined) updatePayload.expiration_date = data.expirationDate || null;
     if (data.isActive !== undefined) updatePayload.is_active = data.isActive;
+    if (data.isPremiumOnly !== undefined) updatePayload.is_premium_only = data.isPremiumOnly;
 
     const { data: row, error } = await supabase
       .from('coupons')

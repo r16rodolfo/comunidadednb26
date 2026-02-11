@@ -3,13 +3,14 @@ export interface Coupon {
   partnerName: string;
   partnerLogo: string;
   categoryId?: string;
-  category?: string; // resolved category name from join
+  category?: string;
   offerTitle: string;
   description: string;
   code: string;
   destinationUrl: string;
   expirationDate?: string;
   isActive: boolean;
+  isPremiumOnly: boolean;
   clickCount: number;
   createdAt: string;
   updatedAt: string;
@@ -38,6 +39,7 @@ export interface CreateCouponData {
   destinationUrl: string;
   expirationDate?: string;
   isActive: boolean;
+  isPremiumOnly?: boolean;
 }
 
 export interface UpdateCouponData extends Partial<CreateCouponData> {
