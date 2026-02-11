@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import type { PixQrData } from '@/components/subscription/PaymentMethodModal';
 
 export interface SubscriptionState {
   subscribed: boolean;
@@ -34,6 +35,8 @@ export function useSubscription() {
   const [isPixCheckoutLoading, setIsPixCheckoutLoading] = useState(false);
   const [isPortalLoading, setIsPortalLoading] = useState(false);
   const [isCancelDowngradeLoading, setIsCancelDowngradeLoading] = useState(false);
+  const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
+  const [pixQrData, setPixQrData] = useState<PixQrData | null>(null);
 
   const checkSubscription = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -58,6 +61,58 @@ export function useSubscription() {
     }
   }, [isAuthenticated]);
 
+  const createEmbeddedCheckout = useCallback(async (planSlug: string) => {
+    if (!isAuthenticated) {
+      toast({ title: 'Faça login para assinar', variant: 'destructive' });
+      return;
+    }
+    setIsCheckoutLoading(true);
+    setStripeClientSecret(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-embedded-checkout', {
+        body: { planId: planSlug, returnUrl: window.location.origin },
+      });
+      if (error) throw error;
+      if (data?.clientSecret) {
+        setStripeClientSecret(data.clientSecret);
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erro desconhecido';
+      toast({ title: 'Erro ao criar checkout', description: message, variant: 'destructive' });
+    } finally {
+      setIsCheckoutLoading(false);
+    }
+  }, [isAuthenticated, toast]);
+
+  const createPixQrCode = useCallback(async (planSlug: string) => {
+    if (!isAuthenticated) {
+      toast({ title: 'Faça login para assinar', variant: 'destructive' });
+      return;
+    }
+    setIsPixCheckoutLoading(true);
+    setPixQrData(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-pix-qrcode', {
+        body: { planId: planSlug },
+      });
+      if (error) throw error;
+      if (data) {
+        setPixQrData({
+          id: data.id,
+          brCode: data.brCode,
+          qrCodeBase64: data.qrCodeBase64,
+          expiresAt: data.expiresAt,
+        });
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erro desconhecido';
+      toast({ title: 'Erro ao gerar QR Code PIX', description: message, variant: 'destructive' });
+    } finally {
+      setIsPixCheckoutLoading(false);
+    }
+  }, [isAuthenticated, toast]);
+
+  // Legacy functions kept for compatibility
   const createCheckout = useCallback(async (planSlug: string) => {
     if (!isAuthenticated) {
       toast({ title: 'Faça login para assinar', variant: 'destructive' });
@@ -130,7 +185,6 @@ export function useSubscription() {
       });
       if (error) throw error;
       toast({ title: 'Downgrade cancelado!', description: 'Seu plano atual foi mantido.' });
-      // Refresh subscription state
       await checkSubscription();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erro desconhecido';
@@ -139,6 +193,11 @@ export function useSubscription() {
       setIsCancelDowngradeLoading(false);
     }
   }, [subscription.stripe_subscription_id, toast, checkSubscription]);
+
+  const resetEmbeddedState = useCallback(() => {
+    setStripeClientSecret(null);
+    setPixQrData(null);
+  }, []);
 
   // Check subscription on mount and auth change
   useEffect(() => {
@@ -163,10 +222,15 @@ export function useSubscription() {
     isPixCheckoutLoading,
     isPortalLoading,
     isCancelDowngradeLoading,
+    stripeClientSecret,
+    pixQrData,
     checkSubscription,
     createCheckout,
     createPixCheckout,
+    createEmbeddedCheckout,
+    createPixQrCode,
     openCustomerPortal,
     cancelDowngrade,
+    resetEmbeddedState,
   };
 }

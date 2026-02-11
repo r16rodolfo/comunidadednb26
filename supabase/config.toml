@@ -1,5 +1,11 @@
 project_id = "ojlfokseswccrzvgkwio"
 
+[functions.create-embedded-checkout]
+verify_jwt = false
+
+[functions.create-pix-qrcode]
+verify_jwt = false
+
 [functions.check-subscription]
 verify_jwt = false
 
