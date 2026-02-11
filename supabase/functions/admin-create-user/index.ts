@@ -54,6 +54,14 @@ serve(async (req) => {
 
     if (createError) throw new Error(createError.message);
 
+    // Save email to profile (trigger may not have it yet)
+    if (newUser.user) {
+      await supabaseAdmin
+        .from("profiles")
+        .update({ email })
+        .eq("user_id", newUser.user.id);
+    }
+
     // Update role if not free (trigger already creates 'free' role)
     if (userRole !== "free" && newUser.user) {
       await supabaseAdmin
