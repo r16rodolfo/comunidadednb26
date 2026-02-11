@@ -34,7 +34,7 @@ serve(async (req) => {
     const user = userData.user;
     logStep("User authenticated", { userId: user.id });
 
-    const { newPlanSlug } = await req.json();
+    const { newPlanSlug, paymentMethod } = await req.json();
     if (!newPlanSlug || !planPriceIds[newPlanSlug]) {
       throw new Error(`Invalid plan slug: ${newPlanSlug}`);
     }
@@ -59,104 +59,71 @@ serve(async (req) => {
     const isUpgrade = newSortOrder > currentSortOrder;
 
     const hasStripe = !!subscriber.stripe_subscription_id && !!subscriber.stripe_customer_id;
+    const origin = req.headers.get("origin") || "https://id-preview--432713c3-4ac1-4d4c-87ae-ed825b7156c6.lovable.app";
 
-    if (hasStripe) {
-      // ---- STRIPE PATH ----
-      const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-      if (!stripeKey) throw new Error("Missing STRIPE_SECRET_KEY");
+    // Determine effective payment method
+    // User can choose 'stripe' or 'pix' regardless of current payment method
+    const effectivePaymentMethod = paymentMethod || (hasStripe ? 'stripe' : 'pix');
 
-      const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-      const subscription = await stripe.subscriptions.retrieve(subscriber.stripe_subscription_id!);
-      const subscriptionItemId = subscription.items.data[0]?.id;
-      if (!subscriptionItemId) throw new Error("No subscription item found");
+    logStep("Plan change request", { currentPlanSlug, newPlanSlug, isUpgrade, effectivePaymentMethod });
 
-      logStep("Stripe plan change", { currentPlanSlug, newPlanSlug, isUpgrade });
+    if (isUpgrade) {
+      // ============ UPGRADE ============
+      if (effectivePaymentMethod === 'stripe') {
+        // --- STRIPE UPGRADE: Create Checkout Session ---
+        const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+        if (!stripeKey) throw new Error("Missing STRIPE_SECRET_KEY");
+        const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-      if (isUpgrade) {
-        const updated = await stripe.subscriptions.update(subscriber.stripe_subscription_id!, {
-          items: [{ id: subscriptionItemId, price: newPriceId }],
-          proration_behavior: "always_invoice",
-        });
+        // If user already has a Stripe subscription, cancel it first so a new one is created
+        // The checkout session will create a brand new subscription
+        const sessionParams: any = {
+          customer: subscriber.stripe_customer_id || undefined,
+          customer_email: !subscriber.stripe_customer_id ? subscriber.email : undefined,
+          line_items: [{ price: newPriceId, quantity: 1 }],
+          mode: 'subscription',
+          ui_mode: 'embedded',
+          return_url: `${origin}/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
+          allow_promotion_codes: true,
+          subscription_data: {
+            metadata: { user_id: user.id, plan_slug: newPlanSlug, type: 'upgrade', previous_plan: currentPlanSlug },
+          },
+        };
 
-        const subscriptionEnd = updated.current_period_end
-          ? new Date(updated.current_period_end * 1000).toISOString()
-          : new Date().toISOString();
+        // If upgrading an existing Stripe subscription, we should update it via checkout
+        // by passing subscription_update for proration
+        if (hasStripe) {
+          // Cancel old subscription at period end won't work - we need immediate upgrade
+          // Use a fresh checkout that replaces the subscription
+          // After payment, webhook will update DB; we also cancel old sub
+          sessionParams.metadata = { 
+            user_id: user.id, 
+            plan_slug: newPlanSlug, 
+            type: 'upgrade',
+            old_subscription_id: subscriber.stripe_subscription_id,
+          };
+        }
 
-        await supabase.from("subscribers").update({
-          subscription_tier: newPlanInfo.tier,
-          current_plan_slug: newPlanSlug,
-          previous_plan_slug: currentPlanSlug,
-          subscription_end: subscriptionEnd,
-          pending_downgrade_to: null,
-          pending_downgrade_date: null,
-          updated_at: new Date().toISOString(),
-        }).eq("user_id", user.id);
+        const session = await stripe.checkout.sessions.create(sessionParams);
 
-        logStep("Stripe upgrade completed", { newPlan: newPlanSlug });
+        logStep("Stripe checkout session created for upgrade", { sessionId: session.id });
 
         return new Response(JSON.stringify({
           success: true,
           type: "upgrade",
+          paymentMethod: "stripe",
+          clientSecret: session.client_secret,
           newPlan: newPlanInfo.tier,
           newPlanSlug,
-          effectiveDate: new Date().toISOString(),
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
         });
+
       } else {
-        const currentPriceId = subscription.items.data[0]?.price?.id;
-
-        const schedule = await stripe.subscriptionSchedules.create({
-          from_subscription: subscriber.stripe_subscription_id!,
-        });
-
-        await stripe.subscriptionSchedules.update(schedule.id, {
-          phases: [
-            {
-              items: [{ price: currentPriceId!, quantity: 1 }],
-              start_date: schedule.phases[0].start_date,
-              end_date: schedule.phases[0].end_date,
-            },
-            {
-              items: [{ price: newPriceId, quantity: 1 }],
-              iterations: 1,
-            },
-          ],
-        });
-
-        const effectiveDate = schedule.phases[0]?.end_date
-          ? new Date(schedule.phases[0].end_date * 1000).toISOString()
-          : new Date().toISOString();
-
-        await supabase.from("subscribers").update({
-          pending_downgrade_to: newPlanSlug,
-          pending_downgrade_date: effectiveDate,
-          previous_plan_slug: currentPlanSlug,
-          updated_at: new Date().toISOString(),
-        }).eq("user_id", user.id);
-
-        logStep("Stripe downgrade scheduled", { newPlan: newPlanSlug, effectiveDate });
-
-        return new Response(JSON.stringify({
-          success: true,
-          type: "downgrade",
-          newPlan: newPlanInfo.tier,
-          newPlanSlug,
-          effectiveDate,
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
-        });
-      }
-    } else {
-      // ---- PIX PATH ----
-      logStep("PIX user plan change", { currentPlanSlug, newPlanSlug, isUpgrade });
-
-      if (isUpgrade) {
-        // PIX Upgrade: generate a PIX QR code for the prorated amount
+        // --- PIX UPGRADE: Generate QR Code ---
         const apiKey = Deno.env.get("ABACATEPAY_API_KEY");
         if (!apiKey) throw new Error("ABACATEPAY_API_KEY is not set");
 
-        // Fetch plans to calculate proration
         const { data: plans } = await supabase
           .from("plans")
           .select("slug, price_cents, name, interval")
@@ -166,7 +133,6 @@ serve(async (req) => {
         const newPlan = plans?.find((p: any) => p.slug === newPlanSlug);
         if (!currentPlan || !newPlan) throw new Error("Plan not found");
 
-        // Calculate prorated amount
         let amountCents = newPlan.price_cents;
         if (subscriber.subscription_end) {
           const subscriptionEnd = new Date(subscriber.subscription_end);
@@ -175,10 +141,9 @@ serve(async (req) => {
           const intervalDays: Record<string, number> = { monthly: 30, quarterly: 90, semiannual: 180, yearly: 365 };
           const totalDays = intervalDays[currentPlan.interval] || 30;
           const credit = Math.round((daysRemaining / totalDays) * currentPlan.price_cents);
-          amountCents = Math.max(100, newPlan.price_cents - credit); // min 1 BRL
+          amountCents = Math.max(100, newPlan.price_cents - credit);
         }
 
-        // Get profile for PIX customer data
         const { data: profile } = await supabase
           .from("profiles")
           .select("name, cpf, cellphone")
@@ -245,6 +210,57 @@ serve(async (req) => {
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
         });
+      }
+    } else {
+      // ============ DOWNGRADE ============
+      if (hasStripe) {
+        const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+        if (!stripeKey) throw new Error("Missing STRIPE_SECRET_KEY");
+        const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+
+        const subscription = await stripe.subscriptions.retrieve(subscriber.stripe_subscription_id!);
+        const currentPriceId = subscription.items.data[0]?.price?.id;
+
+        const schedule = await stripe.subscriptionSchedules.create({
+          from_subscription: subscriber.stripe_subscription_id!,
+        });
+
+        await stripe.subscriptionSchedules.update(schedule.id, {
+          phases: [
+            {
+              items: [{ price: currentPriceId!, quantity: 1 }],
+              start_date: schedule.phases[0].start_date,
+              end_date: schedule.phases[0].end_date,
+            },
+            {
+              items: [{ price: newPriceId, quantity: 1 }],
+              iterations: 1,
+            },
+          ],
+        });
+
+        const effectiveDate = schedule.phases[0]?.end_date
+          ? new Date(schedule.phases[0].end_date * 1000).toISOString()
+          : new Date().toISOString();
+
+        await supabase.from("subscribers").update({
+          pending_downgrade_to: newPlanSlug,
+          pending_downgrade_date: effectiveDate,
+          previous_plan_slug: currentPlanSlug,
+          updated_at: new Date().toISOString(),
+        }).eq("user_id", user.id);
+
+        logStep("Stripe downgrade scheduled", { newPlan: newPlanSlug, effectiveDate });
+
+        return new Response(JSON.stringify({
+          success: true,
+          type: "downgrade",
+          newPlan: newPlanInfo.tier,
+          newPlanSlug,
+          effectiveDate,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
+        });
       } else {
         // PIX Downgrade: just schedule in DB
         const effectiveDate = subscriber.subscription_end || new Date().toISOString();
@@ -256,7 +272,6 @@ serve(async (req) => {
           updated_at: new Date().toISOString(),
         }).eq("user_id", user.id);
 
-        // Get new plan name
         const { data: newPlan } = await supabase
           .from("plans")
           .select("name")
