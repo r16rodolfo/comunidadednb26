@@ -70,8 +70,10 @@ serve(async (req) => {
       const preview = await stripe.invoices.createPreview({
         customer: subscriber.stripe_customer_id!,
         subscription: subscriber.stripe_subscription_id!,
-        subscription_items: [{ id: subscriptionItemId, price: newPriceId }],
-        subscription_proration_behavior: "always_invoice",
+        subscription_details: {
+          items: [{ id: subscriptionItemId, price: newPriceId }],
+          proration_behavior: "always_invoice",
+        },
       });
 
       const credit = preview.lines.data
@@ -85,7 +87,9 @@ serve(async (req) => {
         currency: preview.currency,
         newPlanName: newPlanInfo.tier,
         newPlanSlug,
-        effectiveDate: new Date(subscription.current_period_end * 1000).toISOString(),
+        effectiveDate: subscription.current_period_end
+          ? new Date(subscription.current_period_end * 1000).toISOString()
+          : new Date().toISOString(),
         paymentMethod: "stripe" as const,
       };
 
