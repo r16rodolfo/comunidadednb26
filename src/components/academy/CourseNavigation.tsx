@@ -67,16 +67,14 @@ export function CourseNavigation({
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm leading-tight">
-                    {lesson.title}
-                  </span>
-                  {!lesson.is_free && (
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
-                      Premium
-                    </Badge>
-                  )}
-                </div>
+                <span className="font-medium text-sm leading-tight line-clamp-2">
+                  {lesson.title}
+                </span>
+                {!lesson.is_free && (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 mt-1 w-fit">
+                    Premium
+                  </Badge>
+                )}
                 {moduleTitle && (
                   <div className="text-xs text-muted-foreground mt-1">
                     {moduleTitle}
