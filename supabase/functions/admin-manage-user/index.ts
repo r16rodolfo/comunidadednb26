@@ -67,8 +67,15 @@ serve(async (req) => {
         throw new Error("Cannot delete your own account");
       }
 
+      // Try to delete auth user; if "User not found", clean up orphaned records
       const { error } = await supabaseAdmin.auth.admin.deleteUser(user_id);
-      if (error) throw new Error(error.message);
+      if (error && !error.message.includes("User not found")) {
+        throw new Error(error.message);
+      }
+
+      // Clean up profile and role records (in case auth cascade didn't fire)
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", user_id);
+      await supabaseAdmin.from("profiles").delete().eq("user_id", user_id);
 
       return new Response(
         JSON.stringify({ success: true }),
