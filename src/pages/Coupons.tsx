@@ -5,11 +5,13 @@ import { CouponFilters } from "@/components/coupons/CouponFilters";
 import { CouponGrid } from "@/components/coupons/CouponGrid";
 import { CouponModal } from "@/components/coupons/CouponModal";
 import { useCoupons } from "@/hooks/useCoupons";
+import { useSubscription } from "@/hooks/useSubscription";
 import { Coupon, CouponFilters as Filters } from "@/types/coupons";
 import { PageHeader } from '@/components/shared/PageHeader';
 
 export default function Coupons() {
   const { coupons, categories, loading, getCoupons, fetchCategories, incrementClickCount } = useCoupons();
+  const { subscription } = useSubscription();
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>({
@@ -70,6 +72,7 @@ export default function Coupons() {
           coupons={coupons}
           onGetCoupon={handleGetCoupon}
           loading={loading}
+          isUserPremium={subscription.subscribed}
         />
 
         {/* Modal de Detalhes */}

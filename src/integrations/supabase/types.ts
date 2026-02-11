@@ -49,6 +49,7 @@ export type Database = {
           expiration_date: string | null
           id: string
           is_active: boolean
+          is_premium_only: boolean
           offer_title: string
           partner_logo: string
           partner_name: string
@@ -64,6 +65,7 @@ export type Database = {
           expiration_date?: string | null
           id?: string
           is_active?: boolean
+          is_premium_only?: boolean
           offer_title: string
           partner_logo?: string
           partner_name: string
@@ -79,6 +81,7 @@ export type Database = {
           expiration_date?: string | null
           id?: string
           is_active?: boolean
+          is_premium_only?: boolean
           offer_title?: string
           partner_logo?: string
           partner_name?: string

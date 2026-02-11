@@ -1,0 +1,1 @@
+ALTER TABLE public.coupons ADD COLUMN is_premium_only boolean NOT NULL DEFAULT false;

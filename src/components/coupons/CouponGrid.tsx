@@ -5,9 +5,10 @@ interface CouponGridProps {
   coupons: Coupon[];
   onGetCoupon: (coupon: Coupon) => void;
   loading?: boolean;
+  isUserPremium?: boolean;
 }
 
-export const CouponGrid = ({ coupons, onGetCoupon, loading }: CouponGridProps) => {
+export const CouponGrid = ({ coupons, onGetCoupon, loading, isUserPremium = false }: CouponGridProps) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -57,6 +58,7 @@ export const CouponGrid = ({ coupons, onGetCoupon, loading }: CouponGridProps) =
           key={coupon.id}
           coupon={coupon}
           onGetCoupon={onGetCoupon}
+          isUserPremium={isUserPremium}
         />
       ))}
     </div>

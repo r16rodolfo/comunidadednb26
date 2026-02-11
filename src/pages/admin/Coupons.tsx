@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, Search, MoreHorizontal, ToggleLeft, ToggleRight, Ticket, MousePointerClick, CheckCircle, Clock, Tag } from "lucide-react";
+import { Plus, Edit, Trash2, Search, MoreHorizontal, ToggleLeft, ToggleRight, Ticket, MousePointerClick, CheckCircle, Clock, Tag, Crown } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CreateCouponModal } from "@/components/admin/CreateCouponModal";
 import { CategoryManagement } from "@/components/admin/CategoryManagement";
@@ -222,7 +222,15 @@ export default function AdminCoupons() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="max-w-[200px] truncate text-sm">{coupon.offerTitle}</div>
+                          <div className="max-w-[200px] truncate text-sm flex items-center gap-2">
+                            {coupon.isPremiumOnly && (
+                              <Badge className="bg-amber-500/90 text-white border-0 text-[10px] gap-0.5 shrink-0">
+                                <Crown className="h-2.5 w-2.5" />
+                                Premium
+                              </Badge>
+                            )}
+                            {coupon.offerTitle}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <code className="bg-muted px-2 py-1 rounded text-xs font-mono">{coupon.code}</code>
