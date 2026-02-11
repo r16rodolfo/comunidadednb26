@@ -29,6 +29,24 @@ const formatPhone = (value: string) => {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 };
 
+const isValidCPF = (cpf: string): boolean => {
+  const digits = cpf.replace(/\D/g, '');
+  if (digits.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(digits)) return false;
+
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(digits[i]) * (10 - i);
+  let remainder = (sum * 10) % 11;
+  if (remainder === 10) remainder = 0;
+  if (remainder !== parseInt(digits[9])) return false;
+
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(digits[i]) * (11 - i);
+  remainder = (sum * 10) % 11;
+  if (remainder === 10) remainder = 0;
+  return remainder === parseInt(digits[10]);
+};
+
 const loginSchema = z.object({
   email: z.string().trim().email('E-mail inválido').max(255),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres').max(128),
@@ -36,7 +54,7 @@ const loginSchema = z.object({
 
 const signupSchema = loginSchema.extend({
   name: z.string().trim().min(2, 'Nome deve ter pelo menos 2 caracteres').max(100),
-  cpf: z.string().refine(v => v.replace(/\D/g, '').length === 11, 'CPF deve ter 11 dígitos'),
+  cpf: z.string().refine(v => isValidCPF(v), 'CPF inválido'),
   cellphone: z.string().refine(v => { const d = v.replace(/\D/g, '').length; return d >= 10 && d <= 11; }, 'Telefone inválido'),
 });
 
