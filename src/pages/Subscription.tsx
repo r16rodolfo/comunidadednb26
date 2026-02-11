@@ -249,7 +249,7 @@ export default function Subscription() {
                   <div>
                     <p className="font-medium text-sm">Downgrade agendado</p>
                     <p className="text-sm text-muted-foreground">
-                      Seu plano será alterado para <strong>{subscription.pending_downgrade_to}</strong>{' '}
+                      Seu plano será alterado para <strong>{activePlans.find(p => p.slug === subscription.pending_downgrade_to)?.name ?? subscription.pending_downgrade_to}</strong>{' '}
                       em {subscription.pending_downgrade_date
                         ? new Date(subscription.pending_downgrade_date).toLocaleDateString('pt-BR')
                         : 'data pendente'
