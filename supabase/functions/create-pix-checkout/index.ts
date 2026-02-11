@@ -96,10 +96,17 @@ serve(async (req) => {
     }
 
     const abacateData = await abacateResponse.json();
-    logStep("AbacatePay billing created", { id: abacateData.data?.id, url: abacateData.data?.url });
+    logStep("AbacatePay billing created", abacateData);
+
+    const paymentUrl = abacateData?.data?.url || abacateData?.url || abacateData?.data?.payment_url;
+
+    if (!paymentUrl) {
+      logStep("ERROR: No payment URL found in response", abacateData);
+      throw new Error("AbacatePay did not return a payment URL");
+    }
 
     return new Response(
-      JSON.stringify({ url: abacateData.data?.url }),
+      JSON.stringify({ url: paymentUrl }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );
   } catch (error) {
