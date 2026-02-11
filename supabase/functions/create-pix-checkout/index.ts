@@ -83,6 +83,8 @@ serve(async (req) => {
         customer: {
           name: customerName,
           email: user.email,
+          cellphone: "00000000000",
+          taxId: "00000000000",
         },
       }),
     });
