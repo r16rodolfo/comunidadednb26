@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Copy, Check, Clock, Loader2 } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Copy, Check, Clock, Loader2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PixQrCodeCheckoutProps {
   brCode: string;
@@ -9,6 +10,7 @@ interface PixQrCodeCheckoutProps {
   expiresAt?: string;
   onPaid?: () => void;
   planName: string;
+  pixId?: string;
 }
 
 export function PixQrCodeCheckout({
@@ -17,10 +19,13 @@ export function PixQrCodeCheckout({
   expiresAt,
   onPaid,
   planName,
+  pixId,
 }: PixQrCodeCheckoutProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>('');
+  const [paid, setPaid] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Countdown timer
   useEffect(() => {
@@ -40,6 +45,35 @@ export function PixQrCodeCheckout({
     return () => clearInterval(interval);
   }, [expiresAt]);
 
+  // Polling for payment status
+  useEffect(() => {
+    if (!pixId || paid) return;
+
+    const checkStatus = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('check-pix-status', {
+          body: { pixId },
+        });
+        if (error) return;
+        if (data?.status === 'PAID' || data?.status === 'COMPLETED') {
+          setPaid(true);
+          if (pollingRef.current) clearInterval(pollingRef.current);
+          toast({ title: 'Pagamento confirmado! 🎉' });
+          onPaid?.();
+        }
+      } catch {
+        // silent retry
+      }
+    };
+
+    checkStatus();
+    pollingRef.current = setInterval(checkStatus, 5000);
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [pixId, paid, onPaid, toast]);
+
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(brCode);
@@ -51,13 +85,22 @@ export function PixQrCodeCheckout({
     }
   }, [brCode, toast]);
 
+  if (paid) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-8">
+        <CheckCircle className="h-16 w-16 text-success" />
+        <p className="text-lg font-semibold">Pagamento confirmado!</p>
+        <p className="text-sm text-muted-foreground">Sua assinatura está sendo ativada.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center gap-4 py-4">
       <p className="text-sm text-muted-foreground text-center">
         Escaneie o QR Code ou copie o código para pagar <strong>{planName}</strong>
       </p>
 
-      {/* QR Code Image */}
       {qrCodeBase64 ? (
         <div className="bg-white p-4 rounded-lg">
           <img
@@ -72,7 +115,6 @@ export function PixQrCodeCheckout({
         </div>
       )}
 
-      {/* Timer */}
       {expiresAt && timeLeft && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Clock className="h-4 w-4" />
@@ -80,7 +122,6 @@ export function PixQrCodeCheckout({
         </div>
       )}
 
-      {/* Copy code */}
       <div className="w-full space-y-2">
         <p className="text-xs text-muted-foreground text-center">Código copia e cola:</p>
         <div className="flex gap-2">
@@ -95,9 +136,10 @@ export function PixQrCodeCheckout({
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground text-center">
-        Após o pagamento, sua assinatura será ativada automaticamente.
-      </p>
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        <span>Aguardando confirmação do pagamento...</span>
+      </div>
     </div>
   );
 }
