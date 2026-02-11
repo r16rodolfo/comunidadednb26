@@ -1,63 +1,42 @@
 
 
-## Fase 3 (atualizada) -- Cupons Premium com blur para usuarios gratuitos
+## Reorganizacao do Header do Layout
 
-Em vez de ocultar os cupons exclusivos, os usuarios gratuitos verao os cards com um efeito de blur no conteudo e um overlay com cadeado + CTA para assinar. Isso gera curiosidade e incentiva a conversao.
+O header atual tem elementos dispersos sem agrupamento logico claro. A proposta e reorganizar em tres zonas bem definidas:
 
-### Mudancas no banco de dados
-
-- Adicionar coluna `is_premium_only boolean NOT NULL DEFAULT false` na tabela `coupons`
-- Manter a RLS existente (todos os cupons continuam visiveis para usuarios autenticados -- a restricao e visual, nao de acesso aos dados)
-
-### Arquivos alterados
-
-**1. `src/types/coupons.ts`**
-- Adicionar `isPremiumOnly: boolean` na interface `Coupon`
-- Adicionar `isPremiumOnly?: boolean` na interface `CreateCouponData`
-
-**2. `src/hooks/useCoupons.ts`**
-- Mapear `is_premium_only` do banco para `isPremiumOnly` no objeto Coupon
-
-**3. `src/components/coupons/CouponCard.tsx`**
-- Receber nova prop `isUserPremium: boolean`
-- Se `coupon.isPremiumOnly && !isUserPremium`:
-  - Adicionar `overflow-hidden relative` no Card
-  - Aplicar `blur-sm` nas secoes de titulo da oferta, descricao e botao (manter logo e nome do parceiro visiveis para gerar interesse)
-  - Renderizar um overlay absoluto centralizado com icone de cadeado (Lock do Lucide), badge "Exclusivo Premium" e botao "Assinar para desbloquear" que redireciona para `/subscription`
-  - Desabilitar o `onClick` do botao "PEGAR CUPOM"
-- Se o cupom for premium (independente do usuario), exibir um badge "Premium" dourado no canto superior do card
-
-**4. `src/components/coupons/CouponGrid.tsx`**
-- Receber nova prop `isUserPremium: boolean` e repassar para cada `CouponCard`
-
-**5. `src/pages/Coupons.tsx`**
-- Importar `useSubscription` para verificar se o usuario e assinante
-- Passar `isUserPremium={subscription?.subscribed}` para `CouponGrid`
-
-**6. `src/components/admin/CreateCouponModal.tsx`**
-- Adicionar toggle/switch "Cupom exclusivo Premium" no formulario
-
-**7. `src/pages/admin/Coupons.tsx`**
-- Exibir badge "Premium" na listagem admin para cupons marcados
-
-### Efeito visual esperado
+### Layout proposto
 
 ```text
-+----------------------------+
-|  [Logo]  Nome do Parceiro  |
-|          Categoria         |
-|                            |
-|  ~~~~~~~~~~~~~~~~~~~~~~~~  |  <-- blur
-|  ~~~ Titulo da oferta ~~~  |  <-- blur
-|  ~~~ Descricao ~~~~~~~~~~~  |  <-- blur
-|                            |
-|     +------------------+   |
-|     |  🔒 Exclusivo    |   |  <-- overlay
-|     |    Premium       |   |
-|     | [Assinar agora]  |   |
-|     +------------------+   |
-|                            |
-+----------------------------+
+[Menu(mobile)] Administracao        |  [Sino] [Ver como Usuario]  |  Nome / email  [Badge]  [Perfil] [Sair]
+               Painel de controle   |                             |  
 ```
 
-O logo e nome do parceiro ficam visiveis para que o usuario saiba qual marca esta oferecendo o desconto, gerando desejo de desbloquear.
+- **Esquerda**: Titulo da pagina (ja existente)
+- **Centro-direita**: Acoes do sistema (notificacoes + toggle de visao)
+- **Direita**: Identidade do usuario agrupada (nome, email, badge, botoes de perfil/logout)
+
+### Remocao do indicador "Sistema ativo"
+
+O indicador "Sistema ativo" nao agrega valor real ao usuario (e sempre ativo). Sera removido para liberar espaco e reduzir ruido visual.
+
+### Alteracoes visuais
+
+1. Agrupar notificacao e toggle "Ver como Usuario" com um separador visual (borda vertical) antes do bloco de usuario
+2. Agrupar avatar, nome, email e badge dentro de um container unico com hover sutil
+3. Botoes de perfil e logout ficam apos o bloco de identidade, separados por um divisor vertical fino
+
+### Arquivo alterado
+
+**`src/components/Layout.tsx`** (linhas 243-296 - secao direita do header)
+
+- Remover o bloco "Sistema ativo" (linhas 292-295)
+- Reorganizar a ordem: Notificacoes > Toggle View > Separator > User Info (nome + email + badge) > Separator > Perfil + Logout
+- Adicionar separadores visuais (`border-l border-border h-6`) entre os grupos
+- Envolver o bloco de usuario em um container com `rounded-lg hover:bg-muted/50 px-2 py-1` para feedback visual
+
+### Detalhes tecnicos
+
+- Nenhuma mudanca de logica, apenas reorganizacao de JSX e classes Tailwind
+- Responsividade mantida: no mobile, apenas icones (perfil + logout) ficam visiveis; nome/email/badge continuam `hidden md:flex`
+- O toggle "Ver como Usuario" continua `hidden md:flex` (so desktop)
+
