@@ -1,123 +1,130 @@
 
-## Correcao do Fluxo de Upgrade/Downgrade
+## Gestao Completa de Usuarios (/admin/users)
 
 ### Problemas Identificados
 
-**1. Race condition no upgrade via Stripe**
-Quando o upgrade via Stripe e executado, a funcao `change-plan` atualiza o banco de dados imediatamente. Porem, o `check-subscription` (que roda a cada 10 segundos) ou o webhook do Stripe tambem atualizam o banco. Se o usuario tenta outra mudanca logo depois, o `current_plan_slug` ja esta atualizado, causando comparacoes incorretas (ex: mesmo plano vs. mesmo plano = classificado como downgrade).
+1. **Sem e-mail na listagem** -- A tabela `profiles` nao tem e-mail. O e-mail so existe em `auth.users` (inacessivel pelo client) e parcialmente em `subscribers_safe` (so para assinantes).
+2. **Sem dados de assinatura** -- A tabela nao mostra se o usuario e assinante, qual plano, ou status.
+3. **Cargo efetivo incorreto** -- Usuarios com role "free" mas assinatura ativa aparecem como "Gratuito" em vez de "Premium".
+4. **Visualizacao limitada** -- O modal de detalhes so mostra nome, cargo e data de cadastro. Faltam: e-mail, telefone, CPF, avatar, dados de assinatura.
+5. **Sem edicao** -- Nao e possivel editar o cargo de um usuario.
+6. **Sem exclusao** -- Nao e possivel excluir usuarios.
+7. **Filtros nao funcionam** -- O botao "Filtros" nao faz nada.
 
-**2. Upgrade silencioso sem confirmacao do Stripe**
-Para upgrades via Stripe, a funcao `change-plan` executa `subscriptions.update()` diretamente no servidor. Isso cobra o cartao do usuario sem nenhuma tela de confirmacao do Stripe, o que e uma preocupacao de seguranca e UX.
+### Solucao
 
-**3. Sem opcao de troca de metodo de pagamento**
-Um usuario que assinou via cartao nao tem opcao de trocar para PIX (e vice-versa) ao mudar de plano.
+**1. Armazenar e-mail no perfil durante criacao**
 
-### Solucao Proposta
+O trigger `handle_new_user` ja cria o perfil, mas nao salva o e-mail. Vamos:
+- Adicionar coluna `email` na tabela `profiles`
+- Atualizar o trigger para salvar `NEW.email` no perfil
+- Atualizar a edge function `admin-create-user` para tambem salvar o e-mail no perfil
+- Preencher e-mails dos usuarios existentes com dados de `auth.users` via migracao
 
-**Estrategia: Usar Stripe Checkout Session para upgrades em vez de `subscriptions.update()`**
+**2. Criar Edge Function `admin-manage-user`**
 
-Em vez de alterar a assinatura diretamente no backend, vamos criar uma nova Checkout Session do Stripe com a nova price. O Stripe cuida da proration, confirmacao de pagamento e seguranca automaticamente. Isso resolve os 3 problemas de uma vez.
+Uma edge function para operacoes administrativas:
+- **Editar cargo**: Atualiza `user_roles.role`
+- **Excluir usuario**: Remove via `auth.admin.deleteUser()` (cascata para profiles e user_roles)
+- Validacao de admin no servidor
 
-### Alteracoes
+**3. Enriquecer a listagem com dados de assinatura**
 
-**1. Refatorar `change-plan/index.ts`**
+A query vai juntar `profiles` + `user_roles` + `subscribers_safe` para mostrar:
+- Nome, e-mail, cargo efetivo, plano atual, status da assinatura, data de cadastro
 
-Para o caminho **Stripe upgrade**:
-- Em vez de chamar `stripe.subscriptions.update()`, criar uma nova `stripe.checkout.sessions.create()` com `mode: 'subscription'` e o novo `price`
-- Passar `subscription` existente para que o Stripe faca a proration automaticamente
-- Retornar o `clientSecret` para embedded checkout OU a `url` do checkout
-- O webhook `invoice.paid` e `subscription.updated` ja cuidam de atualizar o banco
+**4. Cargo efetivo**
 
-Para o caminho **Stripe downgrade**:
-- Manter a logica de `subscriptionSchedules` (agendamento para fim do periodo) -- nao precisa de pagamento
+Priorizar o status de assinatura ativa sobre o cargo estatico:
+- Se `subscribers_safe.subscribed = true` -> cargo efetivo = "premium"
+- Senao -> usar `user_roles.role`
 
-Para o caminho **PIX**:
-- Manter a logica atual (QR code para upgrade, agendamento para downgrade)
+**5. Modal de detalhes completo**
 
-**2. Atualizar `PlanChangeConfirmModal.tsx`**
+Exibir todos os dados disponiveis:
+- Nome, e-mail, telefone, CPF (mascarado), avatar
+- Cargo, plano atual, status da assinatura, data de validade
+- Data de cadastro
 
-Para upgrades Stripe:
-- Apos clicar "Confirmar Upgrade", receber um `clientSecret` de volta
-- Renderizar o `StripeEmbeddedCheckout` dentro do modal (mesmo padrao do `PaymentMethodModal`)
-- O usuario ve a tela segura do Stripe, confirma os dados do cartao, e o pagamento e processado
+**6. Edicao de cargo inline**
 
-Para downgrades (Stripe e PIX):
-- Manter o fluxo atual (confirmacao simples + agendamento)
+No dropdown de acoes, adicionar opcao "Editar Cargo" que abre um modal com Select para escolher o novo cargo.
 
-Para upgrades PIX:
-- Manter o fluxo atual (preview + QR code)
+**7. Exclusao com confirmacao**
 
-**3. Adicionar opcao de metodo de pagamento para upgrades**
+No dropdown, adicionar "Excluir" que abre AlertDialog de confirmacao antes de chamar a edge function.
 
-No modal de confirmacao de upgrade, adicionar um passo intermediario onde o usuario pode escolher:
-- Cartao de Credito (Stripe Embedded Checkout)
-- PIX (QR Code com valor proporcional)
+**8. Filtros funcionais**
 
-Isso funciona independente de como o usuario assinou originalmente.
-
-**4. Ajustar `preview-plan-change/index.ts`**
-
-- Para Stripe, o preview continua mostrando os valores de proration
-- Adicionar campo `paymentMethod` retornando `'stripe'` ou `'pix'` baseado no estado atual
-- O frontend usa isso para saber qual fluxo apresentar, mas o usuario pode escolher outro metodo
-
-**5. Garantir que `check-subscription` e o webhook nao conflitem**
-
-- A funcao `change-plan` NAO atualiza mais o banco diretamente para upgrades Stripe
-- O webhook `invoice.paid` faz toda a atualizacao apos o pagamento ser confirmado
-- Para downgrades, a funcao continua atualizando `pending_downgrade_to` diretamente
-
-### Fluxo Final
-
-```text
-UPGRADE (qualquer metodo de pagamento original):
-  1. Usuario clica "Upgrade"
-  2. Modal mostra preview de proration (valores, credito)
-  3. Usuario escolhe: Cartao ou PIX
-  4. Cartao: Stripe Embedded Checkout dentro do modal
-     PIX: QR Code com valor proporcional
-  5. Apos pagamento confirmado:
-     - Webhook atualiza o banco automaticamente (Stripe)
-     - Polling confirma pagamento (PIX)
-
-DOWNGRADE (qualquer metodo):
-  1. Usuario clica "Downgrade"
-  2. Modal mostra informacao de agendamento
-  3. Usuario confirma
-  4. Stripe: subscriptionSchedule agendado
-     PIX: flag no banco (pending_downgrade_to)
-  5. Mudanca efetiva ao fim do periodo
-```
+Substituir o botao decorativo por selects funcionais:
+- Filtro por cargo (Todos, Free, Premium, Gestor, Admin)
+- Filtro por status de assinatura (Todos, Ativo, Inativo)
 
 ### Arquivos Modificados
 
-- `supabase/functions/change-plan/index.ts` -- Stripe upgrade agora retorna `clientSecret` em vez de alterar assinatura diretamente
-- `supabase/functions/preview-plan-change/index.ts` -- Ajustes menores para suportar escolha de metodo
-- `src/components/subscription/PlanChangeConfirmModal.tsx` -- Adicionar passo de escolha de metodo + Stripe Embedded Checkout + PIX QR Code
-- `src/pages/Subscription.tsx` -- Ajustes para callbacks do novo fluxo
+- **Migracao SQL**: Adicionar coluna `email` em `profiles`, atualizar trigger `handle_new_user`
+- **`supabase/functions/admin-manage-user/index.ts`** (novo): Edge function para editar cargo e excluir usuario
+- **`supabase/functions/admin-create-user/index.ts`**: Salvar e-mail no perfil apos criacao
+- **`src/pages/admin/Users.tsx`**: Refatorar completamente com dados enriquecidos, filtros funcionais, modal de detalhes completo, edicao de cargo e exclusao
 
 ### Secao Tecnica
 
-**change-plan upgrade Stripe (novo fluxo):**
-```typescript
-// Em vez de stripe.subscriptions.update():
-const session = await stripe.checkout.sessions.create({
-  customer: subscriber.stripe_customer_id,
-  line_items: [{ price: newPriceId, quantity: 1 }],
-  mode: 'subscription',
-  ui_mode: 'embedded',
-  return_url: `${origin}/subscription?session_id={CHECKOUT_SESSION_ID}`,
-  allow_promotion_codes: true,
-  metadata: { user_id: user.id, plan_id: newPlanSlug, type: 'upgrade' },
-});
+**Migracao SQL:**
+```sql
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email text;
 
-return { success: true, type: 'upgrade', clientSecret: session.client_secret };
+-- Preencher emails existentes
+UPDATE public.profiles p
+SET email = u.email
+FROM auth.users u
+WHERE p.user_id = u.id AND p.email IS NULL;
+
+-- Atualizar trigger
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+SET search_path TO 'public' AS $$
+BEGIN
+  INSERT INTO public.profiles (user_id, name, email, cellphone, cpf)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'name', ''),
+    NEW.email,
+    NEW.raw_user_meta_data->>'cellphone',
+    NEW.raw_user_meta_data->>'cpf'
+  );
+  INSERT INTO public.user_roles (user_id, role)
+  VALUES (NEW.id, 'free');
+  RETURN NEW;
+END;
+$$;
 ```
 
-**PlanChangeConfirmModal (novo fluxo upgrade):**
-```text
-Etapa 1: Preview de proration (valores, credito)
-Etapa 2: Escolha do metodo (Cartao ou PIX)
-Etapa 3a: StripeEmbeddedCheckout (se cartao)
-Etapa 3b: PixQrCodeCheckout (se PIX)
+**Edge Function `admin-manage-user`:**
+```typescript
+// Endpoints:
+// POST { action: 'update_role', user_id, role }
+// POST { action: 'delete_user', user_id }
+```
+
+**Query enriquecida no frontend:**
+```typescript
+const { data: profiles } = await supabase
+  .from('profiles')
+  .select('user_id, name, email, cellphone, cpf, avatar_url, created_at');
+
+const { data: roles } = await supabase
+  .from('user_roles')
+  .select('user_id, role');
+
+const { data: subs } = await supabase
+  .from('subscribers_safe')
+  .select('user_id, subscribed, current_plan_slug, subscription_end, cancel_at_period_end');
+```
+
+**Cargo efetivo:**
+```typescript
+function getEffectiveRole(role: string, sub?: SubscriberInfo): string {
+  if (sub?.subscribed) return 'premium';
+  return role;
+}
 ```
