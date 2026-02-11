@@ -1,93 +1,99 @@
 
-## Correcao do Fluxo Academy: Publicacao Imediata e Acesso Premium
+## Correcao do Modal de Cupons: Preview do Logo, Crop e Protecao contra Fechamento Acidental
 
 ### Problemas Identificados
 
-**1. Aulas nao aparecem para usuarios apos publicacao**
-Quando o admin publica um curso em `/admin/content`, as mutations invalidam apenas a query key `admin-academy-courses`. As queries do usuario (`academy-published-courses` e `academy-course`) tem `staleTime` de 5 minutos, entao o usuario so ve as mudancas apos esse tempo ou ao recarregar a pagina. Alem disso, nao ha invalidacao cruzada entre admin e usuario.
+1. **Logo nao exibe preview**: O upload gera uma URL fake do Unsplash em vez de realmente fazer upload do arquivo. O preview mostra uma imagem quebrada porque a URL nao existe.
 
-**2. Usuarios premium nao conseguem assistir aulas premium**
-A pagina `Academy.tsx` nunca passa `isPremiumUser` para os componentes `VideoPlayer` e `CourseNavigation`. O valor padrao e `false`, entao todas as aulas nao-gratuitas mostram o cadeado "Aula Premium" mesmo para assinantes.
+2. **Sem controle de tamanho/crop**: O usuario precisa enviar imagens ja no tamanho correto, sem nenhum ajuste automatico.
 
-**3. Bunny Library ID depende de localStorage**
-Se o admin nao configurou o Library ID na aba Plataforma, ou se o usuario esta em outro navegador/dispositivo, `localStorage` nao tera o valor e os videos nao serao reproduzidos. Esse dado deveria vir do banco de dados ou de uma configuracao global.
+3. **Modal fecha ao clicar fora**: Um clique acidental fora do modal descarta todo o formulario sem aviso.
+
+### Analise: Rascunho vs Protecao Simples
+
+Para o problema do fechamento acidental, avaliamos duas abordagens:
+
+- **Rascunho automatico (draft)**: Salvaria os dados no banco conforme o usuario preenche. Complexo de implementar (requer estado "draft" na tabela, limpeza periodica, logica de merge). Excessivo para o caso de uso.
+
+- **Protecao simples (recomendado)**: Bloquear o clique fora do modal e, ao clicar em "Cancelar" com dados preenchidos, exibir um dialogo de confirmacao. Simples, eficaz e padrao de UX consolidado.
+
+Optamos pela protecao simples.
 
 ### Solucao
 
-**1. Invalidar cache do usuario apos mudancas no admin**
+**1. Upload real do logo para o storage**
 
-No hook `useAdminAcademy`, apos cada mutation bem-sucedida (create, update, delete, togglePublish), invalidar tambem as queries do lado do usuario:
-- `academy-published-courses`
-- `academy-course`
+Substituir a URL fake por upload real ao bucket `platform-assets` (ja existente, publico, com RLS para admins). O arquivo sera salvo em `coupon-logos/{timestamp}-{filename}` e a URL publica sera armazenada no campo `partner_logo`.
 
-Isso garante que, se o admin estiver logado e navegar para a pagina Academy, vera os dados atualizados imediatamente. Para outros usuarios logados simultaneamente, reduzir o `staleTime` das queries do usuario de 5 minutos para 30 segundos.
+**2. Crop/redimensionamento automatico via Canvas**
 
-**2. Passar `isPremiumUser` baseado na assinatura**
+Ao selecionar uma imagem, redimensionar automaticamente para 200x200px usando Canvas API nativa do navegador. Isso garante tamanho uniforme sem o usuario precisar editar previamente. O resultado sera um Blob que entao e enviado ao storage.
 
-Em `Academy.tsx`:
-- Importar `useSubscription` para verificar se o usuario e assinante
-- Derivar `isPremiumUser` a partir de `subscription.subscribed` ou do role do usuario (admin/gestor tambem tem acesso)
-- Passar essa prop para `VideoPlayer` e `CourseNavigation`
+Nao usaremos uma biblioteca de crop interativo (como react-cropper) para manter a simplicidade -- o logo sera automaticamente centralizado e cortado para formato quadrado.
 
-**3. Buscar Bunny Library ID do banco de dados**
+**3. Protecao contra fechamento acidental**
 
-Em vez de depender exclusivamente de `localStorage`, buscar o `bunny_library_id` de uma fonte persistente. A abordagem mais simples: o admin ja salva configuracoes em `localStorage` na aba Plataforma, mas vamos tambem salvar na tabela `home_config` e ler de la no `VideoPlayer` como fallback. Alternativamente, podemos criar uma query dedicada que le do `localStorage` com fallback para o banco.
-
-Para manter a simplicidade e compatibilidade com o fluxo atual (que ja usa `localStorage`), vamos:
-- Garantir que a aba Plataforma salve o `bunny_library_id` no banco (`home_config`)
-- O `VideoPlayer` le primeiro do `localStorage`, e se nao encontrar, busca do `home_config`
+- Usar `onInteractOutside={(e) => e.preventDefault()}` no `DialogContent` para impedir que cliques fora fechem o modal.
+- Usar `onEscapeKeyDown={(e) => e.preventDefault()}` para impedir fechamento via ESC.
+- No botao "Cancelar", verificar se ha dados preenchidos e exibir `confirm()` antes de fechar.
 
 ### Arquivos Modificados
 
-- **`src/hooks/useAdminAcademy.ts`** -- Invalidar queries do usuario apos mutations admin
-- **`src/hooks/useAcademy.ts`** -- Reduzir `staleTime` para 30 segundos
-- **`src/pages/Academy.tsx`** -- Passar `isPremiumUser` para VideoPlayer e CourseNavigation
-- **`src/components/academy/VideoPlayer.tsx`** -- Buscar Bunny Library ID do banco como fallback
-- **`src/components/admin/tabs/PlatformTab.tsx`** -- Persistir `bunny_library_id` no banco ao salvar
+- **`src/components/admin/CreateCouponModal.tsx`** -- Upload real com crop automatico, preview funcional, protecao contra fechamento
 
-### Secao Tecnica
+### Detalhes Tecnicos
 
-**Invalidacao cruzada (useAdminAcademy):**
+**Upload com crop (Canvas API):**
 ```typescript
-onSuccess: () => {
-  queryClient.invalidateQueries({ queryKey: ['admin-academy-courses'] });
-  // Invalidar cache do usuario tambem
-  queryClient.invalidateQueries({ queryKey: ['academy-published-courses'] });
-  queryClient.invalidateQueries({ queryKey: ['academy-course'] });
-},
-```
-
-**isPremiumUser (Academy.tsx):**
-```typescript
-import { useSubscription } from '@/hooks/useSubscription';
-import { useAuth } from '@/contexts/AuthContext';
-
-const { subscription } = useSubscription();
-const { roles } = useAuth();
-const isPremiumUser = subscription?.subscribed || roles.includes('admin') || roles.includes('gestor');
-
-// Passar para ambos os componentes:
-<VideoPlayer isPremiumUser={isPremiumUser} ... />
-<CourseNavigation isPremiumUser={isPremiumUser} ... />
-```
-
-**Bunny Library ID fallback (VideoPlayer):**
-```typescript
-// Usar hook ou query para buscar do home_config como fallback
-const getBunnyLibraryId = () => {
-  const local = localStorage.getItem('bunny_library_id');
-  if (local) return local;
-  // fallback sera injetado via prop ou context
-  return '';
+const cropAndResize = (file: File, size: number): Promise<Blob> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+      const min = Math.min(img.width, img.height);
+      const sx = (img.width - min) / 2;
+      const sy = (img.height - min) / 2;
+      ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+      canvas.toBlob((blob) => resolve(blob!), 'image/webp', 0.85);
+    };
+    img.src = URL.createObjectURL(file);
+  });
 };
 ```
 
-**Persistir no banco (PlatformTab onSave):**
+**Upload ao Storage:**
 ```typescript
-// Ao salvar configuracoes, persistir bunny_library_id no home_config
-await supabase.from('home_config').update({
-  bunny_library_id: platformConfig.integrations.bunnyLibraryId
-}).eq('id', configId);
+const blob = await cropAndResize(file, 200);
+const path = `coupon-logos/${Date.now()}-${file.name.replace(/\.[^.]+$/, '')}.webp`;
+const { data } = await supabase.storage.from('platform-assets').upload(path, blob, {
+  contentType: 'image/webp',
+  upsert: true,
+});
+const { data: urlData } = supabase.storage.from('platform-assets').getPublicUrl(path);
+setLogoPreview(urlData.publicUrl);
+setValue('partnerLogo', urlData.publicUrl);
 ```
 
-Nota: Para persistir `bunny_library_id` no banco, sera necessario adicionar a coluna na tabela `home_config` via migracao SQL.
+**Protecao do modal:**
+```tsx
+<DialogContent
+  onInteractOutside={(e) => e.preventDefault()}
+  onEscapeKeyDown={(e) => e.preventDefault()}
+>
+```
+
+**Cancelamento seguro:**
+```typescript
+const handleClose = () => {
+  const hasData = watchedFields.partnerName || watchedFields.offerTitle || watchedFields.code;
+  if (hasData && !editingCoupon) {
+    if (!confirm('Tem certeza que deseja sair? Os dados preenchidos serao perdidos.')) return;
+  }
+  reset(defaultValues);
+  setLogoPreview('');
+  onClose();
+};
+```
