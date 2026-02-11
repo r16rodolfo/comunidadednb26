@@ -29,6 +29,7 @@ import { usePlans, formatPrice, formatMonthlyEquivalent, SubscriptionPlan } from
 import { useSubscription } from '@/hooks/useSubscription';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { PaymentMethodModal } from '@/components/subscription/PaymentMethodModal';
+import { PlanChangeConfirmModal } from '@/components/subscription/PlanChangeConfirmModal';
 
 export default function Subscription() {
   const { user } = useAuth();
@@ -54,6 +55,8 @@ export default function Subscription() {
   const [stripeResult, setStripeResult] = useState<'success' | 'cancelled' | null>(null);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPlanSlug, setSelectedPlanSlug] = useState<string | null>(null);
+  const [planChangeModalOpen, setPlanChangeModalOpen] = useState(false);
+  const [planChangeIsUpgrade, setPlanChangeIsUpgrade] = useState(false);
 
   // Handle checkout success/cancel
   useEffect(() => {
@@ -71,11 +74,6 @@ export default function Subscription() {
   const currentPlan = subscription.subscribed
     ? subscription.subscription_tier
     : 'Gratuito';
-
-  const handlePlanClick = useCallback((planSlug: string) => {
-    setSelectedPlanSlug(planSlug);
-    setPaymentModalOpen(true);
-  }, []);
 
   const handleSelectStripe = useCallback(() => {
     if (selectedPlanSlug) {
@@ -125,6 +123,24 @@ export default function Subscription() {
   }, [activePlans]);
 
   const currentPlanSort = subscription.current_plan_slug ? (planSortMap[subscription.current_plan_slug] ?? -1) : -1;
+
+  const handlePlanClick = useCallback((planSlug: string) => {
+    setSelectedPlanSlug(planSlug);
+
+    if (subscription.subscribed && subscription.current_plan_slug && subscription.current_plan_slug !== planSlug) {
+      const thisPlanSort = planSortMap[planSlug] ?? 0;
+      setPlanChangeIsUpgrade(thisPlanSort > currentPlanSort);
+      setPlanChangeModalOpen(true);
+    } else {
+      setPaymentModalOpen(true);
+    }
+  }, [subscription.subscribed, subscription.current_plan_slug, planSortMap, currentPlanSort]);
+
+  const handlePlanChangeConfirmed = useCallback(() => {
+    setPlanChangeModalOpen(false);
+    toast({ title: planChangeIsUpgrade ? 'Upgrade realizado com sucesso! 🎉' : 'Downgrade agendado com sucesso!' });
+    checkSubscription();
+  }, [planChangeIsUpgrade, toast, checkSubscription]);
 
   const getButtonProps = (plan: typeof paidPlans[0]) => {
     const isCurrentPlan = subscription.current_plan_slug === plan.slug;
@@ -445,6 +461,18 @@ export default function Subscription() {
           onStripeComplete={handleStripeComplete}
           onPixPaid={handlePixPaid}
         />
+
+        {selectedPlanSlug && (
+          <PlanChangeConfirmModal
+            open={planChangeModalOpen}
+            onOpenChange={setPlanChangeModalOpen}
+            currentPlanName={subscription.subscription_tier || 'Atual'}
+            newPlanSlug={selectedPlanSlug}
+            newPlanName={selectedPlanName}
+            isUpgrade={planChangeIsUpgrade}
+            onConfirmed={handlePlanChangeConfirmed}
+          />
+        )}
     </Layout>
   );
 }

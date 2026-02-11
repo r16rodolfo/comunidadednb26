@@ -47,6 +47,14 @@ export function determinePlanFromPrice(
   return { tier: 'Premium', slug: 'premium-monthly' };
 }
 
+/** sort_order map for upgrade/downgrade comparison (higher = more expensive) */
+export const planSortOrders: Record<string, number> = {
+  'premium-monthly': 1,
+  'premium-quarterly': 2,
+  'premium-semiannual': 3,
+  'premium-yearly': 4,
+};
+
 /** Resolve plan info from a price ID, with optional Stripe fallback data */
 export function resolvePlan(priceId: string): PlanInfo {
   return priceIdToPlan[priceId] || { tier: 'Premium', slug: 'premium-monthly' };
