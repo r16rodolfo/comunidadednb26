@@ -240,39 +240,46 @@ export default function Layout({ children }: LayoutProps) {
             </div>
           </div>
           
-          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            {/* Notifications for Admin */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* System Actions: Notifications + View Toggle */}
             {user && user.role === UserRole.ADMIN && (
-              <NotificationSystem />
+              <div className="flex items-center gap-1 sm:gap-2">
+                <NotificationSystem />
+                <Button
+                  variant={viewAsUser ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewAsUser(!viewAsUser)}
+                  className="hidden md:flex text-xs"
+                >
+                  {viewAsUser ? 'Voltar ao Admin' : 'Ver como Usuário'}
+                </Button>
+              </div>
             )}
 
-            {/* View Toggle for Admin */}
+            {/* Separator */}
             {user && user.role === UserRole.ADMIN && (
-              <Button
-                variant={viewAsUser ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewAsUser(!viewAsUser)}
-                className="hidden md:flex text-xs"
-              >
-                {viewAsUser ? 'Voltar ao Admin' : 'Ver como Usuário'}
-              </Button>
+              <div className="hidden md:block border-l border-border h-6" />
             )}
 
-            {/* User Menu */}
+            {/* User Identity Block */}
             {user && (
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="hidden md:flex items-center gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="hidden md:flex items-center gap-2.5 rounded-lg hover:bg-muted/50 px-2 py-1.5 transition-colors">
                   <div className="text-right">
-                    <p className="text-sm font-medium">{user.name}</p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                    <p className="text-sm font-medium leading-tight">{user.name}</p>
+                    <p className="text-xs text-muted-foreground leading-tight">{user.email}</p>
                   </div>
                   <Badge variant={displayRoleBadgeVariant} className="text-xs">
                     {displayRoleLabel}
                   </Badge>
                 </div>
-                
-                <div className="flex items-center gap-1">
-                  <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3">
+
+                {/* Separator */}
+                <div className="hidden md:block border-l border-border h-6" />
+
+                {/* Profile + Logout */}
+                <div className="flex items-center gap-0.5">
+                  <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0">
                     <NavLink to="/profile">
                       <User className="h-4 w-4" />
                     </NavLink>
@@ -281,18 +288,13 @@ export default function Layout({ children }: LayoutProps) {
                     onClick={handleLogout} 
                     variant="ghost" 
                     size="sm"
-                    className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
+                    className="h-8 w-8 p-0"
                   >
                     <LogOut className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             )}
-
-            <div className="hidden lg:flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-              Sistema ativo
-            </div>
           </div>
         </header>
 
