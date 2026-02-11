@@ -292,24 +292,30 @@ export function useAdminAcademy() {
     staleTime: 2 * 60 * 1000,
   });
 
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-academy-courses'] });
+    queryClient.invalidateQueries({ queryKey: ['academy-published-courses'] });
+    queryClient.invalidateQueries({ queryKey: ['academy-course'] });
+  };
+
   const createMutation = useMutation({
     mutationFn: createCourse,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-academy-courses'] }),
+    onSuccess: invalidateAll,
   });
 
   const updateMutation = useMutation({
     mutationFn: updateCourse,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-academy-courses'] }),
+    onSuccess: invalidateAll,
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteCourse,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-academy-courses'] }),
+    onSuccess: invalidateAll,
   });
 
   const togglePublishMutation = useMutation({
     mutationFn: ({ id, publish }: { id: string; publish: boolean }) => togglePublish(id, publish),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-academy-courses'] }),
+    onSuccess: invalidateAll,
   });
 
   return {

@@ -3,8 +3,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, CheckCircle2, Clock, PlayCircle, Lock } from "lucide-react";
 import { Lesson } from "@/types/academy";
-// Bunny library ID is read from localStorage (set by admin in platform settings)
-const getBunnyLibraryId = () => localStorage.getItem('bunny_library_id') || '';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+// Fetch bunny_library_id from home_config as DB fallback
+function useBunnyLibraryId() {
+  const { data: dbLibraryId } = useQuery({
+    queryKey: ['bunny-library-id'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('home_config')
+        .select('bunny_library_id')
+        .limit(1)
+        .maybeSingle();
+      return (data as any)?.bunny_library_id || '';
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  // localStorage first, then DB fallback
+  return localStorage.getItem('bunny_library_id') || dbLibraryId || '';
+}
 
 interface VideoPlayerProps {
   lesson: Lesson | null;
@@ -31,10 +49,11 @@ export function VideoPlayer({
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  const bunnyLibraryId = useBunnyLibraryId();
   const canWatch = (l: Lesson) => l.is_free || isPremiumUser;
 
   const getBunnyEmbedUrl = (videoId: string) => {
-    const libraryId = getBunnyLibraryId();
+    const libraryId = bunnyLibraryId;
     if (!libraryId || !videoId) return null;
     return `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}?autoplay=false&loop=false&muted=false&preload=true&responsive=true`;
   };

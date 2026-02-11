@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3 } from 'lucide-react';
@@ -29,8 +30,21 @@ export default function AdminDashboard() {
   const handleSavePlatformConfig = async () => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
       localStorage.setItem('bunny_library_id', platformConfig.integrations.bunnyLibraryId);
+
+      // Persist bunny_library_id to DB
+      const { data: existing } = await supabase
+        .from('home_config')
+        .select('id')
+        .limit(1)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from('home_config').update({
+          bunny_library_id: platformConfig.integrations.bunnyLibraryId,
+        } as any).eq('id', existing.id);
+      }
+
       toast({ title: 'Configurações salvas com sucesso!' });
     } catch {
       toast({ title: 'Erro ao salvar configurações', description: 'Tente novamente mais tarde', variant: 'destructive' });

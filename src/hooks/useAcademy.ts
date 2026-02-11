@@ -107,7 +107,7 @@ export function useAcademy() {
   const { data: publishedCourses = [], isLoading: isCoursesLoading } = useQuery({
     queryKey: ['academy-published-courses'],
     queryFn: fetchPublishedCourses,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   // Track the selected course ID — defaults to first published course
@@ -119,7 +119,7 @@ export function useAcademy() {
     queryKey: ['academy-course', activeCourseId],
     queryFn: () => fetchCourseById(activeCourseId!),
     enabled: !!activeCourseId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   const { data: progressSet } = useQuery({
