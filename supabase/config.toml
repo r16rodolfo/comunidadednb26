@@ -32,3 +32,9 @@ verify_jwt = false
 
 [functions.create-pix-checkout]
 verify_jwt = false
+
+[functions.change-plan]
+verify_jwt = false
+
+[functions.preview-plan-change]
+verify_jwt = false
