@@ -7,14 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Input } from '@/components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import {
   Crown,
   Check,
@@ -28,7 +20,6 @@ import {
   Undo2,
   ArrowUp,
   ArrowDown,
-  Tag,
   CheckCircle2,
   X,
 } from 'lucide-react';
@@ -54,8 +45,6 @@ export default function Subscription() {
     cancelDowngrade,
   } = useSubscription();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [couponCode, setCouponCode] = useState('');
-  const [checkoutPlanSlug, setCheckoutPlanSlug] = useState<string | null>(null);
   const [stripeResult, setStripeResult] = useState<'success' | 'cancelled' | null>(null);
 
   // Handle checkout success/cancel
@@ -342,10 +331,7 @@ export default function Subscription() {
                             className="w-full"
                             variant={bp.variant}
                             disabled={isCheckoutLoading || bp.disabled}
-                            onClick={() => {
-                              setCouponCode('');
-                              setCheckoutPlanSlug(plan.slug);
-                            }}
+                            onClick={() => createCheckout(plan.slug)}
                           >
                             <Icon className="h-4 w-4 mr-2" />
                             {isCheckoutLoading && !bp.disabled ? 'Aguarde...' : bp.label}
@@ -394,45 +380,6 @@ export default function Subscription() {
             </div>
           </CardContent>
         </Card>
-        {/* Coupon Dialog */}
-        <Dialog open={!!checkoutPlanSlug} onOpenChange={(open) => { if (!open) setCheckoutPlanSlug(null); }}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Tag className="h-5 w-5" />
-                Tem cupom de desconto?
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3 py-2">
-              <Input
-                placeholder="Digite seu cupom (opcional)"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                maxLength={50}
-              />
-              <p className="text-xs text-muted-foreground">
-                Se você não possui um cupom, prossiga sem preencher. Você também poderá aplicá-lo na página de pagamento.
-              </p>
-            </div>
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button variant="outline" onClick={() => setCheckoutPlanSlug(null)}>
-                Cancelar
-              </Button>
-              <Button
-                disabled={isCheckoutLoading}
-                onClick={() => {
-                  if (checkoutPlanSlug) {
-                    createCheckout(checkoutPlanSlug, couponCode.trim() || undefined);
-                    setCheckoutPlanSlug(null);
-                  }
-                }}
-              >
-                <Crown className="h-4 w-4 mr-2" />
-                {isCheckoutLoading ? 'Aguarde...' : 'Prosseguir para Pagamento'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
 
     </Layout>
