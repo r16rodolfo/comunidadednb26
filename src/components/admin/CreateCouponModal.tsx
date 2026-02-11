@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Upload } from "lucide-react";
+import { CalendarIcon, Upload, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useForm } from "react-hook-form";
@@ -17,6 +17,7 @@ import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { CreateCouponData, CouponCategory, Coupon } from "@/types/coupons";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const createCouponSchema = z.object({
   partnerName: z.string().min(1, "Nome do parceiro é obrigatório"),
@@ -30,6 +31,30 @@ const createCouponSchema = z.object({
   isActive: z.boolean(),
   isPremiumOnly: z.boolean().optional(),
 });
+
+const cropAndResize = (file: File, size: number): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+      const min = Math.min(img.width, img.height);
+      const sx = (img.width - min) / 2;
+      const sy = (img.height - min) / 2;
+      ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('Canvas toBlob failed'))),
+        'image/webp',
+        0.85
+      );
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(file);
+  });
+};
 
 interface CreateCouponModalProps {
   isOpen: boolean;
@@ -47,6 +72,7 @@ export const CreateCouponModal = ({
   editingCoupon 
 }: CreateCouponModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string>("");
   const { toast } = useToast();
 
@@ -103,17 +129,43 @@ export const CreateCouponModal = ({
     ? new Date(watchedFields.expirationDate) 
     : undefined;
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const mockUrl = `https://images.unsplash.com/photo-${Date.now()}?w=100&h=100&fit=crop&crop=center`;
-      setLogoPreview(mockUrl);
-      setValue("partnerLogo", mockUrl);
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const blob = await cropAndResize(file, 200);
+      const path = `coupon-logos/${Date.now()}-${file.name.replace(/\.[^.]+$/, '')}.webp`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('platform-assets')
+        .upload(path, blob, { contentType: 'image/webp', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('platform-assets')
+        .getPublicUrl(path);
+
+      setLogoPreview(urlData.publicUrl);
+      setValue("partnerLogo", urlData.publicUrl);
       
       toast({
         title: "Logo carregado com sucesso!",
-        description: "O logo do parceiro foi carregado.",
+        description: "O logo do parceiro foi carregado e redimensionado para 200×200px.",
       });
+    } catch (error) {
+      console.error('Logo upload error:', error);
+      toast({
+        title: "Erro no upload",
+        description: "Não foi possível enviar o logo. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+      // Reset file input so the same file can be re-selected
+      e.target.value = '';
     }
   };
 
@@ -142,6 +194,10 @@ export const CreateCouponModal = ({
   };
 
   const handleClose = () => {
+    const hasData = watchedFields.partnerName || watchedFields.offerTitle || watchedFields.code;
+    if (hasData && !editingCoupon) {
+      if (!confirm('Tem certeza que deseja sair? Os dados preenchidos serão perdidos.')) return;
+    }
     reset(defaultValues);
     setLogoPreview("");
     onClose();
@@ -149,7 +205,11 @@ export const CreateCouponModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>
             {editingCoupon ? 'Editar Cupom' : 'Criar Novo Cupom'}
@@ -195,18 +255,24 @@ export const CreateCouponModal = ({
 
           {/* Partner Logo */}
           <div className="space-y-2">
-            <Label htmlFor="partnerLogo">Logo do Parceiro *</Label>
+            <Label htmlFor="partnerLogo">Logo do Parceiro * <span className="text-xs text-muted-foreground">(será redimensionado para 200×200px)</span></Label>
             <div className="flex items-center gap-4">
               {logoPreview && (
-                <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted">
+                <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                   <img src={logoPreview} alt="Preview" className="w-full h-full object-cover" />
                 </div>
               )}
               <div className="flex-1">
-                <Label htmlFor="logoUpload" className="cursor-pointer">
+                <Label htmlFor="logoUpload" className={cn("cursor-pointer", isUploading && "pointer-events-none opacity-50")}>
                   <div className="flex items-center gap-2 p-3 border border-dashed border-border rounded-lg hover:bg-muted/50 transition-colors">
-                    <Upload className="w-4 h-4" />
-                    <span className="text-sm">Clique para fazer upload do logo</span>
+                    {isUploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                    <span className="text-sm">
+                      {isUploading ? 'Enviando...' : 'Clique para fazer upload do logo'}
+                    </span>
                   </div>
                   <input
                     id="logoUpload"
@@ -214,6 +280,7 @@ export const CreateCouponModal = ({
                     accept="image/*"
                     onChange={handleLogoChange}
                     className="hidden"
+                    disabled={isUploading}
                   />
                 </Label>
               </div>
@@ -338,7 +405,7 @@ export const CreateCouponModal = ({
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || isUploading}>
               {isSubmitting ? 'Salvando...' : editingCoupon ? 'Atualizar' : 'Criar Cupom'}
             </Button>
           </div>
