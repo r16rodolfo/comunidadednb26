@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { parseLocalDate } from '@/lib/utils';
 import {
   recommendationBadgeStyles,
   getVariationColorClass,
@@ -55,19 +56,19 @@ export default function AnalysisDetailModal({ analysis, recommendation, open, on
               <div>
                 <DialogTitle className="text-lg">
                   Análise de{' '}
-                  {format(new Date(analysis.date), "dd 'de' MMMM, yyyy", { locale: ptBR })}
+                  {format(parseLocalDate(analysis.date), "dd 'de' MMMM, yyyy", { locale: ptBR })}
                 </DialogTitle>
                 <DialogDescription className="mt-1">
                   {analysis.summary}
                 </DialogDescription>
                 <div className="mt-1 space-y-0.5">
                   {analysis.createdAt && (
-                    <span className="text-[11px] text-muted-foreground/70 block">
+                    <span className="text-xs text-muted-foreground block">
                       Publicado às {format(new Date(analysis.createdAt), "HH:mm 'de' dd/MM/yyyy")}
                     </span>
                   )}
                   {wasEdited && (
-                    <span className="text-[10px] text-muted-foreground/50 italic flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground/70 italic flex items-center gap-1">
                       <Pencil className="h-2.5 w-2.5" />
                       Editado {analysis.editedByName ? `por ${analysis.editedByName}` : ''} em {format(new Date(analysis.updatedAt!), "dd/MM 'às' HH:mm")}
                     </span>
@@ -154,7 +155,7 @@ export default function AnalysisDetailModal({ analysis, recommendation, open, on
           open={showVideo}
           onClose={() => setShowVideo(false)}
           videoUrl={analysis.videoUrl}
-          title={`Vídeo — Análise de ${format(new Date(analysis.date), "dd/MM/yyyy")}`}
+          title={`Vídeo — Análise de ${format(parseLocalDate(analysis.date), "dd/MM/yyyy")}`}
         />
       )}
     </>

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { parseLocalDate } from '@/lib/utils';
 import {
   recommendationBadgeStyles,
   recommendationDotStyles,
@@ -49,10 +50,10 @@ export default function AnalysisFeedCard({ analysis, recommendation, onViewDetai
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-foreground">
-                  {format(new Date(analysis.date), "dd/MM/yyyy", { locale: ptBR })}
+                  {format(parseLocalDate(analysis.date), "dd/MM/yyyy", { locale: ptBR })}
                 </span>
                 {analysis.createdAt && (
-                  <span className="text-[11px] text-muted-foreground/70">
+                  <span className="text-xs text-muted-foreground">
                     às {format(new Date(analysis.createdAt), "HH:mm")}
                   </span>
                 )}
@@ -93,7 +94,7 @@ export default function AnalysisFeedCard({ analysis, recommendation, onViewDetai
                   <span className="flex items-center gap-1 text-xs text-muted-foreground"><ImageIcon className="h-3 w-3" /> Gráfico</span>
                 )}
                 {wasEdited && (
-                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/50 italic">
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground/70 italic">
                     <Pencil className="h-2.5 w-2.5" />
                     Editado {analysis.editedByName ? `por ${analysis.editedByName}` : ''}
                   </span>

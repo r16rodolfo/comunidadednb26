@@ -15,6 +15,7 @@ import { useAdminDnb } from '@/hooks/useAdminDnb';
 import { recommendations } from '@/hooks/useDnb';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { parseLocalDate } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,7 +60,7 @@ export default function AdminAnalyses() {
     withVideo: analyses.filter(a => a.videoUrl).length,
     withImage: analyses.filter(a => a.imageUrl).length,
     thisMonth: analyses.filter(a => {
-      const d = new Date(a.date);
+      const d = parseLocalDate(a.date);
       const now = new Date();
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     }).length,
@@ -158,7 +159,7 @@ export default function AdminAnalyses() {
                       return (
                         <TableRow key={analysis.id}>
                           <TableCell className="font-medium whitespace-nowrap">
-                            {format(new Date(analysis.date), "dd/MM/yyyy", { locale: ptBR })}
+                            {format(parseLocalDate(analysis.date), "dd/MM/yyyy", { locale: ptBR })}
                           </TableCell>
                           <TableCell>
                             <Badge className={`${badgeStyles[analysis.recommendation]} border text-xs`}>
@@ -257,7 +258,7 @@ export default function AdminAnalyses() {
             <AlertDialogHeader>
               <AlertDialogTitle>Excluir análise?</AlertDialogTitle>
               <AlertDialogDescription>
-                A análise de {deleteTarget && format(new Date(deleteTarget.date), "dd/MM/yyyy")} será excluída permanentemente. Esta ação não pode ser desfeita.
+                A análise de {deleteTarget && format(parseLocalDate(deleteTarget.date), "dd/MM/yyyy")} será excluída permanentemente. Esta ação não pode ser desfeita.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

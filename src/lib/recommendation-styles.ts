@@ -18,10 +18,10 @@ export const recommendationDotStyles: Record<string, string> = {
 };
 
 export const recommendationGradientStyles: Record<string, string> = {
-  ideal: 'from-success/20 to-success/5 border-success/30',
-  alert: 'from-warning/20 to-warning/5 border-warning/30',
-  'not-ideal': 'from-destructive/20 to-destructive/5 border-destructive/30',
-  wait: 'from-info/20 to-info/5 border-info/30',
+  ideal: 'from-success/8 to-success/3 border-success/20',
+  alert: 'from-warning/8 to-warning/3 border-warning/20',
+  'not-ideal': 'from-destructive/8 to-destructive/3 border-destructive/20',
+  wait: 'from-info/8 to-info/3 border-info/20',
 };
 
 export function getVariationColorClass(variation: number): string {

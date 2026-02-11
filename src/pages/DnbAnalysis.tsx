@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Info, CalendarSearch, X, TrendingUp } from 'lucide-react';
 import { useDnb } from '@/hooks/useDnb';
+import { parseLocalDate } from '@/lib/utils';
 import { MarketAnalysis } from '@/types/dnb';
 import AnalysisHero from '@/components/dnb/AnalysisHero';
 import AnalysisFeedCard from '@/components/dnb/AnalysisFeedCard';
@@ -47,7 +48,7 @@ export default function DnbAnalysis() {
     if (specificDate) return analysis.date === specificDate;
     if (periodFilter === 'all' || showAllHistory) return true;
     const now = new Date();
-    const analysisDate = new Date(analysis.date);
+    const analysisDate = parseLocalDate(analysis.date);
     const diffDays = Math.floor((now.getTime() - analysisDate.getTime()) / (1000 * 60 * 60 * 24));
     if (periodFilter === '7d') return diffDays <= 7;
     if (periodFilter === '30d') return diffDays <= 30;
@@ -107,6 +108,7 @@ export default function DnbAnalysis() {
             recommendation={latestRecommendation}
             onViewVideo={latestAnalysis.videoUrl ? () => setVideoModal({ open: true, url: latestAnalysis.videoUrl!, title: 'Vídeo — Análise mais recente' }) : undefined}
             onViewImage={latestAnalysis.imageUrl ? () => window.open(latestAnalysis.imageUrl, '_blank') : undefined}
+            onViewDetail={() => setSelectedAnalysis(latestAnalysis)}
           />
         )}
 
@@ -155,7 +157,11 @@ export default function DnbAnalysis() {
             </div>
           </div>
 
-          {displayedHistory.length === 0 ? (
+          {displayedHistory.length === 0 && !hasActiveFilters ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-sm">As análises anteriores aparecerão aqui conforme forem publicadas.</p>
+            </div>
+          ) : displayedHistory.length === 0 && hasActiveFilters ? (
             <div className="text-center py-12 text-muted-foreground">
               <p className="text-sm">Nenhuma análise encontrada para os filtros selecionados</p>
             </div>

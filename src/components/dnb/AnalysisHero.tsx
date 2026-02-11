@@ -11,9 +11,11 @@ import {
   ImageIcon,
   DollarSign,
   Pencil,
+  FileText,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { parseLocalDate } from '@/lib/utils';
 import {
   recommendationBadgeStyles,
   recommendationGradientStyles,
@@ -32,6 +34,7 @@ interface AnalysisHeroProps {
   recommendation: MarketRecommendation;
   onViewVideo?: () => void;
   onViewImage?: () => void;
+  onViewDetail?: () => void;
 }
 
 export default function AnalysisHero({
@@ -39,6 +42,7 @@ export default function AnalysisHero({
   recommendation,
   onViewVideo,
   onViewImage,
+  onViewDetail,
 }: AnalysisHeroProps) {
   const IconComponent = iconMap[recommendation.icon as keyof typeof iconMap];
 
@@ -68,15 +72,15 @@ export default function AnalysisHero({
             </div>
             <div className="text-right">
               <span className="text-sm text-muted-foreground font-medium block">
-                {format(new Date(analysis.date), "dd 'de' MMMM, yyyy", { locale: ptBR })}
+                {format(parseLocalDate(analysis.date), "dd 'de' MMMM, yyyy", { locale: ptBR })}
               </span>
               {analysis.createdAt && (
-                <span className="text-[11px] text-muted-foreground/70 block">
+                <span className="text-xs text-muted-foreground block">
                   Publicado às {format(new Date(analysis.createdAt), "HH:mm")}
                 </span>
               )}
               {wasEdited && (
-                <span className="text-[10px] text-muted-foreground/50 italic flex items-center gap-1 justify-end mt-0.5">
+                <span className="text-xs text-muted-foreground/70 italic flex items-center gap-1 justify-end mt-0.5">
                   <Pencil className="h-2.5 w-2.5" />
                   Editado {analysis.editedByName ? `por ${analysis.editedByName}` : ''} em {format(new Date(analysis.updatedAt!), "dd/MM 'às' HH:mm")}
                 </span>
@@ -91,12 +95,18 @@ export default function AnalysisHero({
           </div>
 
           {/* Summary */}
-          <p className="text-sm leading-relaxed text-foreground/80">
+          <p className="text-sm leading-relaxed text-foreground">
             {analysis.summary}
           </p>
 
-          {/* Media buttons */}
-          <div className="flex items-center gap-2">
+          {/* Action buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {onViewDetail && (
+              <Button variant="default" size="sm" onClick={onViewDetail} className="gap-2">
+                <FileText className="h-4 w-4" />
+                Ver análise completa
+              </Button>
+            )}
             {analysis.videoUrl && (
               <Button variant="outline" size="sm" onClick={onViewVideo} className="gap-2">
                 <Play className="h-4 w-4" />
