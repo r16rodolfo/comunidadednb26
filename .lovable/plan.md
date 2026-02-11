@@ -1,99 +1,126 @@
 
-## Correcao do Modal de Cupons: Preview do Logo, Crop e Protecao contra Fechamento Acidental
+## Correcao Completa do Modulo de Analises de Mercado
 
 ### Problemas Identificados
 
-1. **Logo nao exibe preview**: O upload gera uma URL fake do Unsplash em vez de realmente fazer upload do arquivo. O preview mostra uma imagem quebrada porque a URL nao existe.
+**1. Modal de edicao nao carrega dados existentes**
+O `CreateAnalysisModal` usa `useState` (linha 53) em vez de `useEffect` para resetar o formulario quando `editingAnalysis` muda. O `useState` com callback so executa na montagem inicial, entao ao clicar em "Editar" o formulario aparece vazio como se fosse uma nova analise.
 
-2. **Sem controle de tamanho/crop**: O usuario precisa enviar imagens ja no tamanho correto, sem nenhum ajuste automatico.
+**2. Video abre em nova aba em vez de modal**
+Em `DnbAnalysis.tsx` (linha 119), o clique em "Assistir Video" executa `window.open(url, '_blank')`. No `AnalysisDetailModal`, os botoes de video/imagem nem possuem `onClick`. Deveria abrir um modal com o player Bunny.net embutido.
 
-3. **Modal fecha ao clicar fora**: Um clique acidental fora do modal descarta todo o formulario sem aviso.
+**3. Informacoes nao aparecem no /analise e historico**
+O tipo `MarketAnalysis` nao inclui `created_at` nem `updated_at`, entao os timestamps nao sao exibidos. Alem disso, a data mostrada e apenas o campo `date` (data da analise), sem horario de publicacao.
 
-### Analise: Rascunho vs Protecao Simples
-
-Para o problema do fechamento acidental, avaliamos duas abordagens:
-
-- **Rascunho automatico (draft)**: Salvaria os dados no banco conforme o usuario preenche. Complexo de implementar (requer estado "draft" na tabela, limpeza periodica, logica de merge). Excessivo para o caso de uso.
-
-- **Protecao simples (recomendado)**: Bloquear o clique fora do modal e, ao clicar em "Cancelar" com dados preenchidos, exibir um dialogo de confirmacao. Simples, eficaz e padrao de UX consolidado.
-
-Optamos pela protecao simples.
+**4. Sem indicacao de edicao**
+Nao ha tracking de quem editou ou quando. O campo `updated_at` existe no banco mas nao e mapeado no frontend. Falta um campo `edited_by_name` para registrar o nome do editor.
 
 ### Solucao
 
-**1. Upload real do logo para o storage**
+**1. Corrigir reset do formulario no modal**
+Substituir o `useState` incorreto (linha 53) por um `useEffect` que observa `open` e `editingAnalysis`, resetando todos os campos corretamente.
 
-Substituir a URL fake por upload real ao bucket `platform-assets` (ja existente, publico, com RLS para admins). O arquivo sera salvo em `coupon-logos/{timestamp}-{filename}` e a URL publica sera armazenada no campo `partner_logo`.
+**2. Player de video em modal (Bunny.net)**
+Criar um componente `VideoPlayerModal` que renderiza um iframe do Bunny Stream. Quando a URL do video for um GUID do Bunny, montar a URL do iframe automaticamente. Para URLs externas (YouTube, etc.), embutir como iframe generico. Usar esse modal no Hero, no FeedCard e no DetailModal.
 
-**2. Crop/redimensionamento automatico via Canvas**
+**3. Mapear timestamps no tipo e exibir na UI**
+- Adicionar `created_at` e `updated_at` ao tipo `MarketAnalysis`
+- Mapear esses campos nos hooks `useDnb` e `useAdminDnb`
+- Exibir horario de publicacao no Hero e nos FeedCards (ex: "Publicado em 11/02/2026 as 14:30")
 
-Ao selecionar uma imagem, redimensionar automaticamente para 200x200px usando Canvas API nativa do navegador. Isso garante tamanho uniforme sem o usuario precisar editar previamente. O resultado sera um Blob que entao e enviado ao storage.
+**4. Tracking de edicao**
+- Adicionar coluna `edited_by_name` (text, nullable) na tabela `market_analyses` via migracao SQL
+- No hook `useAdminDnb`, ao atualizar uma analise, preencher `edited_by_name` com o nome do usuario logado
+- Na UI, exibir discretamente "Editado por [nome] em [data/hora]" quando `updated_at` diferir de `created_at`
 
-Nao usaremos uma biblioteca de crop interativo (como react-cropper) para manter a simplicidade -- o logo sera automaticamente centralizado e cortado para formato quadrado.
+### Migracao SQL
 
-**3. Protecao contra fechamento acidental**
+Adicionar coluna para tracking de edicao:
 
-- Usar `onInteractOutside={(e) => e.preventDefault()}` no `DialogContent` para impedir que cliques fora fechem o modal.
-- Usar `onEscapeKeyDown={(e) => e.preventDefault()}` para impedir fechamento via ESC.
-- No botao "Cancelar", verificar se ha dados preenchidos e exibir `confirm()` antes de fechar.
+```sql
+ALTER TABLE public.market_analyses
+ADD COLUMN edited_by_name text;
+```
 
 ### Arquivos Modificados
 
-- **`src/components/admin/CreateCouponModal.tsx`** -- Upload real com crop automatico, preview funcional, protecao contra fechamento
+- **`src/types/dnb.ts`** -- Adicionar `createdAt`, `updatedAt`, `editedByName` ao tipo
+- **`src/hooks/useDnb.ts`** -- Mapear novos campos no `mapRow`
+- **`src/hooks/useAdminDnb.ts`** -- Mapear novos campos; enviar `edited_by_name` no update
+- **`src/components/admin/CreateAnalysisModal.tsx`** -- Corrigir reset com `useEffect`; proteger modal contra fechamento acidental
+- **`src/components/dnb/AnalysisHero.tsx`** -- Exibir horario de publicacao e indicador de edicao; abrir video em modal
+- **`src/components/dnb/AnalysisFeedCard.tsx`** -- Exibir timestamp e indicador de edicao
+- **`src/components/dnb/AnalysisDetailModal.tsx`** -- Adicionar onClick nos botoes de video/imagem; exibir timestamps; player embutido
+- **`src/pages/DnbAnalysis.tsx`** -- Substituir `window.open` por estado de modal de video
+- **`src/components/dnb/VideoPlayerModal.tsx`** (novo) -- Modal com iframe do Bunny player
 
 ### Detalhes Tecnicos
 
-**Upload com crop (Canvas API):**
+**Correcao do reset do formulario:**
 ```typescript
-const cropAndResize = (file: File, size: number): Promise<Blob> => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d')!;
-      const min = Math.min(img.width, img.height);
-      const sx = (img.width - min) / 2;
-      const sy = (img.height - min) / 2;
-      ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
-      canvas.toBlob((blob) => resolve(blob!), 'image/webp', 0.85);
-    };
-    img.src = URL.createObjectURL(file);
-  });
-};
-```
+// ANTES (incorreto - useState nao re-executa)
+useState(() => { if (open && editingAnalysis) { ... } });
 
-**Upload ao Storage:**
-```typescript
-const blob = await cropAndResize(file, 200);
-const path = `coupon-logos/${Date.now()}-${file.name.replace(/\.[^.]+$/, '')}.webp`;
-const { data } = await supabase.storage.from('platform-assets').upload(path, blob, {
-  contentType: 'image/webp',
-  upsert: true,
-});
-const { data: urlData } = supabase.storage.from('platform-assets').getPublicUrl(path);
-setLogoPreview(urlData.publicUrl);
-setValue('partnerLogo', urlData.publicUrl);
-```
-
-**Protecao do modal:**
-```tsx
-<DialogContent
-  onInteractOutside={(e) => e.preventDefault()}
-  onEscapeKeyDown={(e) => e.preventDefault()}
->
-```
-
-**Cancelamento seguro:**
-```typescript
-const handleClose = () => {
-  const hasData = watchedFields.partnerName || watchedFields.offerTitle || watchedFields.code;
-  if (hasData && !editingCoupon) {
-    if (!confirm('Tem certeza que deseja sair? Os dados preenchidos serao perdidos.')) return;
+// DEPOIS (correto - useEffect observa mudancas)
+useEffect(() => {
+  if (open && editingAnalysis) {
+    setForm({ ...editingAnalysis fields... });
+    setSupports(editingAnalysis.supports.map(String));
+    setResistances(editingAnalysis.resistances.map(String));
+  } else if (open && !editingAnalysis) {
+    // Reset para valores padrao (nova analise)
+    setForm({ date: today, recommendation: '', ... });
+    setSupports(['']);
+    setResistances(['']);
   }
-  reset(defaultValues);
-  setLogoPreview('');
-  onClose();
-};
+}, [open, editingAnalysis]);
+```
+
+**VideoPlayerModal (Bunny embed):**
+```typescript
+// Detectar se e GUID do Bunny ou URL externa
+const isBunnyGuid = /^[a-f0-9-]{36}$/.test(videoUrl);
+const embedUrl = isBunnyGuid
+  ? `https://iframe.mediadelivery.net/embed/${libraryId}/${videoUrl}`
+  : videoUrl; // URL externa como YouTube embed
+
+// Renderizar iframe responsivo dentro de um Dialog
+<iframe
+  src={embedUrl}
+  className="w-full aspect-video rounded-lg"
+  allow="autoplay; fullscreen"
+  allowFullScreen
+/>
+```
+
+**Timestamp e indicador de edicao:**
+```typescript
+// No Hero e FeedCard
+const wasEdited = analysis.updatedAt && analysis.createdAt
+  && new Date(analysis.updatedAt).getTime() - new Date(analysis.createdAt).getTime() > 60000;
+
+// Exibir
+<span className="text-xs text-muted-foreground">
+  Publicado em {format(new Date(analysis.createdAt), "dd/MM 'as' HH:mm")}
+</span>
+{wasEdited && (
+  <span className="text-[10px] text-muted-foreground/60 italic">
+    Editado {analysis.editedByName ? `por ${analysis.editedByName}` : ''} em {format(...)}
+  </span>
+)}
+```
+
+**Update mutation com nome do editor:**
+```typescript
+// useAdminDnb - updateAnalysis
+const { data: profile } = await supabase
+  .from('profiles')
+  .select('name')
+  .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+  .single();
+
+await supabase.from('market_analyses').update({
+  ...fields,
+  edited_by_name: profile?.name || 'Admin',
+}).eq('id', analysis.id);
 ```
