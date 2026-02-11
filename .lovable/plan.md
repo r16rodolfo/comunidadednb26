@@ -1,172 +1,165 @@
 
 
-## Checkout Embutido: Stripe + PIX Inline
+## Upgrade e Downgrade com Proration via Stripe
 
-### Objetivo
+### Contexto
 
-Substituir os redirecionamentos externos por experiencias de pagamento embutidas na plataforma:
-- **Stripe**: usar `@stripe/react-stripe-js` com Embedded Checkout (EmbeddedCheckoutProvider + EmbeddedCheckout)
-- **PIX**: gerar QR Code via endpoint `/v1/pixQrCode/create` do AbacatePay e exibir inline
+Todos os planos sao "Premium" com intervalos diferentes (mensal, trimestral, semestral, anual). O Stripe oferece proration nativo via `stripe.subscriptions.update()`, eliminando a necessidade de calculos manuais.
 
-O usuario nunca sai da plataforma para pagar.
-
-### Fluxo atual vs. novo
+### Estrategia de negocios
 
 ```text
-ATUAL:
-  Usuario clica "Assinar" -> Modal escolhe metodo -> Redireciona para URL externa
+UPGRADE (plano mais barato -> mais caro):
+  - Mudanca imediata
+  - Stripe calcula credito pelo tempo nao usado do plano atual
+  - Cobra a diferenca proporcional do novo plano
+  - Usuario recebe acesso imediato ao novo ciclo
 
-NOVO:
-  Usuario clica "Assinar" -> Modal escolhe metodo -> Modal expande com checkout embutido
-    - Cartao: formulario Stripe renderizado dentro do modal
-    - PIX: QR Code + codigo copia-e-cola renderizado dentro do modal
+DOWNGRADE (plano mais caro -> mais barato):
+  - Mudanca agendada para o fim do periodo atual
+  - Usuario mantem acesso ate o fim do que ja pagou
+  - Na renovacao, o novo plano (mais barato) entra em vigor
+  - Credito do valor restante e aplicado automaticamente
+
+CANCELAMENTO:
+  - Acesso mantido ate o fim do periodo pago
+  - Sem reembolso parcial
 ```
 
-### Alteracoes
+### Exemplo pratico
 
-**1. Instalar dependencia `@stripe/react-stripe-js`**
+Um usuario assina o **Trimestral** (R$60/3 meses = R$20/mes). Apos 1 mes, quer fazer **upgrade para Anual** (R$185/ano = ~R$15,42/mes):
 
-Adicionar o pacote `@stripe/react-stripe-js` (que inclui `@stripe/stripe-js` como peer dependency). Necessario para renderizar o Embedded Checkout do Stripe no frontend.
+1. Stripe calcula credito: 2 meses restantes = ~R$40 de credito
+2. Stripe calcula custo proporcional do Anual para o periodo restante
+3. Cobra a diferenca (novo custo - credito)
+4. Novo ciclo anual comeca imediatamente
 
-**2. Criar edge function `create-embedded-checkout` (nova)**
+### Alteracoes necessarias
 
-Arquivo: `supabase/functions/create-embedded-checkout/index.ts`
+**1. Criar edge function `change-plan` (nova)**
 
-Semelhante a `create-checkout`, mas retorna o `client_secret` da sessao ao inves da URL:
+Arquivo: `supabase/functions/change-plan/index.ts`
 
-- Autentica o usuario
-- Resolve o `priceId` via `planPriceIds`
-- Cria sessao Stripe com `mode: "subscription"` e `ui_mode: "embedded"`
-- Configura `return_url` com `{CHECKOUT_SESSION_ID}` placeholder
-- Retorna `{ clientSecret: session.client_secret }`
+Logica central:
+- Recebe `newPlanSlug` do frontend
+- Autentica o usuario e busca seu `stripe_subscription_id` na tabela `subscribers`
+- Recupera a assinatura atual do Stripe
+- Compara `sort_order` dos planos para determinar se e upgrade ou downgrade
+- **Upgrade**: chama `stripe.subscriptions.update()` com `proration_behavior: 'always_invoice'` para cobrar imediatamente
+- **Downgrade**: cria um `subscriptionSchedule` para agendar a mudanca no fim do periodo, usando `stripe.subscriptionSchedules.create()` a partir da assinatura existente
+- Atualiza a tabela `subscribers` com o novo estado (ou `pending_downgrade_to` para downgrades)
+- Retorna `{ success, type: 'upgrade' | 'downgrade', prorationAmount?, effectiveDate? }`
 
-Registrar em `supabase/config.toml` com `verify_jwt = false`.
+**2. Criar edge function `preview-plan-change` (nova)**
 
-**3. Criar edge function `create-pix-qrcode` (nova)**
+Arquivo: `supabase/functions/preview-plan-change/index.ts`
 
-Arquivo: `supabase/functions/create-pix-qrcode/index.ts`
+Antes de confirmar a mudanca, mostrar ao usuario quanto sera cobrado/creditado:
+- Recebe `newPlanSlug` do frontend
+- Chama `stripe.invoices.createPreview()` com os itens da assinatura atual e os novos, usando `subscription_proration_behavior`
+- Retorna `{ amountDue, credit, effectiveDate, newPlanName }` para exibicao no frontend
 
-- Autentica o usuario
-- Busca dados do perfil (CPF, telefone) na tabela `profiles`
-- Busca dados do plano na tabela `plans`
-- Chama `POST https://api.abacatepay.com/v1/pixQrCode/create` com o valor e dados do cliente
-- Retorna `{ qrCode, qrCodeBase64, brCode, expiresAt }` para renderizacao no frontend
+**3. Atualizar o frontend: adicionar modal de confirmacao**
 
-Registrar em `supabase/config.toml` com `verify_jwt = false`.
+Criar componente `PlanChangeConfirmModal` em `src/components/subscription/PlanChangeConfirmModal.tsx`:
+- Ao clicar em "Upgrade" ou "Downgrade", abre um modal com:
+  - Nome do plano atual e do novo plano
+  - Para upgrades: valor a ser cobrado agora (proration preview)
+  - Para downgrades: data em que a mudanca entrara em vigor
+  - Botao "Confirmar mudanca" e "Cancelar"
 
-**4. Refatorar `PaymentMethodModal` em fluxo multi-etapa**
+**4. Atualizar `Subscription.tsx`**
 
-Arquivo: `src/components/subscription/PaymentMethodModal.tsx`
+- Alterar o `handlePlanClick` para diferenciar entre:
+  - Nova assinatura (sem plano ativo): abre `PaymentMethodModal` como hoje
+  - Mudanca de plano (ja assinante): abre `PlanChangeConfirmModal` com preview
+- Integrar chamadas a `preview-plan-change` e `change-plan`
 
-Transformar o modal em 3 estados:
-- **Etapa 1 - Escolha**: botoes "Cartao" e "PIX" (igual hoje)
-- **Etapa 2a - Stripe Embedded**: carrega `EmbeddedCheckoutProvider` + `EmbeddedCheckout` com o `clientSecret` obtido da nova edge function. O modal expande para acomodar o formulario.
-- **Etapa 2b - PIX Inline**: exibe imagem do QR Code, codigo `brCode` para copiar, timer de expiracao e botao "Copiar codigo"
+**5. Atualizar `useSubscription.ts`**
 
-Adicionar botao "Voltar" para retornar a etapa 1.
+Adicionar funcoes:
+- `previewPlanChange(newPlanSlug)`: chama `preview-plan-change` e retorna dados do preview
+- `changePlan(newPlanSlug)`: chama `change-plan` e atualiza o estado
 
-**5. Criar componente `StripeEmbeddedCheckout`**
+**6. Atualizar webhook `stripe-webhook/index.ts`**
 
-Arquivo: `src/components/subscription/StripeEmbeddedCheckout.tsx`
+O webhook ja trata `customer.subscription.updated` e detecta schedules pendentes. Verificar que o fluxo de upgrade (mudanca imediata de price) atualiza corretamente o `current_plan_slug` e `subscription_tier` na tabela `subscribers`.
 
-- Inicializa `loadStripe` com a chave publica do Stripe (variavel `VITE_STRIPE_PUBLISHABLE_KEY` ou hardcoded)
-- Recebe `clientSecret` como prop
-- Renderiza `EmbeddedCheckoutProvider` + `EmbeddedCheckout`
-- Trata `onComplete` para fechar o modal, exibir toast de sucesso e disparar `checkSubscription`
+**7. Registrar novas edge functions em `config.toml`**
 
-**6. Criar componente `PixQrCodeCheckout`**
+Adicionar:
+```toml
+[functions.change-plan]
+verify_jwt = false
 
-Arquivo: `src/components/subscription/PixQrCodeCheckout.tsx`
-
-- Recebe `qrCode` (base64 da imagem), `brCode` (texto copiavel) e `expiresAt`
-- Renderiza a imagem do QR Code centralizada
-- Exibe campo com o codigo `brCode` e botao "Copiar"
-- Mostra countdown de expiracao
-- Polling opcional: a cada 5s chama `check-subscription` para detectar pagamento confirmado e fechar o modal automaticamente
-
-**7. Atualizar `useSubscription` hook**
-
-Arquivo: `src/hooks/useSubscription.ts`
-
-- Adicionar funcao `createEmbeddedCheckout(planSlug)` que chama a nova edge function e retorna `clientSecret`
-- Adicionar funcao `createPixQrCode(planSlug)` que chama a nova edge function e retorna dados do QR Code
-- Manter funcoes antigas (`createCheckout`, `createPixCheckout`) como fallback
-
-**8. Adicionar chave publica do Stripe ao frontend**
-
-A chave publica do Stripe (pk_live_... ou pk_test_...) e necessaria no frontend para inicializar o `loadStripe`. Sera armazenada como `VITE_STRIPE_PUBLISHABLE_KEY` no `.env` ou, preferencialmente, como constante no codigo (chaves publicaveis sao seguras no frontend).
-
-**9. Atualizar `Subscription.tsx`**
-
-Passar as novas funcoes do hook para o `PaymentMethodModal` refatorado, de modo que ao escolher o metodo de pagamento, o modal transite para a etapa correspondente sem sair da pagina.
+[functions.preview-plan-change]
+verify_jwt = false
+```
 
 ### Secao tecnica
 
-**Edge function `create-embedded-checkout` (resumo):**
+**Edge function `change-plan` (logica principal):**
 ```typescript
-const session = await stripe.checkout.sessions.create({
-  customer: customerId,
-  customer_email: customerId ? undefined : user.email,
-  line_items: [{ price: priceId, quantity: 1 }],
-  mode: "subscription",
-  ui_mode: "embedded",
-  return_url: `${origin}/subscription?session_id={CHECKOUT_SESSION_ID}`,
-  allow_promotion_codes: true,
-  metadata: { user_id: user.id, plan_id: planId },
-});
+// Determinar tipo de mudanca
+const currentSortOrder = planSortOrders[currentPlanSlug];
+const newSortOrder = planSortOrders[newPlanSlug];
+const isUpgrade = newSortOrder > currentSortOrder;
 
-return Response.json({ clientSecret: session.client_secret });
-```
-
-**Edge function `create-pix-qrcode` (resumo):**
-```typescript
-const response = await fetch("https://api.abacatepay.com/v1/pixQrCode/create", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${apiKey}`,
-  },
-  body: JSON.stringify({
-    amount: plan.price_cents,
-    expiresIn: 1800, // 30 minutos
-    description: `Assinatura ${plan.name}`,
-  }),
-});
-
-const data = await response.json();
-return Response.json({
-  qrCode: data.data.qrCodeBase64,
-  brCode: data.data.brCode,
-  expiresAt: data.data.expiresAt,
-});
-```
-
-**Componente Stripe Embedded (resumo):**
-```typescript
-import { loadStripe } from "@stripe/stripe-js";
-import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
-
-const stripePromise = loadStripe("pk_live_...");
-
-function StripeEmbeddedCheckout({ clientSecret, onComplete }) {
-  return (
-    <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret, onComplete }}>
-      <EmbeddedCheckout />
-    </EmbeddedCheckoutProvider>
-  );
+if (isUpgrade) {
+  // Upgrade: mudanca imediata com cobranca proporcional
+  await stripe.subscriptions.update(subscriptionId, {
+    items: [{ id: subscriptionItemId, price: newPriceId }],
+    proration_behavior: 'always_invoice',
+  });
+} else {
+  // Downgrade: agendar para o fim do periodo
+  const schedule = await stripe.subscriptionSchedules.create({
+    from_subscription: subscriptionId,
+  });
+  await stripe.subscriptionSchedules.update(schedule.id, {
+    phases: [
+      { // Fase atual
+        items: [{ price: currentPriceId, quantity: 1 }],
+        start_date: schedule.phases[0].start_date,
+        end_date: schedule.phases[0].end_date,
+      },
+      { // Proxima fase (downgrade)
+        items: [{ price: newPriceId, quantity: 1 }],
+        iterations: 1,
+      },
+    ],
+  });
 }
 ```
 
+**Edge function `preview-plan-change` (logica principal):**
+```typescript
+const preview = await stripe.invoices.createPreview({
+  customer: customerId,
+  subscription: subscriptionId,
+  subscription_items: [{ id: subscriptionItemId, price: newPriceId }],
+  subscription_proration_behavior: 'always_invoice',
+});
+
+return {
+  amountDue: preview.amount_due, // em centavos
+  credit: preview.lines.data
+    .filter(l => l.amount < 0)
+    .reduce((sum, l) => sum + l.amount, 0),
+  total: preview.total,
+  currency: preview.currency,
+};
+```
+
 **Arquivos criados:**
-- `supabase/functions/create-embedded-checkout/index.ts`
-- `supabase/functions/create-pix-qrcode/index.ts`
-- `src/components/subscription/StripeEmbeddedCheckout.tsx`
-- `src/components/subscription/PixQrCodeCheckout.tsx`
+- `supabase/functions/change-plan/index.ts`
+- `supabase/functions/preview-plan-change/index.ts`
+- `src/components/subscription/PlanChangeConfirmModal.tsx`
 
 **Arquivos alterados:**
-- `supabase/config.toml` — registrar novas edge functions
-- `src/components/subscription/PaymentMethodModal.tsx` — fluxo multi-etapa
-- `src/hooks/useSubscription.ts` — novas funcoes
-- `src/pages/Subscription.tsx` — integrar novas props
-- `package.json` — adicionar `@stripe/react-stripe-js`
+- `supabase/config.toml` -- registrar novas edge functions
+- `src/hooks/useSubscription.ts` -- novas funcoes `previewPlanChange` e `changePlan`
+- `src/pages/Subscription.tsx` -- integrar fluxo de mudanca de plano
+- `supabase/functions/_shared/plan-config.ts` -- adicionar mapa de sort_order para uso no backend
 
