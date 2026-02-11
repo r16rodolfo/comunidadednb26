@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
+import { usePlans, getPlanDisplayName } from '@/hooks/usePlans';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 export default function Profile() {
   const { user, updateProfile } = useAuth();
   const { subscription, isLoading: isSubLoading, isPortalLoading, openCustomerPortal } = useSubscription();
+  const { plans } = usePlans();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -233,7 +235,7 @@ export default function Profile() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="text-center p-4 border rounded-lg">
                         <p className="text-sm text-muted-foreground">Plano Atual</p>
-                        <p className="text-lg font-semibold capitalize">{subscription.current_plan_slug || subscription.subscription_tier || 'Premium'}</p>
+                        <p className="text-lg font-semibold">{getPlanDisplayName(subscription.current_plan_slug, plans)}</p>
                       </div>
                       <div className="text-center p-4 border rounded-lg">
                         <p className="text-sm text-muted-foreground">Status</p>

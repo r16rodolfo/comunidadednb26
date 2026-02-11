@@ -80,7 +80,7 @@ export function usePlans() {
   };
 }
 
-// Utility functions (kept here for convenience)
+// Utility functions
 export const formatPrice = (priceCents: number): string => {
   if (priceCents === 0) return 'R$ 0';
   return `R$ ${(priceCents / 100).toFixed(2).replace('.', ',')}`;
@@ -100,4 +100,11 @@ export const formatMonthlyEquivalent = (plan: SubscriptionPlan): string => {
   const monthly = getMonthlyEquivalent(plan);
   if (monthly === 0) return 'R$ 0';
   return `R$ ${(monthly / 100).toFixed(2).replace('.', ',')}`;
+};
+
+/** Maps a plan slug to its display name using the plans array. Falls back to 'Gratuito' if not found. */
+export const getPlanDisplayName = (slug: string | null | undefined, plans: SubscriptionPlan[]): string => {
+  if (!slug) return 'Gratuito';
+  const plan = plans.find(p => p.slug === slug);
+  return plan?.name ?? slug;
 };

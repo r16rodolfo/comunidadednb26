@@ -10,8 +10,10 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { PlanManagementCard } from '@/components/admin/PlanManagementCard';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { usePlans, getPlanDisplayName } from '@/hooks/usePlans';
 
 export default function AdminSubscriptions() {
+  const { plans } = usePlans();
   const { data: subscribers = [], isLoading } = useQuery({
     queryKey: ['admin-subscribers'],
     queryFn: async () => {
@@ -97,7 +99,7 @@ export default function AdminSubscriptions() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className="font-medium">{sub.current_plan_slug || 'Gratuito'}</span>
+                          <span className="font-medium">{getPlanDisplayName(sub.current_plan_slug, plans)}</span>
                         </TableCell>
                         <TableCell>{getStatusBadge(sub)}</TableCell>
                         <TableCell>
