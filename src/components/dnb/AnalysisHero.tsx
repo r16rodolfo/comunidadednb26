@@ -10,6 +10,7 @@ import {
   Play,
   ImageIcon,
   DollarSign,
+  Pencil,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -41,6 +42,9 @@ export default function AnalysisHero({
 }: AnalysisHeroProps) {
   const IconComponent = iconMap[recommendation.icon as keyof typeof iconMap];
 
+  const wasEdited = analysis.updatedAt && analysis.createdAt
+    && new Date(analysis.updatedAt).getTime() - new Date(analysis.createdAt).getTime() > 60000;
+
   return (
     <Card className={`border-2 bg-gradient-to-br ${recommendationGradientStyles[analysis.recommendation]} shadow-lg overflow-hidden`}>
       <CardContent className="p-6 md:p-8">
@@ -62,23 +66,28 @@ export default function AnalysisHero({
                 </p>
               </div>
             </div>
-            <span className="text-sm text-muted-foreground font-medium">
-              {format(new Date(analysis.date), "dd 'de' MMMM, yyyy", { locale: ptBR })}
-            </span>
+            <div className="text-right">
+              <span className="text-sm text-muted-foreground font-medium block">
+                {format(new Date(analysis.date), "dd 'de' MMMM, yyyy", { locale: ptBR })}
+              </span>
+              {analysis.createdAt && (
+                <span className="text-[11px] text-muted-foreground/70 block">
+                  Publicado às {format(new Date(analysis.createdAt), "HH:mm")}
+                </span>
+              )}
+              {wasEdited && (
+                <span className="text-[10px] text-muted-foreground/50 italic flex items-center gap-1 justify-end mt-0.5">
+                  <Pencil className="h-2.5 w-2.5" />
+                  Editado {analysis.editedByName ? `por ${analysis.editedByName}` : ''} em {format(new Date(analysis.updatedAt!), "dd/MM 'às' HH:mm")}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Middle: Quotes */}
           <div className="grid grid-cols-2 gap-4">
-            <PriceIndicator
-              label="USD/BRL"
-              price={analysis.dollarPrice}
-              variation={analysis.dollarVariation}
-            />
-            <PriceIndicator
-              label="EUR/BRL"
-              price={analysis.euroPrice}
-              variation={analysis.euroVariation}
-            />
+            <PriceIndicator label="USD/BRL" price={analysis.dollarPrice} variation={analysis.dollarVariation} />
+            <PriceIndicator label="EUR/BRL" price={analysis.euroPrice} variation={analysis.euroVariation} />
           </div>
 
           {/* Summary */}
@@ -89,23 +98,13 @@ export default function AnalysisHero({
           {/* Media buttons */}
           <div className="flex items-center gap-2">
             {analysis.videoUrl && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onViewVideo}
-                className="gap-2"
-              >
+              <Button variant="outline" size="sm" onClick={onViewVideo} className="gap-2">
                 <Play className="h-4 w-4" />
                 Assistir Vídeo
               </Button>
             )}
             {analysis.imageUrl && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onViewImage}
-                className="gap-2"
-              >
+              <Button variant="outline" size="sm" onClick={onViewImage} className="gap-2">
                 <ImageIcon className="h-4 w-4" />
                 Ver Gráfico
               </Button>
@@ -117,15 +116,7 @@ export default function AnalysisHero({
   );
 }
 
-function PriceIndicator({
-  label,
-  price,
-  variation,
-}: {
-  label: string;
-  price: number;
-  variation: number;
-}) {
+function PriceIndicator({ label, price, variation }: { label: string; price: number; variation: number }) {
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg bg-background/60 backdrop-blur-sm">
       <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -134,8 +125,7 @@ function PriceIndicator({
         <div className="flex items-baseline gap-2">
           <span className="text-lg font-bold">R$ {price.toFixed(2)}</span>
           <span className={`text-xs font-semibold ${getVariationColorClass(variation)}`}>
-            {variation >= 0 ? '+' : ''}
-            {variation}%
+            {variation >= 0 ? '+' : ''}{variation}%
           </span>
         </div>
       </div>

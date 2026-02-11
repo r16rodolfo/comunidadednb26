@@ -10,6 +10,7 @@ import {
   Play,
   ImageIcon,
   Eye,
+  Pencil,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -19,12 +20,7 @@ import {
   getVariationColorClass,
 } from '@/lib/recommendation-styles';
 
-const iconMap = {
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  Clock,
-};
+const iconMap = { TrendingUp, TrendingDown, AlertTriangle, Clock };
 
 interface AnalysisFeedCardProps {
   analysis: MarketAnalysis;
@@ -32,18 +28,14 @@ interface AnalysisFeedCardProps {
   onViewDetail: () => void;
 }
 
-export default function AnalysisFeedCard({
-  analysis,
-  recommendation,
-  onViewDetail,
-}: AnalysisFeedCardProps) {
+export default function AnalysisFeedCard({ analysis, recommendation, onViewDetail }: AnalysisFeedCardProps) {
   const IconComponent = iconMap[recommendation.icon as keyof typeof iconMap];
 
+  const wasEdited = analysis.updatedAt && analysis.createdAt
+    && new Date(analysis.updatedAt).getTime() - new Date(analysis.createdAt).getTime() > 60000;
+
   return (
-    <Card
-      className="group cursor-pointer hover:shadow-md transition-all duration-200 hover:border-primary/30"
-      onClick={onViewDetail}
-    >
+    <Card className="group cursor-pointer hover:shadow-md transition-all duration-200 hover:border-primary/30" onClick={onViewDetail}>
       <CardContent className="p-4 md:p-5">
         <div className="flex items-start gap-4">
           {/* Timeline dot */}
@@ -59,10 +51,12 @@ export default function AnalysisFeedCard({
                 <span className="text-sm font-semibold text-foreground">
                   {format(new Date(analysis.date), "dd/MM/yyyy", { locale: ptBR })}
                 </span>
-                <Badge
-                  variant="outline"
-                  className={`${recommendationBadgeStyles[analysis.recommendation]} border text-xs font-medium`}
-                >
+                {analysis.createdAt && (
+                  <span className="text-[11px] text-muted-foreground/70">
+                    às {format(new Date(analysis.createdAt), "HH:mm")}
+                  </span>
+                )}
+                <Badge variant="outline" className={`${recommendationBadgeStyles[analysis.recommendation]} border text-xs font-medium`}>
                   {IconComponent && <IconComponent className="h-3 w-3 mr-1" />}
                   {recommendation.label}
                 </Badge>
@@ -87,21 +81,21 @@ export default function AnalysisFeedCard({
             </div>
 
             {/* Summary */}
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {analysis.summary}
-            </p>
+            <p className="text-sm text-muted-foreground line-clamp-2">{analysis.summary}</p>
 
-            {/* Bottom row: media indicators + action */}
+            {/* Bottom row */}
             <div className="flex items-center justify-between pt-1">
               <div className="flex items-center gap-2">
                 {analysis.videoUrl && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Play className="h-3 w-3" /> Vídeo
-                  </span>
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground"><Play className="h-3 w-3" /> Vídeo</span>
                 )}
                 {analysis.imageUrl && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <ImageIcon className="h-3 w-3" /> Gráfico
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground"><ImageIcon className="h-3 w-3" /> Gráfico</span>
+                )}
+                {wasEdited && (
+                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/50 italic">
+                    <Pencil className="h-2.5 w-2.5" />
+                    Editado {analysis.editedByName ? `por ${analysis.editedByName}` : ''}
                   </span>
                 )}
               </div>
@@ -109,10 +103,7 @@ export default function AnalysisFeedCard({
                 variant="ghost"
                 size="sm"
                 className="h-7 text-xs gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onViewDetail();
-                }}
+                onClick={(e) => { e.stopPropagation(); onViewDetail(); }}
               >
                 <Eye className="h-3 w-3" />
                 Ver análise

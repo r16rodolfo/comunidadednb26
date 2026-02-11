@@ -50,6 +50,9 @@ function mapRow(row: any): MarketAnalysis {
     imageUrl: row.image_url || undefined,
     supports: (row.supports || []).map(Number),
     resistances: (row.resistances || []).map(Number),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    editedByName: row.edited_by_name || undefined,
   };
 }
 

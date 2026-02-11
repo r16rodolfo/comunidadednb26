@@ -239,6 +239,7 @@ export type Database = {
           date: string
           dollar_price: number
           dollar_variation: number
+          edited_by_name: string | null
           euro_price: number
           euro_variation: number
           full_analysis: string
@@ -256,6 +257,7 @@ export type Database = {
           date: string
           dollar_price: number
           dollar_variation?: number
+          edited_by_name?: string | null
           euro_price: number
           euro_variation?: number
           full_analysis: string
@@ -273,6 +275,7 @@ export type Database = {
           date?: string
           dollar_price?: number
           dollar_variation?: number
+          edited_by_name?: string | null
           euro_price?: number
           euro_variation?: number
           full_analysis?: string

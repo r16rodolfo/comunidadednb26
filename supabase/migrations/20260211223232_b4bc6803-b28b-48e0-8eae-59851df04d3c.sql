@@ -1,0 +1,1 @@
+ALTER TABLE public.market_analyses ADD COLUMN edited_by_name text;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,32 +25,29 @@ const recommendationOptions = [
   { value: 'wait', label: 'Momento de Aguardar', icon: Clock, color: 'bg-info/10 text-info' },
 ] as const;
 
+const defaultForm = {
+  date: new Date().toISOString().split('T')[0],
+  recommendation: '' as string,
+  dollarPrice: '',
+  dollarVariation: '',
+  euroPrice: '',
+  euroVariation: '',
+  summary: '',
+  fullAnalysis: '',
+  videoUrl: '',
+  imageUrl: '',
+};
+
 export function CreateAnalysisModal({ open, onOpenChange, onSave, editingAnalysis }: CreateAnalysisModalProps) {
   const { toast } = useToast();
   const isEditing = !!editingAnalysis;
 
-  const [form, setForm] = useState({
-    date: editingAnalysis?.date || new Date().toISOString().split('T')[0],
-    recommendation: editingAnalysis?.recommendation || '' as string,
-    dollarPrice: editingAnalysis?.dollarPrice?.toString() || '',
-    dollarVariation: editingAnalysis?.dollarVariation?.toString() || '',
-    euroPrice: editingAnalysis?.euroPrice?.toString() || '',
-    euroVariation: editingAnalysis?.euroVariation?.toString() || '',
-    summary: editingAnalysis?.summary || '',
-    fullAnalysis: editingAnalysis?.fullAnalysis || '',
-    videoUrl: editingAnalysis?.videoUrl || '',
-    imageUrl: editingAnalysis?.imageUrl || '',
-  });
+  const [form, setForm] = useState(defaultForm);
+  const [supports, setSupports] = useState<string[]>(['']);
+  const [resistances, setResistances] = useState<string[]>(['']);
 
-  const [supports, setSupports] = useState<string[]>(
-    editingAnalysis?.supports?.map(String) || ['']
-  );
-  const [resistances, setResistances] = useState<string[]>(
-    editingAnalysis?.resistances?.map(String) || ['']
-  );
-
-  // Reset form when modal opens with new data
-  useState(() => {
+  // Correctly reset form when modal opens / editingAnalysis changes
+  useEffect(() => {
     if (open && editingAnalysis) {
       setForm({
         date: editingAnalysis.date,
@@ -64,10 +61,14 @@ export function CreateAnalysisModal({ open, onOpenChange, onSave, editingAnalysi
         videoUrl: editingAnalysis.videoUrl || '',
         imageUrl: editingAnalysis.imageUrl || '',
       });
-      setSupports(editingAnalysis.supports.map(String));
-      setResistances(editingAnalysis.resistances.map(String));
+      setSupports(editingAnalysis.supports.length > 0 ? editingAnalysis.supports.map(String) : ['']);
+      setResistances(editingAnalysis.resistances.length > 0 ? editingAnalysis.resistances.map(String) : ['']);
+    } else if (open && !editingAnalysis) {
+      setForm({ ...defaultForm, date: new Date().toISOString().split('T')[0] });
+      setSupports(['']);
+      setResistances(['']);
     }
-  });
+  }, [open, editingAnalysis]);
 
   const updateField = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -89,6 +90,15 @@ export function CreateAnalysisModal({ open, onOpenChange, onSave, editingAnalysi
     } else {
       setResistances(prev => prev.map((v, i) => i === index ? value : v));
     }
+  };
+
+  const hasData = form.summary || form.dollarPrice || form.euroPrice || form.fullAnalysis;
+
+  const handleClose = () => {
+    if (hasData && !isEditing) {
+      if (!confirm('Tem certeza que deseja sair? Os dados preenchidos serão perdidos.')) return;
+    }
+    onOpenChange(false);
   };
 
   const handleSubmit = () => {
@@ -116,23 +126,15 @@ export function CreateAnalysisModal({ open, onOpenChange, onSave, editingAnalysi
     onSave(analysis);
     toast({ title: isEditing ? 'Análise atualizada!' : 'Análise criada!' });
     onOpenChange(false);
-
-    // Reset form
-    setForm({
-      date: new Date().toISOString().split('T')[0],
-      recommendation: '',
-      dollarPrice: '', dollarVariation: '',
-      euroPrice: '', euroVariation: '',
-      summary: '', fullAnalysis: '',
-      videoUrl: '', imageUrl: '',
-    });
-    setSupports(['']);
-    setResistances(['']);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else onOpenChange(v); }}>
+      <DialogContent
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Editar Análise' : 'Nova Análise de Mercado'}</DialogTitle>
           <DialogDescription>
@@ -180,47 +182,19 @@ export function CreateAnalysisModal({ open, onOpenChange, onSave, editingAnalysi
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="dollarPrice">USD/BRL (R$) *</Label>
-                <Input
-                  id="dollarPrice"
-                  type="number"
-                  step="0.01"
-                  placeholder="5.59"
-                  value={form.dollarPrice}
-                  onChange={e => updateField('dollarPrice', e.target.value)}
-                />
+                <Input id="dollarPrice" type="number" step="0.01" placeholder="5.59" value={form.dollarPrice} onChange={e => updateField('dollarPrice', e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="dollarVariation">Variação USD (%)</Label>
-                <Input
-                  id="dollarVariation"
-                  type="number"
-                  step="0.01"
-                  placeholder="-0.35"
-                  value={form.dollarVariation}
-                  onChange={e => updateField('dollarVariation', e.target.value)}
-                />
+                <Input id="dollarVariation" type="number" step="0.01" placeholder="-0.35" value={form.dollarVariation} onChange={e => updateField('dollarVariation', e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="euroPrice">EUR/BRL (R$) *</Label>
-                <Input
-                  id="euroPrice"
-                  type="number"
-                  step="0.01"
-                  placeholder="6.44"
-                  value={form.euroPrice}
-                  onChange={e => updateField('euroPrice', e.target.value)}
-                />
+                <Input id="euroPrice" type="number" step="0.01" placeholder="6.44" value={form.euroPrice} onChange={e => updateField('euroPrice', e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="euroVariation">Variação EUR (%)</Label>
-                <Input
-                  id="euroVariation"
-                  type="number"
-                  step="0.01"
-                  placeholder="-0.67"
-                  value={form.euroVariation}
-                  onChange={e => updateField('euroVariation', e.target.value)}
-                />
+                <Input id="euroVariation" type="number" step="0.01" placeholder="-0.67" value={form.euroVariation} onChange={e => updateField('euroVariation', e.target.value)} />
               </div>
             </div>
           </div>
@@ -231,23 +205,12 @@ export function CreateAnalysisModal({ open, onOpenChange, onSave, editingAnalysi
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="summary">Resumo *</Label>
-              <Input
-                id="summary"
-                placeholder="Dólar em baixa mas cenário lateral mantido"
-                value={form.summary}
-                onChange={e => updateField('summary', e.target.value)}
-              />
+              <Input id="summary" placeholder="Dólar em baixa mas cenário lateral mantido" value={form.summary} onChange={e => updateField('summary', e.target.value)} />
               <p className="text-xs text-muted-foreground">Uma frase curta que aparece no card do feed.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="fullAnalysis">Análise Completa *</Label>
-              <Textarea
-                id="fullAnalysis"
-                rows={5}
-                placeholder="O dólar fechou em baixa de -0,35% nessa quinta..."
-                value={form.fullAnalysis}
-                onChange={e => updateField('fullAnalysis', e.target.value)}
-              />
+              <Textarea id="fullAnalysis" rows={5} placeholder="O dólar fechou em baixa de -0,35% nessa quinta..." value={form.fullAnalysis} onChange={e => updateField('fullAnalysis', e.target.value)} />
             </div>
           </div>
 
@@ -255,61 +218,30 @@ export function CreateAnalysisModal({ open, onOpenChange, onSave, editingAnalysi
 
           {/* Technical Levels */}
           <div className="grid grid-cols-2 gap-6">
-            {/* Supports */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="flex items-center gap-1.5">
-                  <TrendingDown className="h-3.5 w-3.5 text-primary" />
-                  Suportes
-                </Label>
-                <Button type="button" variant="ghost" size="sm" onClick={() => addLevel('supports')} className="h-7 text-xs gap-1">
-                  <Plus className="h-3 w-3" /> Adicionar
-                </Button>
+                <Label className="flex items-center gap-1.5"><TrendingDown className="h-3.5 w-3.5 text-primary" />Suportes</Label>
+                <Button type="button" variant="ghost" size="sm" onClick={() => addLevel('supports')} className="h-7 text-xs gap-1"><Plus className="h-3 w-3" /> Adicionar</Button>
               </div>
               {supports.map((val, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="R$ 5.50"
-                    value={val}
-                    onChange={e => updateLevel('supports', i, e.target.value)}
-                    className="h-8 text-sm"
-                  />
+                  <Input type="number" step="0.01" placeholder="R$ 5.50" value={val} onChange={e => updateLevel('supports', i, e.target.value)} className="h-8 text-sm" />
                   {supports.length > 1 && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => removeLevel('supports', i)} className="h-8 w-8 p-0 shrink-0">
-                      <X className="h-3 w-3" />
-                    </Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => removeLevel('supports', i)} className="h-8 w-8 p-0 shrink-0"><X className="h-3 w-3" /></Button>
                   )}
                 </div>
               ))}
             </div>
-
-            {/* Resistances */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="flex items-center gap-1.5">
-                  <TrendingUp className="h-3.5 w-3.5 text-destructive" />
-                  Resistências
-                </Label>
-                <Button type="button" variant="ghost" size="sm" onClick={() => addLevel('resistances')} className="h-7 text-xs gap-1">
-                  <Plus className="h-3 w-3" /> Adicionar
-                </Button>
+                <Label className="flex items-center gap-1.5"><TrendingUp className="h-3.5 w-3.5 text-destructive" />Resistências</Label>
+                <Button type="button" variant="ghost" size="sm" onClick={() => addLevel('resistances')} className="h-7 text-xs gap-1"><Plus className="h-3 w-3" /> Adicionar</Button>
               </div>
               {resistances.map((val, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="R$ 5.63"
-                    value={val}
-                    onChange={e => updateLevel('resistances', i, e.target.value)}
-                    className="h-8 text-sm"
-                  />
+                  <Input type="number" step="0.01" placeholder="R$ 5.63" value={val} onChange={e => updateLevel('resistances', i, e.target.value)} className="h-8 text-sm" />
                   {resistances.length > 1 && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => removeLevel('resistances', i)} className="h-8 w-8 p-0 shrink-0">
-                      <X className="h-3 w-3" />
-                    </Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => removeLevel('resistances', i)} className="h-8 w-8 p-0 shrink-0"><X className="h-3 w-3" /></Button>
                   )}
                 </div>
               ))}
@@ -325,37 +257,26 @@ export function CreateAnalysisModal({ open, onOpenChange, onSave, editingAnalysi
               <Badge variant="outline" className="text-xs font-normal">Opcional</Badge>
             </h4>
             <p className="text-xs text-muted-foreground mb-3">
-              Por enquanto, cole as URLs diretamente. Futuramente, o upload será integrado ao Bunny.net.
+              Cole o GUID do vídeo Bunny ou uma URL externa. Para imagens, cole a URL do CDN.
             </p>
             <div className="space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="videoUrl" className="flex items-center gap-1.5 text-sm">
-                  <Video className="h-3.5 w-3.5" /> URL do Vídeo
-                </Label>
-                <Input
-                  id="videoUrl"
-                  placeholder="https://... ou Bunny Video GUID (futuro)"
-                  value={form.videoUrl}
-                  onChange={e => updateField('videoUrl', e.target.value)}
-                />
+                <Label htmlFor="videoUrl" className="flex items-center gap-1.5 text-sm"><Video className="h-3.5 w-3.5" /> URL / GUID do Vídeo</Label>
+                <Input id="videoUrl" placeholder="GUID do Bunny ou URL externa" value={form.videoUrl} onChange={e => updateField('videoUrl', e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="imageUrl" className="flex items-center gap-1.5 text-sm">
-                  <ImageIcon className="h-3.5 w-3.5" /> URL da Imagem/Gráfico
-                </Label>
-                <Input
-                  id="imageUrl"
-                  placeholder="https://... ou Bunny CDN URL (futuro)"
-                  value={form.imageUrl}
-                  onChange={e => updateField('imageUrl', e.target.value)}
-                />
+                <Label htmlFor="imageUrl" className="flex items-center gap-1.5 text-sm"><ImageIcon className="h-3.5 w-3.5" /> URL da Imagem/Gráfico</Label>
+                <Input id="imageUrl" placeholder="https://..." value={form.imageUrl} onChange={e => updateField('imageUrl', e.target.value)} />
               </div>
             </div>
           </div>
 
-          <Button onClick={handleSubmit} className="w-full">
-            {isEditing ? 'Salvar Alterações' : 'Publicar Análise'}
-          </Button>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={handleClose} className="flex-1">Cancelar</Button>
+            <Button onClick={handleSubmit} className="flex-1">
+              {isEditing ? 'Salvar Alterações' : 'Publicar Análise'}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
