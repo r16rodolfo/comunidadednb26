@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { List, Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserRole } from "@/types/auth";
 
 export default function Academy() {
   const {
@@ -27,6 +30,9 @@ export default function Academy() {
 
   const isMobile = useIsMobile();
   const [navOpen, setNavOpen] = useState(false);
+  const { subscription } = useSubscription();
+  const { user } = useAuth();
+  const isPremiumUser = subscription?.subscribed || user?.role === UserRole.ADMIN || user?.role === UserRole.GESTOR;
 
   const handleMarkCompleted = () => {
     if (currentLesson && !currentLesson.is_completed) {
@@ -67,6 +73,7 @@ export default function Academy() {
       searchTerm={searchTerm}
       onSearchChange={setSearchTerm}
       filteredLessons={filteredLessons}
+      isPremiumUser={isPremiumUser}
       publishedCourses={publishedCourses}
       activeCourseId={activeCourseId}
       onCourseChange={onCourseChange}
@@ -102,6 +109,7 @@ export default function Academy() {
                 onMarkCompleted={handleMarkCompleted}
                 hasNext={!!getNextLesson()}
                 hasPrevious={!!getPreviousLesson()}
+                isPremiumUser={isPremiumUser}
               />
             </div>
           </>
@@ -115,6 +123,7 @@ export default function Academy() {
               onMarkCompleted={handleMarkCompleted}
               hasNext={!!getNextLesson()}
               hasPrevious={!!getPreviousLesson()}
+              isPremiumUser={isPremiumUser}
             />
           </>
         )}

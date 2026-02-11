@@ -1,0 +1,1 @@
+ALTER TABLE public.home_config ADD COLUMN bunny_library_id text DEFAULT NULL;

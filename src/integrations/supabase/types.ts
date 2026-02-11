@@ -130,6 +130,7 @@ export type Database = {
       home_config: {
         Row: {
           banners: Json
+          bunny_library_id: string | null
           id: string
           login_bg_url: string | null
           step_cards: Json
@@ -138,6 +139,7 @@ export type Database = {
         }
         Insert: {
           banners?: Json
+          bunny_library_id?: string | null
           id?: string
           login_bg_url?: string | null
           step_cards?: Json
@@ -146,6 +148,7 @@ export type Database = {
         }
         Update: {
           banners?: Json
+          bunny_library_id?: string | null
           id?: string
           login_bg_url?: string | null
           step_cards?: Json
