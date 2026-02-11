@@ -339,7 +339,7 @@ export default function Subscription() {
             {paidPlans.map((plan) => {
               const isCurrentPlan = subscription.current_plan_slug === plan.slug;
               return (
-                <Card key={plan.id} className={`relative flex flex-col ${plan.popular ? 'ring-2 ring-primary shadow-lg' : ''} ${isCurrentPlan ? 'ring-2 ring-success' : ''}`}>
+              <Card key={plan.id} className={`relative flex flex-col ${isCurrentPlan ? 'ring-2 ring-amber-500 shadow-lg' : plan.popular ? 'ring-2 ring-primary shadow-lg' : ''}`}>
                   {plan.popular && !isCurrentPlan && (
                     <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
                       <Badge className="bg-primary text-primary-foreground">
@@ -350,7 +350,7 @@ export default function Subscription() {
                   )}
                   {isCurrentPlan && (
                     <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
-                      <Badge className="bg-success text-white">
+                      <Badge className="bg-amber-500 text-white border-amber-500">
                         <Check className="h-3 w-3 mr-1" />
                         Seu Plano
                       </Badge>
