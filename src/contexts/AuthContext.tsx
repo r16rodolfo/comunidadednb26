@@ -158,6 +158,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: redirectUrl,
         data: {
           name: data.name,
+          cpf: data.cpf,
+          cellphone: data.cellphone,
         },
       },
     });
@@ -188,12 +190,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateProfile = async (data: Partial<UserProfile>) => {
     if (!authState.user) return;
     
+    const updateData: Record<string, unknown> = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.avatar !== undefined) updateData.avatar_url = data.avatar;
+    if ((data as any).cpf !== undefined) updateData.cpf = (data as any).cpf;
+    if ((data as any).cellphone !== undefined) updateData.cellphone = (data as any).cellphone;
+
     const { error } = await supabase
       .from('profiles')
-      .update({
-        name: data.name,
-        avatar_url: data.avatar,
-      })
+      .update(updateData)
       .eq('user_id', authState.user.id);
 
     if (error) throw new Error(error.message);

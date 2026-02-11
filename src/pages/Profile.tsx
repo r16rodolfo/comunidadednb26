@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { UserRole } from '@/types/auth';
 import { getRoleFullLabel, getRoleBadgeVariant } from '@/lib/roles';
-import { User, Settings, CreditCard, Shield, ExternalLink, Loader2 } from 'lucide-react';
+import { User, Settings, CreditCard, Shield, ExternalLink, Loader2, Phone, Hash } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,15 +26,28 @@ export default function Profile() {
   const [isLoading, setIsLoading] = useState(false);
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
-    email: user?.email || ''
+    email: user?.email || '',
+    cpf: '',
+    cellphone: '',
   });
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
 
-  // getRoleFullLabel and getRoleBadgeVariant imported from @/lib/roles
+  // Load CPF/cellphone from profiles table
+  useEffect(() => {
+    if (user?.id) {
+      supabase.from('profiles').select('cpf, cellphone').eq('user_id', user.id).maybeSingle().then(({ data }) => {
+        if (data) {
+          setProfileData(prev => ({ ...prev, cpf: data.cpf || '', cellphone: data.cellphone || '' }));
+        }
+        setProfileLoaded(true);
+      });
+    }
+  }, [user?.id]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,6 +177,30 @@ export default function Profile() {
                         value={profileData.email}
                         onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
                         required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cpf">CPF</Label>
+                      <Input
+                        id="cpf"
+                        value={profileData.cpf}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
+                          setProfileData(prev => ({ ...prev, cpf: digits }));
+                        }}
+                        placeholder="00000000000"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cellphone">Telefone</Label>
+                      <Input
+                        id="cellphone"
+                        value={profileData.cellphone}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
+                          setProfileData(prev => ({ ...prev, cellphone: digits }));
+                        }}
+                        placeholder="11999999999"
                       />
                     </div>
                   </div>

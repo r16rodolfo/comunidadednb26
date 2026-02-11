@@ -7,12 +7,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Loader2, Phone, Hash } from 'lucide-react';
 import { z } from 'zod';
 import defaultAuthBg from '@/assets/auth-bg.jpg';
 import { useLoginBg } from '@/hooks/useLoginBg';
 
 type AuthMode = 'login' | 'signup' | 'recovery';
+
+const formatCPF = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  return digits
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+};
+
+const formatPhone = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
 
 const loginSchema = z.object({
   email: z.string().trim().email('E-mail inválido').max(255),
@@ -21,6 +36,8 @@ const loginSchema = z.object({
 
 const signupSchema = loginSchema.extend({
   name: z.string().trim().min(2, 'Nome deve ter pelo menos 2 caracteres').max(100),
+  cpf: z.string().refine(v => v.replace(/\D/g, '').length === 11, 'CPF deve ter 11 dígitos'),
+  cellphone: z.string().refine(v => { const d = v.replace(/\D/g, '').length; return d >= 10 && d <= 11; }, 'Telefone inválido'),
 });
 
 const recoverySchema = z.object({
@@ -32,6 +49,8 @@ export function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [cellphone, setCellphone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -86,7 +105,7 @@ export function AuthPage() {
     e.preventDefault();
     clearErrors();
 
-    const result = signupSchema.safeParse({ email, password, name });
+    const result = signupSchema.safeParse({ email, password, name, cpf, cellphone });
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
       result.error.errors.forEach(err => {
@@ -98,7 +117,13 @@ export function AuthPage() {
 
     setIsLoading(true);
     try {
-      await register({ email: result.data.email, password: result.data.password, name: result.data.name });
+      await register({
+        email: result.data.email,
+        password: result.data.password,
+        name: result.data.name,
+        cpf: result.data.cpf.replace(/\D/g, ''),
+        cellphone: result.data.cellphone.replace(/\D/g, ''),
+      });
       setSignupSuccess(true);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro ao criar conta';
@@ -320,6 +345,40 @@ export function AuthPage() {
                   />
                 </div>
                 {errors.name && <p className="text-xs text-red-300">{errors.name}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cpf" className="text-white/90 text-sm">CPF</Label>
+                <div className="relative">
+                  <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+                  <Input
+                    id="cpf"
+                    type="text"
+                    value={cpf}
+                    onChange={(e) => setCpf(formatCPF(e.target.value))}
+                    placeholder="000.000.000-00"
+                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-primary"
+                    required
+                  />
+                </div>
+                {errors.cpf && <p className="text-xs text-red-300">{errors.cpf}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cellphone" className="text-white/90 text-sm">Telefone</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+                  <Input
+                    id="cellphone"
+                    type="text"
+                    value={cellphone}
+                    onChange={(e) => setCellphone(formatPhone(e.target.value))}
+                    placeholder="(00) 00000-0000"
+                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-primary"
+                    required
+                  />
+                </div>
+                {errors.cellphone && <p className="text-xs text-red-300">{errors.cellphone}</p>}
               </div>
 
               <div className="space-y-2">
