@@ -31,6 +31,7 @@ export function useSubscription() {
   const [subscription, setSubscription] = useState<SubscriptionState>(defaultState);
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
+  const [isPixCheckoutLoading, setIsPixCheckoutLoading] = useState(false);
   const [isPortalLoading, setIsPortalLoading] = useState(false);
   const [isCancelDowngradeLoading, setIsCancelDowngradeLoading] = useState(false);
 
@@ -76,6 +77,28 @@ export function useSubscription() {
       toast({ title: 'Erro ao criar checkout', description: message, variant: 'destructive' });
     } finally {
       setIsCheckoutLoading(false);
+    }
+  }, [isAuthenticated, toast]);
+
+  const createPixCheckout = useCallback(async (planSlug: string) => {
+    if (!isAuthenticated) {
+      toast({ title: 'Faça login para assinar', variant: 'destructive' });
+      return;
+    }
+    setIsPixCheckoutLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-pix-checkout', {
+        body: { planId: planSlug, returnUrl: window.location.origin },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erro desconhecido';
+      toast({ title: 'Erro ao criar checkout PIX', description: message, variant: 'destructive' });
+    } finally {
+      setIsPixCheckoutLoading(false);
     }
   }, [isAuthenticated, toast]);
 
@@ -137,10 +160,12 @@ export function useSubscription() {
     subscription,
     isLoading,
     isCheckoutLoading,
+    isPixCheckoutLoading,
     isPortalLoading,
     isCancelDowngradeLoading,
     checkSubscription,
     createCheckout,
+    createPixCheckout,
     openCustomerPortal,
     cancelDowngrade,
   };

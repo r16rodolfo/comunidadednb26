@@ -16,6 +16,14 @@ export const planPriceIds: Record<string, string> = {
   'premium-yearly': 'price_1Sya69EuyKN6OMe7XLGIXK07',
 };
 
+/** slug → BRL price in cents (for AbacatePay PIX payments) */
+export const planPricesBRL: Record<string, { name: string; priceCents: number }> = {
+  'premium-monthly': { name: 'Premium Mensal', priceCents: 2990 },
+  'premium-quarterly': { name: 'Premium Trimestral', priceCents: 7490 },
+  'premium-semiannual': { name: 'Premium Semestral', priceCents: 13990 },
+  'premium-yearly': { name: 'Premium Anual', priceCents: 24990 },
+};
+
 /** Stripe price ID → plan info (reverse map) */
 export const priceIdToPlan: Record<string, PlanInfo> = {
   'price_1SyZy1EuyKN6OMe7udEOfpGV': { tier: 'Premium Mensal', slug: 'premium-monthly' },
