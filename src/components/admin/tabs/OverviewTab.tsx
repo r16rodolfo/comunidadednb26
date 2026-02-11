@@ -58,21 +58,29 @@ export function OverviewTab() {
 
       if (error) throw error;
 
-      // Get roles for these users
       const userIds = (data || []).map(u => u.user_id);
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('user_id, role')
-        .in('user_id', userIds);
+      
+      // Fetch roles and subscription status in parallel
+      const [rolesRes, subsRes] = await Promise.all([
+        supabase.from('user_roles').select('user_id, role').in('user_id', userIds),
+        supabase.from('subscribers_safe').select('user_id, subscribed, current_plan_slug').in('user_id', userIds),
+      ]);
 
-      const roleMap = new Map((roles || []).map(r => [r.user_id, r.role]));
+      const roleMap = new Map((rolesRes.data || []).map(r => [r.user_id, r.role]));
+      const subMap = new Map((subsRes.data || []).map(s => [s.user_id, s]));
 
-      return (data || []).map(u => ({
-        id: u.user_id,
-        name: u.name || 'Sem nome',
-        role: roleMap.get(u.user_id) || 'free',
-        joinedAt: u.created_at,
-      }));
+      return (data || []).map(u => {
+        const role = roleMap.get(u.user_id) || 'free';
+        const sub = subMap.get(u.user_id);
+        // If user has active subscription, show as premium regardless of role table
+        const effectiveRole = (sub?.subscribed) ? 'premium' : role;
+        return {
+          id: u.user_id,
+          name: u.name || 'Sem nome',
+          role: effectiveRole,
+          joinedAt: u.created_at,
+        };
+      });
     },
   });
 
