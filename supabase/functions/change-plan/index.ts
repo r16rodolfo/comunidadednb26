@@ -78,7 +78,9 @@ serve(async (req) => {
           proration_behavior: "always_invoice",
         });
 
-        const subscriptionEnd = new Date(updated.current_period_end * 1000).toISOString();
+        const subscriptionEnd = updated.current_period_end
+          ? new Date(updated.current_period_end * 1000).toISOString()
+          : new Date().toISOString();
 
         await supabase.from("subscribers").update({
           subscription_tier: newPlanInfo.tier,
@@ -122,7 +124,9 @@ serve(async (req) => {
           ],
         });
 
-        const effectiveDate = new Date(schedule.phases[0].end_date * 1000).toISOString();
+        const effectiveDate = schedule.phases[0]?.end_date
+          ? new Date(schedule.phases[0].end_date * 1000).toISOString()
+          : new Date().toISOString();
 
         await supabase.from("subscribers").update({
           pending_downgrade_to: newPlanSlug,
