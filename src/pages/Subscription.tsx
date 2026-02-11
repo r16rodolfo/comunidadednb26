@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/Layout';
@@ -28,6 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import { usePlans, formatPrice, formatMonthlyEquivalent, SubscriptionPlan } from '@/hooks/usePlans';
 import { useSubscription } from '@/hooks/useSubscription';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { PaymentMethodModal } from '@/components/subscription/PaymentMethodModal';
 
 export default function Subscription() {
   const { user } = useAuth();
@@ -37,15 +38,19 @@ export default function Subscription() {
     subscription,
     isLoading,
     isCheckoutLoading,
+    isPixCheckoutLoading,
     isPortalLoading,
     isCancelDowngradeLoading,
     checkSubscription,
     createCheckout,
+    createPixCheckout,
     openCustomerPortal,
     cancelDowngrade,
   } = useSubscription();
   const [searchParams, setSearchParams] = useSearchParams();
   const [stripeResult, setStripeResult] = useState<'success' | 'cancelled' | null>(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedPlanSlug, setSelectedPlanSlug] = useState<string | null>(null);
 
   // Handle checkout success/cancel
   useEffect(() => {
@@ -63,6 +68,29 @@ export default function Subscription() {
   const currentPlan = subscription.subscribed
     ? subscription.subscription_tier
     : 'Gratuito';
+
+  const handlePlanClick = useCallback((planSlug: string) => {
+    setSelectedPlanSlug(planSlug);
+    setPaymentModalOpen(true);
+  }, []);
+
+  const handleSelectStripe = useCallback(() => {
+    if (selectedPlanSlug) {
+      createCheckout(selectedPlanSlug);
+    }
+  }, [selectedPlanSlug, createCheckout]);
+
+  const handleSelectPix = useCallback(() => {
+    if (selectedPlanSlug) {
+      createPixCheckout(selectedPlanSlug);
+    }
+  }, [selectedPlanSlug, createPixCheckout]);
+
+  const selectedPlanName = useMemo(() => {
+    if (!selectedPlanSlug) return '';
+    const plan = activePlans.find(p => p.slug === selectedPlanSlug);
+    return plan?.name ?? selectedPlanSlug;
+  }, [selectedPlanSlug, activePlans]);
 
   const freePlan = activePlans.find(p => p.interval === 'free');
   const paidPlans = activePlans.filter(p => p.interval !== 'free');
@@ -330,11 +358,11 @@ export default function Subscription() {
                           <Button
                             className="w-full"
                             variant={bp.variant}
-                            disabled={isCheckoutLoading || bp.disabled}
-                            onClick={() => createCheckout(plan.slug)}
+                            disabled={(isCheckoutLoading || isPixCheckoutLoading) || bp.disabled}
+                            onClick={() => handlePlanClick(plan.slug)}
                           >
                             <Icon className="h-4 w-4 mr-2" />
-                            {isCheckoutLoading && !bp.disabled ? 'Aguarde...' : bp.label}
+                            {(isCheckoutLoading || isPixCheckoutLoading) && !bp.disabled ? 'Aguarde...' : bp.label}
                           </Button>
                         );
                       })()}
@@ -382,6 +410,15 @@ export default function Subscription() {
         </Card>
       </div>
 
+        <PaymentMethodModal
+          open={paymentModalOpen}
+          onOpenChange={setPaymentModalOpen}
+          planName={selectedPlanName}
+          onSelectStripe={handleSelectStripe}
+          onSelectPix={handleSelectPix}
+          isStripeLoading={isCheckoutLoading}
+          isPixLoading={isPixCheckoutLoading}
+        />
     </Layout>
   );
 }
