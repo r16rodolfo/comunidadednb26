@@ -39,10 +39,12 @@ interface LessonForm {
   is_free: boolean;
 }
 
-/** Parse duration string like "15min", "1h30", "480" into seconds */
+/** Parse "HH:MM" or legacy strings like "15min" into seconds */
 function parseDuration(input: string): number {
   if (!input) return 0;
   const trimmed = input.trim().toLowerCase();
+  const timeMatch = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+  if (timeMatch) return parseInt(timeMatch[1], 10) * 3600 + parseInt(timeMatch[2], 10) * 60;
   if (/^\d+$/.test(trimmed)) return parseInt(trimmed, 10);
   const minMatch = trimmed.match(/^(\d+)\s*m(?:in)?$/);
   if (minMatch) return parseInt(minMatch[1], 10) * 60;
@@ -51,15 +53,12 @@ function parseDuration(input: string): number {
   return 0;
 }
 
-/** Format seconds back into a human-readable duration */
+/** Format seconds into HH:MM */
 function formatDuration(seconds: number): string {
-  if (seconds <= 0) return '';
+  if (seconds <= 0) return '00:00';
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  if (h > 0) return m > 0 ? `${h}h${m}min` : `${h}h`;
-  if (m > 0) return `${m}min`;
-  return `${s}`;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
 export function CourseModal({ open, onOpenChange, editingCourse }: CourseModalProps) {
@@ -305,8 +304,8 @@ export function CourseModal({ open, onOpenChange, editingCourse }: CourseModalPr
                               <Input value={lesson.bunny_video_id} onChange={(e) => updateLesson(module.id, lesson.id, 'bunny_video_id', e.target.value)} placeholder="ex: eb1c4f77-..." />
                             </div>
                             <div>
-                              <Label className="text-xs">Duração</Label>
-                              <Input value={lesson.duration} onChange={(e) => updateLesson(module.id, lesson.id, 'duration', e.target.value)} placeholder="ex: 15min" />
+                              <Label className="text-xs">Duração (HH:MM)</Label>
+                              <Input type="time" value={lesson.duration} onChange={(e) => updateLesson(module.id, lesson.id, 'duration', e.target.value)} />
                             </div>
                           </div>
                         </div>
