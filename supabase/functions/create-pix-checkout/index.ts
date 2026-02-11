@@ -61,33 +61,58 @@ serve(async (req) => {
 
     const origin = returnUrl || req.headers.get("origin") || "http://localhost:3000";
 
-    // Create AbacatePay billing (customer object omitted — requires valid CPF/phone)
+    // Fetch profile for CPF and cellphone
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("name, cpf, cellphone")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const customerName = profile?.name || user.user_metadata?.name || "Cliente";
+    const customerCpf = profile?.cpf;
+    const customerPhone = profile?.cellphone;
+
+    logStep("Profile data", { name: customerName, hasCpf: !!customerCpf, hasPhone: !!customerPhone });
+
+    // Build request body
+    const billingBody: Record<string, unknown> = {
+      frequency: "ONE_TIME",
+      methods: ["PIX"],
+      products: [
+        {
+          externalId: plan.slug,
+          name: plan.name,
+          description: `Assinatura ${plan.name}`,
+          quantity: 1,
+          price: plan.price_cents,
+        },
+      ],
+      returnUrl: `${origin}/subscription?cancelled=true`,
+      completionUrl: `${origin}/subscription?success=true&method=pix`,
+      metadata: {
+        userId: user.id,
+        email: user.email,
+        planSlug: plan.slug,
+      },
+    };
+
+    // Include customer object only if CPF and phone are available
+    if (customerCpf && customerPhone) {
+      billingBody.customer = {
+        name: customerName,
+        email: user.email,
+        cellphone: customerPhone,
+        taxId: customerCpf,
+      };
+    }
+
     const abacateResponse = await fetch("https://api.abacatepay.com/v1/billing/create", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        frequency: "ONE_TIME",
-        methods: ["PIX"],
-        products: [
-          {
-            externalId: plan.slug,
-            name: plan.name,
-            description: `Assinatura ${plan.name}`,
-            quantity: 1,
-            price: plan.price_cents,
-          },
-        ],
-        returnUrl: `${origin}/subscription?cancelled=true`,
-        completionUrl: `${origin}/subscription?success=true&method=pix`,
-        metadata: {
-          userId: user.id,
-          email: user.email,
-          planSlug: plan.slug,
-        },
-      }),
+      body: JSON.stringify(billingBody),
     });
 
     if (!abacateResponse.ok) {
