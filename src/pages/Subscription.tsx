@@ -41,11 +41,14 @@ export default function Subscription() {
     isPixCheckoutLoading,
     isPortalLoading,
     isCancelDowngradeLoading,
+    stripeClientSecret,
+    pixQrData,
     checkSubscription,
-    createCheckout,
-    createPixCheckout,
+    createEmbeddedCheckout,
+    createPixQrCode,
     openCustomerPortal,
     cancelDowngrade,
+    resetEmbeddedState,
   } = useSubscription();
   const [searchParams, setSearchParams] = useSearchParams();
   const [stripeResult, setStripeResult] = useState<'success' | 'cancelled' | null>(null);
@@ -76,15 +79,34 @@ export default function Subscription() {
 
   const handleSelectStripe = useCallback(() => {
     if (selectedPlanSlug) {
-      createCheckout(selectedPlanSlug);
+      createEmbeddedCheckout(selectedPlanSlug);
     }
-  }, [selectedPlanSlug, createCheckout]);
+  }, [selectedPlanSlug, createEmbeddedCheckout]);
 
   const handleSelectPix = useCallback(() => {
     if (selectedPlanSlug) {
-      createPixCheckout(selectedPlanSlug);
+      createPixQrCode(selectedPlanSlug);
     }
-  }, [selectedPlanSlug, createPixCheckout]);
+  }, [selectedPlanSlug, createPixQrCode]);
+
+  const handleStripeComplete = useCallback(() => {
+    setPaymentModalOpen(false);
+    resetEmbeddedState();
+    toast({ title: 'Assinatura realizada com sucesso! 🎉' });
+    checkSubscription();
+  }, [resetEmbeddedState, toast, checkSubscription]);
+
+  const handlePixPaid = useCallback(() => {
+    setPaymentModalOpen(false);
+    resetEmbeddedState();
+    toast({ title: 'Pagamento PIX confirmado! 🎉' });
+    checkSubscription();
+  }, [resetEmbeddedState, toast, checkSubscription]);
+
+  const handleModalClose = useCallback((open: boolean) => {
+    setPaymentModalOpen(open);
+    if (!open) resetEmbeddedState();
+  }, [resetEmbeddedState]);
 
   const selectedPlanName = useMemo(() => {
     if (!selectedPlanSlug) return '';
@@ -412,12 +434,16 @@ export default function Subscription() {
 
         <PaymentMethodModal
           open={paymentModalOpen}
-          onOpenChange={setPaymentModalOpen}
+          onOpenChange={handleModalClose}
           planName={selectedPlanName}
           onSelectStripe={handleSelectStripe}
           onSelectPix={handleSelectPix}
           isStripeLoading={isCheckoutLoading}
           isPixLoading={isPixCheckoutLoading}
+          stripeClientSecret={stripeClientSecret}
+          pixQrData={pixQrData}
+          onStripeComplete={handleStripeComplete}
+          onPixPaid={handlePixPaid}
         />
     </Layout>
   );
