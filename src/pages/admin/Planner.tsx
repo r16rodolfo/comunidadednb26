@@ -39,13 +39,13 @@ export default function AdminPlanner() {
             type="single"
             value={period}
             onValueChange={(v) => v && setPeriod(v as PlannerPeriod)}
-            className="bg-muted/50 rounded-lg p-0.5"
+            className="border border-border rounded-lg p-1 bg-muted/40"
           >
             {PERIOD_OPTIONS.map((opt) => (
               <ToggleGroupItem
                 key={opt.value}
                 value={opt.value}
-                className="text-xs sm:text-sm px-3 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md"
+                className="text-xs sm:text-sm px-3 py-1.5 rounded-md text-muted-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm transition-colors"
               >
                 {opt.label}
               </ToggleGroupItem>
