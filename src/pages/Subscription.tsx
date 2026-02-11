@@ -29,7 +29,10 @@ import {
   ArrowUp,
   ArrowDown,
   Tag,
+  CheckCircle2,
+  X,
 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { usePlans, formatPrice, formatMonthlyEquivalent, SubscriptionPlan } from '@/hooks/usePlans';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -50,19 +53,23 @@ export default function Subscription() {
     openCustomerPortal,
     cancelDowngrade,
   } = useSubscription();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [couponCode, setCouponCode] = useState('');
   const [checkoutPlanSlug, setCheckoutPlanSlug] = useState<string | null>(null);
+  const [stripeResult, setStripeResult] = useState<'success' | 'cancelled' | null>(null);
 
   // Handle checkout success/cancel
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
-      toast({ title: '🎉 Assinatura realizada com sucesso!' });
+      setStripeResult('success');
       checkSubscription();
+      // Clean URL params
+      setSearchParams({}, { replace: true });
     } else if (searchParams.get('cancelled') === 'true') {
-      toast({ title: 'Checkout cancelado', variant: 'destructive' });
+      setStripeResult('cancelled');
+      setSearchParams({}, { replace: true });
     }
-  }, [searchParams]);
+  }, [searchParams, setSearchParams, checkSubscription]);
 
   const currentPlan = subscription.subscribed
     ? subscription.subscription_tier
@@ -105,6 +112,32 @@ export default function Subscription() {
             Atualizar Status
           </Button>
         </PageHeader>
+
+        {/* Stripe return feedback */}
+        {stripeResult === 'success' && (
+          <Alert className="border-success/50 bg-success/10">
+            <CheckCircle2 className="h-5 w-5 text-success" />
+            <AlertTitle className="text-success font-semibold">Assinatura realizada com sucesso! 🎉</AlertTitle>
+            <AlertDescription className="text-muted-foreground">
+              Seu plano foi ativado. Pode levar alguns segundos para refletir aqui — clique em "Atualizar Status" se necessário.
+            </AlertDescription>
+            <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => setStripeResult(null)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </Alert>
+        )}
+        {stripeResult === 'cancelled' && (
+          <Alert className="border-warning/50 bg-warning/10">
+            <AlertTriangle className="h-5 w-5 text-warning" />
+            <AlertTitle className="text-warning font-semibold">Checkout cancelado</AlertTitle>
+            <AlertDescription className="text-muted-foreground">
+              Você cancelou o processo de pagamento. Nenhuma cobrança foi realizada. Você pode tentar novamente quando quiser.
+            </AlertDescription>
+            <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => setStripeResult(null)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </Alert>
+        )}
 
         {/* Status Atual */}
         {isLoading ? (
