@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import { planPricesBRL } from "../_shared/plan-config.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,6 +22,11 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_ANON_KEY") ?? "",
   );
 
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  );
+
   try {
     logStep("Function started");
 
@@ -40,18 +44,25 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Get plan info
+    // Get plan info from request
     const { planId, returnUrl } = await req.json();
     if (!planId) throw new Error("planId is required");
 
-    const planInfo = planPricesBRL[planId];
-    if (!planInfo) throw new Error(`Unknown plan: ${planId}`);
-    logStep("Plan resolved", { planId, ...planInfo });
+    // Fetch plan from database
+    const { data: plan, error: planError } = await supabaseAdmin
+      .from("plans")
+      .select("name, price_cents, slug")
+      .eq("slug", planId)
+      .eq("is_active", true)
+      .single();
+
+    if (planError || !plan) throw new Error(`Plan not found: ${planId}`);
+    logStep("Plan resolved from DB", { slug: plan.slug, name: plan.name, priceCents: plan.price_cents });
 
     const origin = returnUrl || req.headers.get("origin") || "http://localhost:3000";
 
     // Get user name from profiles
-    const { data: profile } = await supabaseClient
+    const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("name")
       .eq("user_id", user.id)
@@ -71,11 +82,11 @@ serve(async (req) => {
         methods: ["PIX"],
         products: [
           {
-            externalId: planId,
-            name: planInfo.name,
-            description: `Assinatura ${planInfo.name}`,
+            externalId: plan.slug,
+            name: plan.name,
+            description: `Assinatura ${plan.name}`,
             quantity: 1,
-            price: planInfo.priceCents,
+            price: plan.price_cents,
           },
         ],
         returnUrl: `${origin}/subscription?cancelled=true`,
