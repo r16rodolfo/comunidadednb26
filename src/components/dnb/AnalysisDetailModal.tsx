@@ -14,7 +14,6 @@ import {
   TrendingDown,
   AlertTriangle,
   Clock,
-  DollarSign,
   Play,
   ImageIcon,
   Pencil,
@@ -39,6 +38,7 @@ interface AnalysisDetailModalProps {
 
 export default function AnalysisDetailModal({ analysis, recommendation, open, onClose }: AnalysisDetailModalProps) {
   const [showVideo, setShowVideo] = useState(false);
+  const [showImage, setShowImage] = useState(false);
 
   if (!analysis || !recommendation) return null;
 
@@ -50,21 +50,22 @@ export default function AnalysisDetailModal({ analysis, recommendation, open, on
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 gap-4">
+          {/* Header */}
+          <DialogHeader className="pb-0">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <DialogTitle className="text-lg">
+                <DialogTitle className="text-base sm:text-lg">
                   Análise de{' '}
                   {format(parseLocalDate(analysis.date), "dd 'de' MMMM, yyyy", { locale: ptBR })}
                 </DialogTitle>
-                <DialogDescription className="mt-1">
-                  {analysis.summary}
+                <DialogDescription className="sr-only">
+                  Detalhes da análise de mercado
                 </DialogDescription>
                 <div className="mt-1 space-y-0.5">
                   {analysis.createdAt && (
                     <span className="text-xs text-muted-foreground block">
-                      Publicado às {format(new Date(analysis.createdAt), "HH:mm 'de' dd/MM/yyyy")}
+                      Publicado em {format(new Date(analysis.createdAt), "dd/MM/yyyy 'às' HH:mm")}
                     </span>
                   )}
                   {wasEdited && (
@@ -82,74 +83,106 @@ export default function AnalysisDetailModal({ analysis, recommendation, open, on
             </div>
           </DialogHeader>
 
-          {/* Media buttons */}
-          {(analysis.videoUrl || analysis.imageUrl) && (
-            <div className="flex gap-2 -mt-1">
-              {analysis.videoUrl && (
-                <Button
-                  className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground flex-1"
-                  size="sm"
+          {/* 3-Column Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Card 1: Video / Media */}
+            <div className="rounded-xl border bg-card p-4 flex flex-col gap-3">
+              <h4 className="text-sm font-semibold">Assista nossa análise</h4>
+              {analysis.videoUrl ? (
+                <div
+                  className="relative rounded-lg overflow-hidden bg-muted aspect-video cursor-pointer group"
                   onClick={() => setShowVideo(true)}
                 >
-                  <Play className="h-4 w-4" />
-                  Assistir Vídeo
-                </Button>
+                  {analysis.imageUrl ? (
+                    <img src={analysis.imageUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center">
+                      <Play className="h-8 w-8 text-muted-foreground/50" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
+                    <div className="h-11 w-11 rounded-full bg-primary/90 flex items-center justify-center">
+                      <Play className="h-5 w-5 text-primary-foreground fill-primary-foreground" />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center rounded-lg bg-muted/50 p-6">
+                  <p className="text-xs text-muted-foreground text-center">Nenhum vídeo disponível</p>
+                </div>
               )}
               {analysis.imageUrl && (
                 <Button
                   variant="secondary"
-                  className="gap-2 flex-1"
                   size="sm"
+                  className="gap-2 w-full"
                   onClick={() => window.open(analysis.imageUrl, '_blank')}
                 >
-                  <ImageIcon className="h-4 w-4" />
+                  <ImageIcon className="h-3.5 w-3.5" />
                   Ver Gráfico
                 </Button>
               )}
             </div>
-          )}
 
-          <div className="space-y-5 pt-1">
-            {/* Quotes */}
-            <div className="grid grid-cols-2 gap-3">
-              <QuoteCard label="USD/BRL" price={analysis.dollarPrice} variation={analysis.dollarVariation} />
-              <QuoteCard label="EUR/BRL" price={analysis.euroPrice} variation={analysis.euroVariation} />
+            {/* Card 2: Cotações */}
+            <div className="rounded-xl border bg-card p-4 flex flex-col gap-4">
+              <h4 className="text-sm font-semibold">Cotação na Publicação</h4>
+              <QuoteRow flag="🇺🇸" label="USD/BRL" price={analysis.dollarPrice} variation={analysis.dollarVariation} />
+              <div className="border-t" />
+              <QuoteRow flag="🇪🇺" label="EUR/BRL" price={analysis.euroPrice} variation={analysis.euroVariation} />
             </div>
 
-            {/* Full Analysis */}
-            <div>
-              <h4 className="text-sm font-semibold mb-2 text-primary">Análise Completa</h4>
-              <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">{analysis.fullAnalysis}</p>
-            </div>
-
-            {/* Technical Levels */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 border rounded-lg bg-destructive/5 border-destructive/20">
-                <h4 className="text-xs font-semibold text-destructive flex items-center gap-1 mb-2">
-                  <TrendingUp className="h-3 w-3" />Resistências
-                </h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {analysis.resistances.map((level, i) => (
-                    <Badge key={i} variant="secondary" className="bg-destructive/10 text-destructive text-xs">R$ {level.toFixed(2)}</Badge>
-                  ))}
-                </div>
-              </div>
-              <div className="p-3 border rounded-lg bg-primary/5 border-primary/20">
-                <h4 className="text-xs font-semibold text-primary flex items-center gap-1 mb-2">
-                  <TrendingDown className="h-3 w-3" />Suportes
-                </h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {analysis.supports.map((level, i) => (
-                    <Badge key={i} variant="secondary" className="bg-primary/10 text-primary text-xs">R$ {level.toFixed(2)}</Badge>
-                  ))}
-                </div>
+            {/* Card 3: Níveis de Negociação */}
+            <div className="rounded-xl border bg-card p-4 flex flex-col gap-3">
+              <h4 className="text-sm font-semibold">Níveis de Negociação</h4>
+              <div className="space-y-2">
+                {analysis.resistances.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3 text-destructive" />
+                      Resistências
+                    </span>
+                    {analysis.resistances.map((level, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 rounded-lg border bg-destructive/5 border-destructive/15">
+                        <span className="text-xs text-muted-foreground">Nível {i + 1}</span>
+                        <span className="text-sm font-bold">R$ {level.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {analysis.supports.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      <TrendingDown className="h-3 w-3 text-primary" />
+                      Suportes
+                    </span>
+                    {analysis.supports.map((level, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 rounded-lg border bg-primary/5 border-primary/15">
+                        <span className="text-xs text-muted-foreground">Nível {i + 1}</span>
+                        <span className="text-sm font-bold">R$ {level.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {analysis.resistances.length === 0 && analysis.supports.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Nenhum nível informado</p>
+                )}
               </div>
             </div>
           </div>
+
+          {/* Análise do Especialista */}
+          {analysis.fullAnalysis && (
+            <div className="rounded-xl border bg-card p-4">
+              <h4 className="text-sm font-semibold mb-3">Análise do Especialista</h4>
+              <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">
+                {analysis.fullAnalysis}
+              </p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* Video Player Modal */}
       {analysis.videoUrl && (
         <VideoPlayerModal
           open={showVideo}
@@ -162,17 +195,18 @@ export default function AnalysisDetailModal({ analysis, recommendation, open, on
   );
 }
 
-function QuoteCard({ label, price, variation }: { label: string; price: number; variation: number }) {
+function QuoteRow({ flag, label, price, variation }: { flag: string; label: string; price: number; variation: number }) {
+  const arrow = variation >= 0 ? '▲' : '▼';
   return (
-    <div className="p-3 rounded-lg bg-muted/50">
+    <div>
       <div className="flex items-center gap-2 mb-1">
-        <DollarSign className="h-3 w-3 text-muted-foreground" />
+        <span className="text-base">{flag}</span>
         <span className="text-xs text-muted-foreground font-medium">{label}</span>
       </div>
       <div className="flex items-baseline gap-2">
-        <span className="text-lg font-bold">R$ {price.toFixed(2)}</span>
+        <span className="text-2xl font-bold tracking-tight">{price.toFixed(4)}</span>
         <span className={`text-xs font-semibold ${getVariationColorClass(variation)}`}>
-          {variation >= 0 ? '+' : ''}{variation}%
+          {arrow} {Math.abs(variation).toFixed(2)}%
         </span>
       </div>
     </div>
