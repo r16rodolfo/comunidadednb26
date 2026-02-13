@@ -38,7 +38,7 @@ export default function PromoBanner({ banners }: PromoBannerProps) {
   const handleBannerClick = () => {
     if (!current.redirectUrl) return;
     if (current.redirectUrl.startsWith('http')) {
-      window.open(current.redirectUrl, '_blank', 'noopener');
+      window.open(current.redirectUrl, '_blank', 'noopener,noreferrer');
     } else {
       window.location.href = current.redirectUrl;
     }

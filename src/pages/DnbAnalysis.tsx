@@ -107,7 +107,7 @@ export default function DnbAnalysis() {
             analysis={latestAnalysis}
             recommendation={latestRecommendation}
             onViewVideo={latestAnalysis.videoUrl ? () => setVideoModal({ open: true, url: latestAnalysis.videoUrl!, title: 'Vídeo — Análise mais recente' }) : undefined}
-            onViewImage={latestAnalysis.imageUrl ? () => window.open(latestAnalysis.imageUrl, '_blank') : undefined}
+            onViewImage={latestAnalysis.imageUrl ? () => window.open(latestAnalysis.imageUrl!, '_blank', 'noopener,noreferrer') : undefined}
             onViewDetail={() => setSelectedAnalysis(latestAnalysis)}
           />
         )}

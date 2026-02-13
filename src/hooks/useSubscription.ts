@@ -125,7 +125,7 @@ export function useSubscription() {
       });
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, '_blank');
+        window.open(data.url, '_blank', 'noopener,noreferrer');
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erro desconhecido';
@@ -147,7 +147,7 @@ export function useSubscription() {
       });
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, '_blank');
+        window.open(data.url, '_blank', 'noopener,noreferrer');
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erro desconhecido';
@@ -166,7 +166,7 @@ export function useSubscription() {
       });
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, '_blank');
+        window.open(data.url, '_blank', 'noopener,noreferrer');
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erro desconhecido';
