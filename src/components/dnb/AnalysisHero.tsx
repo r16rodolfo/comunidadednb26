@@ -8,8 +8,6 @@ import {
   AlertTriangle,
   Clock,
   Play,
-  ImageIcon,
-  DollarSign,
   Pencil,
   FileText,
 } from 'lucide-react';
@@ -71,7 +69,7 @@ export default function AnalysisHero({
               </div>
             </div>
             <div className="text-right">
-              <span className="text-sm text-muted-foreground font-medium block">
+              <span className="text-sm font-bold block">
                 {format(parseLocalDate(analysis.date), "dd 'de' MMMM, yyyy", { locale: ptBR })}
               </span>
               {analysis.createdAt && (
@@ -90,8 +88,8 @@ export default function AnalysisHero({
 
           {/* Middle: Quotes */}
           <div className="grid grid-cols-2 gap-4">
-            <PriceIndicator label="USD/BRL" price={analysis.dollarPrice} variation={analysis.dollarVariation} />
-            <PriceIndicator label="EUR/BRL" price={analysis.euroPrice} variation={analysis.euroVariation} />
+            <PriceIndicator label="USD/BRL" symbol="$" price={analysis.dollarPrice} variation={analysis.dollarVariation} />
+            <PriceIndicator label="EUR/BRL" symbol="€" price={analysis.euroPrice} variation={analysis.euroVariation} />
           </div>
 
           {/* Summary */}
@@ -100,23 +98,17 @@ export default function AnalysisHero({
           </p>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
             {onViewDetail && (
-              <Button variant="default" size="sm" onClick={onViewDetail} className="gap-2">
+              <Button variant="default" onClick={onViewDetail} className="gap-2 flex-1 min-w-[180px]">
                 <FileText className="h-4 w-4" />
                 Ver análise completa
               </Button>
             )}
             {analysis.videoUrl && (
-              <Button variant="outline" size="sm" onClick={onViewVideo} className="gap-2">
+              <Button variant="outline" onClick={onViewVideo} className="gap-2 flex-1 min-w-[180px]">
                 <Play className="h-4 w-4" />
                 Assistir Vídeo
-              </Button>
-            )}
-            {analysis.imageUrl && (
-              <Button variant="outline" size="sm" onClick={onViewImage} className="gap-2">
-                <ImageIcon className="h-4 w-4" />
-                Ver Gráfico
               </Button>
             )}
           </div>
@@ -126,18 +118,18 @@ export default function AnalysisHero({
   );
 }
 
-function PriceIndicator({ label, price, variation }: { label: string; price: number; variation: number }) {
+function PriceIndicator({ label, symbol, price, variation }: { label: string; symbol: string; price: number; variation: number }) {
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg bg-background/60 backdrop-blur-sm">
-      <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
-      <div className="min-w-0">
+    <div className="flex items-start gap-3">
+      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+        <span className="text-sm font-semibold text-muted-foreground">{symbol}</span>
+      </div>
+      <div>
         <p className="text-xs text-muted-foreground font-medium">{label}</p>
-        <div className="flex items-baseline gap-2">
-          <span className="text-lg font-bold">R$ {price.toFixed(2)}</span>
-          <span className={`text-xs font-semibold ${getVariationColorClass(variation)}`}>
-            {variation >= 0 ? '+' : ''}{variation}%
-          </span>
-        </div>
+        <span className="text-xl font-bold block">R$ {price.toFixed(2)}</span>
+        <span className={`text-xs font-semibold block ${getVariationColorClass(variation)}`}>
+          {variation >= 0 ? '+' : ''}{variation}%
+        </span>
       </div>
     </div>
   );
