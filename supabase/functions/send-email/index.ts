@@ -30,28 +30,38 @@ serve(async (req) => {
       );
     }
 
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } },
-    );
-
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
 
-    // Check if this is a service_role call (from other edge functions)
-    const isServiceRole = claimsData?.claims?.role === "service_role";
+    // Decode JWT payload to check role claim (service_role vs authenticated user)
+    let jwtPayload: Record<string, unknown> = {};
+    try {
+      const payloadBase64 = token.split(".")[1];
+      jwtPayload = JSON.parse(atob(payloadBase64));
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid token format" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
+      );
+    }
+
+    const isServiceRole = jwtPayload.role === "service_role";
 
     if (!isServiceRole) {
       // For non-service-role calls, verify user is authenticated and is admin
-      if (claimsError || !claimsData?.claims) {
+      const supabaseClient = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        { global: { headers: { Authorization: authHeader } } },
+      );
+      const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+      if (userError || !userData.user) {
         return new Response(
           JSON.stringify({ error: "Authentication failed" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
         );
       }
 
-      const userId = claimsData.claims.sub as string;
+      const userId = userData.user.id;
       const adminClient = createClient(
         Deno.env.get("SUPABASE_URL") ?? "",
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
