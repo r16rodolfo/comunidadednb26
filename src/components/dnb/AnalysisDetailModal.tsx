@@ -76,7 +76,7 @@ export default function AnalysisDetailModal({ analysis, recommendation, open, on
                   )}
                 </div>
               </div>
-              <Badge className={`${recommendationBadgeStyles[analysis.recommendation]} border text-xs font-semibold shrink-0`}>
+              <Badge className={`${recommendationBadgeStyles[analysis.recommendation]} border text-xs font-semibold shrink-0 mr-6`}>
                 {IconComponent && <IconComponent className="h-3 w-3 mr-1" />}
                 {recommendation.label}
               </Badge>
