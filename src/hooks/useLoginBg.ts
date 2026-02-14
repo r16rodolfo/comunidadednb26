@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useLoginBg() {
-  const { data: loginBgUrl, refetch } = useQuery({
+  const { data: loginBgUrl, refetch, isLoading } = useQuery({
     queryKey: ['login-bg-url'],
     queryFn: async () => {
       const { data } = await supabase
@@ -16,5 +16,5 @@ export function useLoginBg() {
     staleTime: 5 * 60 * 1000,
   });
 
-  return { loginBgUrl: loginBgUrl ?? null, refetch };
+  return { loginBgUrl: loginBgUrl ?? null, refetch, isLoading };
 }

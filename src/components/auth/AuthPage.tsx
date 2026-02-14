@@ -184,15 +184,18 @@ export function AuthPage() {
     setSignupSuccess(false);
   };
 
-  const { loginBgUrl } = useLoginBg();
+  const { loginBgUrl, isLoading: isBgLoading } = useLoginBg();
   const authBg = loginBgUrl || defaultAuthBg;
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-4">
+    <div className="min-h-screen relative flex items-center justify-center p-4 bg-black">
       {/* Full-page background */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${authBg})` }}
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-500"
+        style={{
+          backgroundImage: isBgLoading ? 'none' : `url(${authBg})`,
+          opacity: isBgLoading ? 0 : 1,
+        }}
       />
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
 
