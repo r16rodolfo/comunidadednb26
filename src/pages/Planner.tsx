@@ -2,6 +2,16 @@ import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Plus, Target, Calculator } from "lucide-react";
 import { usePlanner } from "@/hooks/usePlanner";
 import { MetricsGrid } from "@/components/planner/MetricsGrid";
@@ -22,12 +32,15 @@ export default function Planner() {
     createGoal,
     updateGoal,
     addTransaction,
+    updateTransaction,
     deleteTransaction,
   } = usePlanner();
 
   const { toast } = useToast();
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showEditGoal, setShowEditGoal] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleCreateGoal = (goal: Omit<TripGoal, 'id' | 'createdAt'>) => {
     createGoal(goal);
@@ -53,13 +66,30 @@ export default function Planner() {
     });
   };
 
-  const handleDeleteTransaction = (id: string) => {
-    deleteTransaction(id);
+  const handleEditTransaction = (id: string, transaction: Omit<Transaction, 'id' | 'createdAt'>) => {
+    updateTransaction(id, transaction);
+    setEditingTransaction(null);
     toast({
-      title: "Transação removida",
-      description: "A transação foi excluída do seu histórico.",
-      variant: "destructive",
+      title: "Transação atualizada!",
+      description: "Os dados da compra foram atualizados com sucesso.",
     });
+  };
+
+  const handleConfirmDelete = () => {
+    if (deletingId) {
+      deleteTransaction(deletingId);
+      setDeletingId(null);
+      toast({
+        title: "Transação removida",
+        description: "A transação foi excluída do seu histórico.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditClick = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setShowAddTransaction(true);
   };
 
   // Empty state when no goal is set
@@ -113,7 +143,7 @@ export default function Planner() {
               <Target className="mr-1.5 h-4 w-4" />
               Editar Meta
             </Button>
-            <Button size="sm" onClick={() => setShowAddTransaction(true)} className="text-xs sm:text-sm">
+            <Button size="sm" onClick={() => { setEditingTransaction(null); setShowAddTransaction(true); }} className="text-xs sm:text-sm">
               <Plus className="mr-1.5 h-4 w-4" />
               Nova Compra
             </Button>
@@ -138,8 +168,8 @@ export default function Planner() {
             <TransactionTable
               transactions={transactions}
               currency={tripGoal.currency}
-              onEdit={() => {}} // TODO: Implement edit transaction
-              onDelete={handleDeleteTransaction}
+              onEdit={handleEditClick}
+              onDelete={(id) => setDeletingId(id)}
             />
           </div>
         </div>
@@ -147,9 +177,14 @@ export default function Planner() {
         {/* Modals */}
         <AddTransactionModal
           open={showAddTransaction}
-          onOpenChange={setShowAddTransaction}
+          onOpenChange={(open) => {
+            setShowAddTransaction(open);
+            if (!open) setEditingTransaction(null);
+          }}
           onSubmit={handleAddTransaction}
+          onEdit={handleEditTransaction}
           currency={tripGoal.currency}
+          editingTransaction={editingTransaction}
         />
 
         <EditGoalModal
@@ -158,6 +193,24 @@ export default function Planner() {
           onSubmit={handleUpdateGoal}
           existingGoal={tripGoal}
         />
+
+        {/* Delete Confirmation */}
+        <AlertDialog open={!!deletingId} onOpenChange={(open) => { if (!open) setDeletingId(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir transação</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Layout>
   );
