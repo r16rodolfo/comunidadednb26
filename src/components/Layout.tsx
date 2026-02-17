@@ -304,6 +304,12 @@ export default function Layout({ children }: LayoutProps) {
             {children}
           </div>
         </main>
+
+        <footer className="py-3 px-4 text-center border-t border-border">
+          <p className="text-xs text-muted-foreground">
+            Desenvolvido por McKinley Avenue
+          </p>
+        </footer>
       </div>
     </div>
   );
