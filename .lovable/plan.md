@@ -1,64 +1,32 @@
 
+# Adicionar Rodape Fixo Discreto
 
-# Corrigir Botao Editar e Adicionar Alerta de Exclusao no Historico de Compras
+## O que sera feito
+Adicionar um rodape fixo na parte inferior da area de conteudo principal do Layout, exibindo de forma discreta quem desenvolveu a plataforma.
 
-## Problemas Identificados
+## Detalhes
 
-1. **Botao Editar**: No `Planner.tsx`, o `onEdit` esta passando uma funcao vazia (`() => {}`), e no hook `usePlanner.ts` a funcao `updateTransaction` nao esta implementada (apenas exibe um `console.warn`).
+### Arquivo: `src/components/Layout.tsx`
 
-2. **Botao Excluir**: A exclusao acontece imediatamente sem pedir confirmacao ao usuario, o que pode causar exclusoes acidentais.
+Adicionar um elemento `<footer>` logo apos o `<main>`, ainda dentro da coluna `flex-col` do conteudo. O rodape tera:
 
-## Solucao
+- Texto pequeno e discreto (ex: `text-xs text-muted-foreground`)
+- Centralizado
+- Exemplo de texto: "Desenvolvido por McKinley Avenue" (ou o nome que voce preferir)
+- Padding leve (`py-3`) e borda superior sutil (`border-t border-border`)
+- O rodape ficara sempre visivel na parte inferior da pagina, empurrado pelo conteudo graas ao layout `flex-col` com `min-h-screen`
 
-### 1. Implementar `updateTransaction` no hook (`src/hooks/usePlanner.ts`)
-- Criar uma mutation real que faz `UPDATE` na tabela `planner_transactions` pelo `id`
-- Atualizar os campos `date`, `location`, `amount`, `rate`, `total_paid`
-- Invalidar a query apos sucesso
+### Posicionamento no codigo
+O footer sera inserido entre o fechamento da `<main>` (linha 306) e o fechamento da `<div>` do conteudo (linha 307):
 
-### 2. Adicionar modo de edicao no modal (`src/components/planner/AddTransactionModal.tsx`)
-- Aceitar uma prop opcional `editingTransaction` com os dados da transacao a editar
-- Quando presente, pre-preencher os campos do formulario com os valores existentes
-- Alterar titulo e botao de submit para refletir o modo de edicao
-- Chamar `onEdit` em vez de `onSubmit` quando estiver editando
+```
+</main>
 
-### 3. Conectar edicao na pagina (`src/pages/Planner.tsx`)
-- Adicionar estado `editingTransaction` para controlar qual transacao esta sendo editada
-- Ao clicar em "Editar" na tabela, abrir o modal com os dados da transacao
-- Criar handler `handleEditTransaction` que chama `updateTransaction` do hook
-
-### 4. Adicionar alerta de confirmacao para exclusao (`src/pages/Planner.tsx`)
-- Usar o componente `AlertDialog` do shadcn/ui
-- Ao clicar em "Excluir", exibir um dialogo pedindo confirmacao
-- Somente excluir apos o usuario confirmar
-- Adicionar estado `deletingId` para controlar qual transacao esta sendo excluida
-
-## Detalhes Tecnicos
-
-### `src/hooks/usePlanner.ts`
-Substituir a funcao `updateTransaction` stub por uma mutation real:
-```typescript
-const updateTransactionMutation = useMutation({
-  mutationFn: async ({ id, transaction }: { id: string; transaction: Omit<Transaction, 'id' | 'createdAt'> }) => {
-    const { error } = await supabase.from('planner_transactions').update({
-      date: transaction.date.toISOString().split('T')[0],
-      location: transaction.location,
-      amount: transaction.amount,
-      rate: transaction.rate,
-      total_paid: transaction.totalPaid,
-    }).eq('id', id);
-    if (error) throw error;
-  },
-  onSuccess: () => queryClient.invalidateQueries({ queryKey: ['planner-transactions', userId] }),
-});
+<footer className="py-3 px-4 text-center border-t border-border">
+  <p className="text-xs text-muted-foreground">
+    Desenvolvido por McKinley Avenue
+  </p>
+</footer>
 ```
 
-### `src/components/planner/AddTransactionModal.tsx`
-- Adicionar props `editingTransaction?: Transaction` e `onEdit?: (id: string, transaction: ...) => void`
-- Usar `useEffect` para popular os campos quando `editingTransaction` muda
-- Titulo muda para "Editar Compra" quando editando
-
-### `src/pages/Planner.tsx`
-- Estado: `editingTransaction` (Transaction | null), `deletingId` (string | null)
-- AlertDialog com mensagem "Tem certeza que deseja excluir esta transacao?" com botoes Cancelar/Excluir
-- Handler de edicao abre o modal com dados pre-preenchidos
-
+Como o layout ja usa `flex-1` no main e `min-h-screen` no container, o rodape ficara naturalmente fixo na base da pagina quando o conteudo for curto, e abaixo do conteudo quando for longo.
