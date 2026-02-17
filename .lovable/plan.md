@@ -1,49 +1,29 @@
 
+# Ajustar Fluxo do Modal "Nova Compra"
 
-# Corrigir Flash de Imagem Antiga na Tela de Login
+## Mudanca
+Alterar a ordem e logica dos campos no modal de Nova Compra para que o usuario informe:
 
-## Problema
-Ao acessar `/login`, a imagem de fundo antiga (`src/assets/auth-bg.jpg`) aparece brevemente antes de ser substituida pela imagem configurada no banco de dados (`login_bg_url`). Isso acontece porque:
+1. **Quantidade (USD)** - quanto de moeda comprou
+2. **Total Pago (R$)** - quanto pagou em reais
+3. **Taxa (R$/USD)** - calculada automaticamente (Total Pago / Quantidade)
 
-1. O hook `useLoginBg()` faz uma query assincrona ao banco
-2. Enquanto a query carrega, o fallback estatico `auth-bg.jpg` e exibido
-3. Quando a query resolve, a imagem troca — gerando o flash visual
-
-## Solucao
-Aguardar o carregamento da URL do banco antes de renderizar o background. Se a query ainda estiver pendente, exibir apenas um fundo escuro (sem imagem). A imagem so aparece apos a query resolver.
-
-## Alteracoes
-
-### 1. `src/hooks/useLoginBg.ts`
-- Expor o estado `isLoading` da query para o componente consumidor saber quando a URL esta pronta
-
-### 2. `src/components/auth/AuthPage.tsx`
-- Consumir `isLoading` do hook
-- Enquanto `isLoading` for `true`, usar apenas o fundo escuro (`bg-black`) sem imagem
-- Apos a query resolver, exibir a imagem (dinamica ou fallback estatico)
-- Adicionar transicao suave (`transition-opacity`) para que a imagem apareca gradualmente em vez de piscar
+Atualmente o fluxo e: Quantidade -> Taxa -> Total Pago (calculado). O novo fluxo inverte: o usuario informa o total pago e a taxa e derivada.
 
 ## Detalhes Tecnicos
 
-No hook `useLoginBg.ts`:
-```typescript
-const { data, isLoading } = useQuery({ ... });
-return { loginBgUrl: data ?? null, isLoading };
-```
+### Arquivo: `src/components/planner/AddTransactionModal.tsx`
 
-No componente `AuthPage.tsx`:
-```typescript
-const { loginBgUrl, isLoading } = useLoginBg();
-const authBg = loginBgUrl || defaultAuthBg;
+**Logica de calculo:**
+- Quando ambos `amount` e `totalPaid` estiverem preenchidos, calcular `rate = totalPaid / amount`
+- O campo Taxa sera somente leitura (read-only) e exibira o valor calculado
+- Remover a flag `autoCalculate` (nao sera mais necessaria)
 
-// Background div com transicao
-<div
-  className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-500"
-  style={{
-    backgroundImage: isLoading ? 'none' : `url(${authBg})`,
-    opacity: isLoading ? 0 : 1,
-  }}
-/>
-```
+**Ordem visual dos campos (apos Data e Local):**
+1. Quantidade ({currency}) - input editavel
+2. Total Pago (R$) - input editavel
+3. Taxa (R$ por {currency}) - campo calculado, read-only, com indicacao visual de "calculado automaticamente"
 
-O fundo escuro ja esta garantido pelo overlay `bg-black/40` existente, entao durante o carregamento o usuario vera apenas um fundo escuro limpo por uma fracao de segundo antes da imagem aparecer suavemente.
+**Validacao do submit:**
+- Manter a exigencia de `location`, `amount` e `totalPaid` preenchidos
+- A `rate` sera calculada, entao nao precisa ser validada como input do usuario
