@@ -172,10 +172,23 @@ export function usePlanner() {
     addTransactionMutation.mutate(transaction);
   }, [addTransactionMutation]);
 
-  const updateTransaction = useCallback((_id: string, _transaction: Partial<Transaction>) => {
-    // Not currently used in UI; can be added later if needed
-    console.warn('updateTransaction not yet implemented for DB');
-  }, []);
+  const updateTransactionMutation = useMutation({
+    mutationFn: async ({ id, transaction }: { id: string; transaction: Omit<Transaction, 'id' | 'createdAt'> }) => {
+      const { error } = await supabase.from('planner_transactions').update({
+        date: transaction.date.toISOString().split('T')[0],
+        location: transaction.location,
+        amount: transaction.amount,
+        rate: transaction.rate,
+        total_paid: transaction.totalPaid,
+      }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['planner-transactions', userId] }),
+  });
+
+  const updateTransaction = useCallback((id: string, transaction: Omit<Transaction, 'id' | 'createdAt'>) => {
+    updateTransactionMutation.mutate({ id, transaction });
+  }, [updateTransactionMutation]);
 
   const deleteTransaction = useCallback((id: string) => {
     deleteTransactionMutation.mutate(id);

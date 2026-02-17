@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,19 +22,34 @@ interface AddTransactionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (transaction: Omit<Transaction, 'id' | 'createdAt'>) => void;
+  onEdit?: (id: string, transaction: Omit<Transaction, 'id' | 'createdAt'>) => void;
   currency: string;
+  editingTransaction?: Transaction | null;
 }
 
 export function AddTransactionModal({ 
   open, 
   onOpenChange, 
-  onSubmit, 
-  currency 
+  onSubmit,
+  onEdit,
+  currency,
+  editingTransaction,
 }: AddTransactionModalProps) {
   const [date, setDate] = useState<Date>(new Date());
   const [location, setLocation] = useState("");
   const [amount, setAmount] = useState("");
   const [totalPaid, setTotalPaid] = useState("");
+
+  const isEditing = !!editingTransaction;
+
+  useEffect(() => {
+    if (editingTransaction && open) {
+      setDate(editingTransaction.date);
+      setLocation(editingTransaction.location);
+      setAmount(String(editingTransaction.amount));
+      setTotalPaid(String(editingTransaction.totalPaid));
+    }
+  }, [editingTransaction, open]);
 
   const calculatedRate = amount && totalPaid && parseFloat(amount) > 0
     ? (parseFloat(totalPaid) / parseFloat(amount)).toFixed(4)
@@ -47,17 +62,21 @@ export function AddTransactionModal({
       return;
     }
 
-    onSubmit({
+    const transactionData = {
       date,
       location,
       amount: parseFloat(amount),
       rate: parseFloat(calculatedRate),
       totalPaid: parseFloat(totalPaid),
-    });
+    };
 
-    setLocation("");
-    setAmount("");
-    setTotalPaid("");
+    if (isEditing && onEdit) {
+      onEdit(editingTransaction.id, transactionData);
+    } else {
+      onSubmit(transactionData);
+    }
+
+    resetForm();
     onOpenChange(false);
   };
 
@@ -77,10 +96,12 @@ export function AddTransactionModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calculator className="h-5 w-5 text-primary" />
-            Nova Compra de {currency}
+            {isEditing ? `Editar Compra de ${currency}` : `Nova Compra de ${currency}`}
           </DialogTitle>
           <DialogDescription>
-            Registre uma nova transação de compra de moeda estrangeira
+            {isEditing
+              ? "Atualize os dados desta transação de câmbio"
+              : "Registre uma nova transação de compra de moeda estrangeira"}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -179,7 +200,7 @@ export function AddTransactionModal({
               Cancelar
             </Button>
             <Button type="submit" disabled={!location || !amount || !totalPaid || !calculatedRate}>
-              Adicionar Transação
+              {isEditing ? "Salvar Alterações" : "Adicionar Transação"}
             </Button>
           </DialogFooter>
         </form>
