@@ -34,35 +34,16 @@ export function AddTransactionModal({
   const [date, setDate] = useState<Date>(new Date());
   const [location, setLocation] = useState("");
   const [amount, setAmount] = useState("");
-  const [rate, setRate] = useState("");
   const [totalPaid, setTotalPaid] = useState("");
-  const [autoCalculate, setAutoCalculate] = useState(true);
 
-  const handleAmountChange = (value: string) => {
-    setAmount(value);
-    if (autoCalculate && rate && value) {
-      const calculatedTotal = parseFloat(value) * parseFloat(rate);
-      setTotalPaid(calculatedTotal.toFixed(2));
-    }
-  };
-
-  const handleRateChange = (value: string) => {
-    setRate(value);
-    if (autoCalculate && amount && value) {
-      const calculatedTotal = parseFloat(amount) * parseFloat(value);
-      setTotalPaid(calculatedTotal.toFixed(2));
-    }
-  };
-
-  const handleTotalPaidChange = (value: string) => {
-    setTotalPaid(value);
-    setAutoCalculate(false);
-  };
+  const calculatedRate = amount && totalPaid && parseFloat(amount) > 0
+    ? (parseFloat(totalPaid) / parseFloat(amount)).toFixed(4)
+    : "";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!location || !amount || !rate || !totalPaid) {
+    if (!location || !amount || !totalPaid || !calculatedRate) {
       return;
     }
 
@@ -70,16 +51,13 @@ export function AddTransactionModal({
       date,
       location,
       amount: parseFloat(amount),
-      rate: parseFloat(rate),
+      rate: parseFloat(calculatedRate),
       totalPaid: parseFloat(totalPaid),
     });
 
-    // Reset form
     setLocation("");
     setAmount("");
-    setRate("");
     setTotalPaid("");
-    setAutoCalculate(true);
     onOpenChange(false);
   };
 
@@ -87,9 +65,7 @@ export function AddTransactionModal({
     setDate(new Date());
     setLocation("");
     setAmount("");
-    setRate("");
     setTotalPaid("");
-    setAutoCalculate(true);
   };
 
   return (
@@ -159,45 +135,42 @@ export function AddTransactionModal({
                 type="number"
                 step="0.01"
                 value={amount}
-                onChange={(e) => handleAmountChange(e.target.value)}
+                onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
                 required
               />
             </div>
 
-            {/* Taxa */}
+            {/* Total Pago */}
             <div className="space-y-2">
-              <Label htmlFor="rate">Taxa (R$ por {currency})</Label>
+              <Label htmlFor="totalPaid">Total Pago (R$)</Label>
               <Input
-                id="rate"
+                id="totalPaid"
                 type="number"
-                step="0.0001"
-                value={rate}
-                onChange={(e) => handleRateChange(e.target.value)}
-                placeholder="0.0000"
+                step="0.01"
+                value={totalPaid}
+                onChange={(e) => setTotalPaid(e.target.value)}
+                placeholder="0.00"
                 required
               />
             </div>
           </div>
 
-          {/* Total Pago */}
+          {/* Taxa Calculada */}
           <div className="space-y-2">
-            <Label htmlFor="totalPaid">
-              Total Pago (R$)
-              {autoCalculate && (
-                <span className="text-xs text-muted-foreground ml-2">
-                  (calculado automaticamente)
-                </span>
-              )}
+            <Label htmlFor="rate">
+              Taxa (R$ por {currency})
+              <span className="text-xs text-muted-foreground ml-2">
+                (calculado automaticamente)
+              </span>
             </Label>
             <Input
-              id="totalPaid"
-              type="number"
-              step="0.01"
-              value={totalPaid}
-              onChange={(e) => handleTotalPaidChange(e.target.value)}
-              placeholder="0.00"
-              required
+              id="rate"
+              type="text"
+              value={calculatedRate}
+              readOnly
+              className="bg-muted cursor-not-allowed"
+              placeholder="Preencha quantidade e total"
             />
           </div>
 
@@ -205,7 +178,7 @@ export function AddTransactionModal({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={!location || !amount || !rate || !totalPaid}>
+            <Button type="submit" disabled={!location || !amount || !totalPaid || !calculatedRate}>
               Adicionar Transação
             </Button>
           </DialogFooter>
